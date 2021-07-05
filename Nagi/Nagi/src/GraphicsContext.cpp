@@ -167,7 +167,7 @@ vk::PresentModeKHR GraphicsContext::SelectPresentMode(const std::vector<vk::Pres
 			return presentMode == vk::PresentModeKHR::eMailbox;
 		});
 
-	// Fallback to FIFO if Mailbox not available
+	// Fallback to FIFO if Mailbox not available --> Guaranteed to be implemented
 	if (selectedPresentModeIt == presentModes.cend())
 		return vk::PresentModeKHR::eFifo;
 
@@ -204,11 +204,8 @@ void GraphicsContext::CreateLogicalDevice(const vk::PhysicalDevice& physicalDevi
 	queueCreateInfos.reserve(queueCreateInfos.size());
 	float queuePriority = 1.0f;
 
-	std::for_each(uniqueQfs.cbegin(), uniqueQfs.cend(),
-		[&queueCreateInfos, queuePriority](uint32_t qfmIdx)
-		{
-			queueCreateInfos.push_back(vk::DeviceQueueCreateInfo(vk::DeviceQueueCreateFlags(), qfmIdx, 1, &queuePriority));
-		});
+	for (auto qfmIdx : uniqueQfs)
+		queueCreateInfos.push_back(vk::DeviceQueueCreateInfo(vk::DeviceQueueCreateFlags(), qfmIdx, 1, &queuePriority));
 
 	// Enable validation layer on Device level (deprecated now) for backwards comp.
 	std::vector<const char*> enabledLayers = { "VK_LAYER_KHRONOS_validation" };
@@ -250,13 +247,14 @@ void GraphicsContext::CreateSwapchain(const vk::PhysicalDevice& physicalDevice, 
 	uint32_t imageCount = std::clamp(surfaceCapabilities.minImageCount + 1, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount);
 
 
+	// --------------------------------------------------------
 	// Revisit this later!!! We can check for support
 	vk::SurfaceTransformFlagBitsKHR preTransform = vk::SurfaceTransformFlagBitsKHR::eIdentity;
 
 	// Revisit this later!!! We can check for support
 	// The alpha channel, if it exists, of the images is ignored
 	vk::CompositeAlphaFlagBitsKHR compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
-
+	// --------------------------------------------------------
 
 	vk::SwapchainCreateInfoKHR scCreateInfo
 	(
@@ -305,7 +303,6 @@ void GraphicsContext::CreateSwapchain(const vk::PhysicalDevice& physicalDevice, 
 	{
 		std::cout << "vk::SystemError: " << err.what() << std::endl;
 	}
-
 }
 
 
