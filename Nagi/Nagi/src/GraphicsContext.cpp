@@ -2,6 +2,11 @@
 #include "GraphicsContext.h"
 #include "Window.h"
 
+// VMA
+#define VMA_IMPLEMENTATION
+#include "vk_mem_alloc.h"
+
+
 namespace Nagi
 {
 
@@ -24,30 +29,38 @@ GraphicsContext::GraphicsContext(const Window& win, bool debugLayer)
 
 	CreateInstance(win.GetRequiredExtensions(), debugLayer);
 
-	// Add Vulkan Memory Allocator when we get to buffers
 	m_surface = win.GetSurface(m_instance);
 	CreateDebugMessenger(m_instance);
 
 	GetPhysicalDevice(m_instance);
 	CreateLogicalDevice(m_physicalDevice, m_surface);
 
+	// Initialize VMA
+	// We will use later, stick with normal Buffer/Image creation for now
+	CreateVulkanMemoryAllocator(m_instance, m_physicalDevice, m_logicalDevice);
+
 	vk::SurfaceFormatKHR surfaceFormatUsed = 
 		CreateSwapchain(m_physicalDevice, m_logicalDevice, m_surface, { win.GetClientWidth(), win.GetClientHeight() });
 	CreateSwapchainImageViews(m_swapchain, m_logicalDevice, surfaceFormatUsed);
 
-
+	CreateDepthResources(m_physicalDevice, m_logicalDevice, { win.GetClientWidth(), win.GetClientHeight() });
 
 }
 
 GraphicsContext::~GraphicsContext()
 {
+	// ==================================== VMA related destructions
+
+	// Destroy vma resources here
+	// e.g vmaDestroyBuffer(m_allocator, buffer, allocation);
+
+	vmaDestroyAllocator(m_allocator);
+
 	// ==================================== Logical device related destructions
 	for (auto view : m_swapchainImageViews)
 		m_logicalDevice.destroyImageView(view);
-
-	for (auto image : m_swapchainImages)
-		m_logicalDevice.destroyImage(image);
-
+	
+	// This destroys the swapchain images too
 	m_logicalDevice.destroySwapchainKHR(m_swapchain);
 
 	m_logicalDevice.destroy();
@@ -120,7 +133,7 @@ void GraphicsContext::CreateDebugMessenger(const vk::Instance& instance)
 			vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | 
 			vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo,
 			// Types
-			vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | 
+			//vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | 
 			vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
 			vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
 
@@ -128,6 +141,18 @@ void GraphicsContext::CreateDebugMessenger(const vk::Instance& instance)
 		},
 		nullptr,	// User data
 		m_didl);
+}
+
+void GraphicsContext::CreateVulkanMemoryAllocator(const vk::Instance& instance, const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice)
+{
+	VmaAllocatorCreateInfo allocatorInfo = {};
+	allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_2;
+	allocatorInfo.physicalDevice = physicalDevice;
+	allocatorInfo.device = logicalDevice;
+	allocatorInfo.instance = instance;
+
+	
+	assert(vmaCreateAllocator(&allocatorInfo, &m_allocator) == VK_SUCCESS);
 }
 
 void GraphicsContext::GetPhysicalDevice(const vk::Instance& instance) 
@@ -378,6 +403,59 @@ void GraphicsContext::CreateSwapchainImageViews(const vk::SwapchainKHR& swapchai
 			assert(false);
 		}
 	}	
+}
+
+void GraphicsContext::CreateDepthResources(const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice, std::pair<uint32_t, uint32_t> clientDimensions)
+{
+	// ========================= Create Image
+	// Declare that we want a 32 bit signed floating point component
+	const vk::Format depthFormat = vk::Format::eD32Sfloat;
+
+	// Get properties of this format (We have to check tiling features supported by this device for this format)
+	vk::FormatProperties formatProperties = physicalDevice.getFormatProperties(depthFormat);
+	
+	// ImageTiling specifies tiling arrangement for the data in this image (how is it laid out)
+	// We prioritize optimal
+	vk::ImageTiling imageTiling;
+	if (formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment)
+		imageTiling = vk::ImageTiling::eOptimal;	// Texels laid out in an implementation specific order for optimal access
+	else if (formatProperties.linearTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment)
+		imageTiling = vk::ImageTiling::eLinear;		// Texels laid out in row major order in data	
+	else
+		assert(false);		// D32 is not a supported format a for the depth stencil attachment
+
+	vk::ImageCreateInfo imageCreateInfo
+	(
+		{},
+		vk::ImageType::e2D,
+		depthFormat,
+		vk::Extent3D(clientDimensions.first, clientDimensions.second, 1),
+		1,
+		1,
+		vk::SampleCountFlagBits::e1,
+		imageTiling,
+		vk::ImageUsageFlagBits::eDepthStencilAttachment
+		// Sharing mode exclusive --> Owned by one queue family at a time, hence no need for the rest of arguments (specifying queue families)
+	);
+
+	try
+	{
+		m_depthImage = logicalDevice.createImage(imageCreateInfo);
+	}
+	catch (vk::SystemError& err)
+	{
+		std::cout << "vk::SystemError: " << err.what() << std::endl;
+		assert(false);
+	}
+
+	// ======================= Allocate memory for specified image
+	// TO DO
+
+
+
+
+
+
 }
 
 

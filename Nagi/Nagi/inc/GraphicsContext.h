@@ -1,6 +1,9 @@
 #pragma once
 #include <vulkan/vulkan.hpp>
 
+// Forward declare VmaAllocator
+typedef struct VmaAllocator_T* VmaAllocator;
+
 namespace Nagi
 {
 
@@ -29,10 +32,13 @@ private:
 	void CreateInstance(std::vector<const char*> requiredExtensions, bool debugLayer);
 	void CreateDebugMessenger(const vk::Instance& instance);
 
+	void CreateVulkanMemoryAllocator(const vk::Instance& instance, const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice);
+
 	void GetPhysicalDevice(const vk::Instance& instance);
 	void CreateLogicalDevice(const vk::PhysicalDevice& physDevice, vk::SurfaceKHR surface);
 	vk::SurfaceFormatKHR CreateSwapchain(const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice, vk::SurfaceKHR surface, std::pair<uint32_t, uint32_t> clientDimensions);
 	void CreateSwapchainImageViews(const vk::SwapchainKHR& swapchain, const vk::Device& logicalDevice, const vk::SurfaceFormatKHR& surfaceFormat);
+	void CreateDepthResources(const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice, std::pair<uint32_t, uint32_t> clientDimensions);
 		
 	// Helpers
 	QueueFamilies FindQueueFamilies(const vk::PhysicalDevice& physDevice, vk::SurfaceKHR surface) const;
@@ -45,10 +51,15 @@ private:
 	vk::PhysicalDevice m_physicalDevice;
 	vk::Device m_logicalDevice;
 
+	// VMA
+	VmaAllocator m_allocator;
+
 	vk::SurfaceKHR m_surface;
 	vk::SwapchainKHR m_swapchain;
 	std::vector<vk::Image> m_swapchainImages;
 	std::vector<vk::ImageView> m_swapchainImageViews;
+
+	vk::Image m_depthImage;
 
 	vk::DispatchLoaderDynamic m_didl;
 	vk::DebugUtilsMessengerEXT m_debugMessenger;
