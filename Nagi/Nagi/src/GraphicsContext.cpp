@@ -15,25 +15,47 @@ struct QueueFamilies
 		return gphIdx.has_value() &&
 			presentIdx.has_value();
 	}
-
 };
 
 GraphicsContext::GraphicsContext(const Window& win, bool debugLayer)
 {
+	// We limit the use of member variables in these creation helpers for learning purposes
+	// This way, we can make it easy to see what each step of the creation requires at a glance!
+
 	CreateInstance(win.GetRequiredExtensions(), debugLayer);
 
-	vk::SurfaceKHR surface = win.GetSurface(m_instance);
+	// Add Vulkan Memory Allocator when we get to buffers
+	m_surface = win.GetSurface(m_instance);
 	CreateDebugMessenger(m_instance);
 
 	GetPhysicalDevice(m_instance);
-	CreateLogicalDevice(m_physicalDevice, surface);
+	CreateLogicalDevice(m_physicalDevice, m_surface);
 
-	CreateSwapchain(m_physicalDevice, m_logicalDevice, surface, { win.GetClientWidth(), win.GetClientHeight() });
+	vk::SurfaceFormatKHR surfaceFormatUsed = 
+		CreateSwapchain(m_physicalDevice, m_logicalDevice, m_surface, { win.GetClientWidth(), win.GetClientHeight() });
+	CreateSwapchainImageViews(m_swapchain, m_logicalDevice, surfaceFormatUsed);
+
+
+
 }
 
 GraphicsContext::~GraphicsContext()
 {
+	// ==================================== Logical device related destructions
+	for (auto view : m_swapchainImageViews)
+		m_logicalDevice.destroyImageView(view);
+
+	for (auto image : m_swapchainImages)
+		m_logicalDevice.destroyImage(image);
+
+	m_logicalDevice.destroySwapchainKHR(m_swapchain);
+
 	m_logicalDevice.destroy();
+
+	// ==================================== Instance related destructions
+	m_instance.destroySurfaceKHR(m_surface);
+	m_instance.destroyDebugUtilsMessengerEXT(m_debugMessenger, {}, m_didl);		// We used the dynamic dispatch to create our debug utils
+
 	m_instance.destroy();
 }
 
@@ -83,7 +105,9 @@ void GraphicsContext::CreateInstance(std::vector<const char*> requiredExtensions
 
 void GraphicsContext::CreateDebugMessenger(const vk::Instance& instance)
 {
-	auto instanceLoader = vk::DispatchLoaderDynamic(instance, vkGetInstanceProcAddr);
+	m_didl = vk::DispatchLoaderDynamic(instance, vkGetInstanceProcAddr);
+	// Note to self:  (Compare with old C-style project)
+	// Instead of loading the Extension function on compile time, we can do it in runtime.
 
 	// Hook the messenger to the instance
 	m_debugMessenger = instance.createDebugUtilsMessengerEXT(
@@ -103,7 +127,7 @@ void GraphicsContext::CreateDebugMessenger(const vk::Instance& instance)
 			DebugCallback
 		},
 		nullptr,	// User data
-		instanceLoader);
+		m_didl);
 }
 
 void GraphicsContext::GetPhysicalDevice(const vk::Instance& instance) 
@@ -223,7 +247,7 @@ void GraphicsContext::CreateLogicalDevice(const vk::PhysicalDevice& physicalDevi
 	}
 }
 
-void GraphicsContext::CreateSwapchain(const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice, vk::SurfaceKHR surface, std::pair<uint32_t, uint32_t> clientDimensions)
+vk::SurfaceFormatKHR GraphicsContext::CreateSwapchain(const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice, vk::SurfaceKHR surface, std::pair<uint32_t, uint32_t> clientDimensions)
 {
 	// ================= Gather surface details
 	// Get VkFormats supported by the surface
@@ -303,6 +327,57 @@ void GraphicsContext::CreateSwapchain(const vk::PhysicalDevice& physicalDevice, 
 	{
 		std::cout << "vk::SystemError: " << err.what() << std::endl;
 	}
+
+	// Return surface format, we will need this when we create swapchain image views
+	return surfaceFormat;
+}
+
+void GraphicsContext::CreateSwapchainImageViews(const vk::SwapchainKHR& swapchain, const vk::Device& logicalDevice, const vk::SurfaceFormatKHR& surfaceFormat)
+{
+	// Get the swapchain images
+	m_swapchainImages = logicalDevice.getSwapchainImagesKHR(swapchain);
+	m_swapchainImageViews.reserve(m_swapchainImages.size());
+
+	// Specify component values placed in each component of the output vector (RGBA)
+	vk::ComponentMapping componentMapping
+	(
+		vk::ComponentSwizzle::eR,
+		vk::ComponentSwizzle::eG,
+		vk::ComponentSwizzle::eB,
+		vk::ComponentSwizzle::eA
+	);
+
+	vk::ImageSubresourceRange subresRange
+	(
+		vk::ImageAspectFlagBits::eColor,
+		0,	// Base mip level
+		1,	// Level count
+		0,	// Base array layer 
+		1	// layerCount
+	);
+
+	for (const auto& image : m_swapchainImages)
+	{
+		vk::ImageViewCreateInfo viewCreateInfo
+		(
+			{},
+			image,
+			vk::ImageViewType::e2D,
+			surfaceFormat.format,
+			componentMapping,	
+			subresRange
+		);
+	
+		try
+		{
+			m_swapchainImageViews.push_back(logicalDevice.createImageView(viewCreateInfo));
+		}
+		catch (vk::SystemError& err)
+		{
+			std::cout << "vk::SystemError: " << err.what() << std::endl;
+			assert(false);
+		}
+	}	
 }
 
 
