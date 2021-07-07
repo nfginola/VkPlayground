@@ -11,9 +11,9 @@ namespace Nagi
 
 struct PerFrameSyncResource
 {
-	std::vector<vk::Semaphore> m_imageAvailableSemaphores;	// To halt the pipeline if Swapchain image is not yet available (Swapchain not done with it)
-	std::vector<vk::Semaphore> m_renderFinishedSemaphores;	// To wait for the render to be finished before letting the Swapchain present the image
-	std::vector<vk::Fence> m_inFlightFences;				// To make sure that we are not using resources that are in flight! (e.g Command Buffer still in use when we want to use it again)
+	vk::Semaphore imageAvailableSemaphore;	// To halt the pipeline if Swapchain image is not yet available (Swapchain not done with it)
+	vk::Semaphore renderFinishedSemaphore;	// To wait for the render to be finished before letting the Swapchain acquire the image to present
+	vk::Fence inFlightFence;				// To make sure that we are not using resources that are in flight! (e.g Command Buffer still in use when we want to use it again)
 };
 
 struct QueueFamilies
@@ -61,6 +61,7 @@ GraphicsContext::GraphicsContext(const Window& win, bool debugLayer)
 
 		// Frame synchronization
 		CreateSyncObjects(m_logicalDevice, s_maxFramesInFlight);
+		CreateCommandBuffers(m_logicalDevice, m_gphCmdPool, s_maxFramesInFlight);
 	}
 	catch (vk::SystemError& err)
 	{
@@ -89,7 +90,7 @@ GraphicsContext::~GraphicsContext()
 	//	vmaDestroyAllocator(m_allocator);
 
 	// ==================================== Logical device related destructions
-	m_logicalDevice.destroyCommandPool(m_gphCommandPool);
+	m_logicalDevice.destroyCommandPool(m_gphCmdPool);	// All cmd buffers associated with this pool is cleaned up automatically
 
 	for (auto view : m_swapchainImageViews)
 		m_logicalDevice.destroyImageView(view);
@@ -525,13 +526,33 @@ void GraphicsContext::CreateDepthResources(const vk::PhysicalDevice& physicalDev
 
 void GraphicsContext::CreateCommandPools(const vk::Device& logicalDevice, const QueueFamilies& qfs)
 {
-	m_gphCommandPool = m_logicalDevice.createCommandPool(vk::CommandPoolCreateInfo({}, qfs.gphIdx.value()));
+	m_gphCmdPool = m_logicalDevice.createCommandPool(vk::CommandPoolCreateInfo({}, qfs.gphIdx.value()));
 	// Other pools can be created here..
 }
 
 void GraphicsContext::CreateSyncObjects(const vk::Device& logicalDevice, uint32_t maxFramesInFlight)
 {
+	vk::FenceCreateInfo fenceCreateInfo(vk::FenceCreateFlagBits::eSignaled);
+	vk::SemaphoreCreateInfo semCreateInfo;
+
+	for (uint32_t i = 0; i < s_maxFramesInFlight; ++i)
+	{
+		PerFrameSyncResource pfsr;
+		pfsr.imageAvailableSemaphore = logicalDevice.createSemaphore(semCreateInfo);
+		pfsr.renderFinishedSemaphore = logicalDevice.createSemaphore(semCreateInfo);
+		pfsr.inFlightFence = logicalDevice.createFence(fenceCreateInfo);
+	}
+}
+
+void GraphicsContext::CreateCommandBuffers(const vk::Device& logicalDevice, const vk::CommandPool& cmdPool, uint32_t maxFramesInFlight)
+{
+	vk::CommandBufferAllocateInfo allocateInfo(cmdPool, vk::CommandBufferLevel::ePrimary, maxFramesInFlight);
+
+	// We have 'maxFramesInFlight' amount of cmd buffers so that we can re-record a cmd buffer that isn't being executed!
+	// (We will sync with the in-flight fence
+	m_gphCmdBuffers = logicalDevice.allocateCommandBuffers(allocateInfo);
 	
+	// We can create more command buffers here..
 }
 
 

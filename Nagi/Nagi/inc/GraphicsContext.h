@@ -45,6 +45,7 @@ private:
 	void CreateDepthResources(const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice, std::pair<uint32_t, uint32_t> clientDimensions);
 	void CreateCommandPools(const vk::Device& logicalDevice, const QueueFamilies& qfs);
 	void CreateSyncObjects(const vk::Device& logicalDevice, uint32_t maxFramesInFlight);
+	void CreateCommandBuffers(const vk::Device& logicalDevice, const vk::CommandPool& cmdPool, uint32_t maxFramesInFlight);
 		
 	// Helpers
 	QueueFamilies FindQueueFamilies(const vk::PhysicalDevice& physDevice, vk::SurfaceKHR surface) const;
@@ -60,7 +61,8 @@ private:
 	vk::DispatchLoaderDynamic m_didl;
 	vk::DebugUtilsMessengerEXT m_debugMessenger;
 
-	vk::CommandPool m_gphCommandPool;
+	vk::CommandPool m_gphCmdPool;
+	std::vector<vk::CommandBuffer> m_gphCmdBuffers;
 
 	std::vector<PerFrameSyncResource> m_frameSyncResources;
 
