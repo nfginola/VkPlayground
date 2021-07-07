@@ -30,6 +30,7 @@ public:
 	vk::SurfaceKHR GetSurface(const vk::Instance& vInst) const;
 	const std::vector<const char*>& GetRequiredExtensions() const;
 
+	// GLFW callbacks which we re-route to a specific Window instance
 	static void FramebufferResizeCallback(GLFWwindow* window, int width, int height);
 	static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 

@@ -10,6 +10,13 @@
 namespace Nagi
 {
 
+struct PerFrameSyncResource
+{
+	std::vector<vk::Semaphore> m_imageAvailableSemaphores;	// To halt the pipeline if Swapchain image is not yet available (Swapchain not done with it)
+	std::vector<vk::Semaphore> m_renderFinishedSemaphores;	// To wait for the render to be finished before letting the Swapchain present the image
+	std::vector<vk::Fence> m_inFlightFences;				// To make sure that we are not using resources that are in flight! (e.g Command Buffer still in use when we want to use it again)
+};
+
 struct QueueFamilies
 {
 	std::optional<uint32_t> gphIdx;
@@ -33,17 +40,25 @@ GraphicsContext::GraphicsContext(const Window& win, bool debugLayer)
 	CreateDebugMessenger(m_instance);
 
 	GetPhysicalDevice(m_instance);
-	CreateLogicalDevice(m_physicalDevice, m_surface);
+
+	QueueFamilies qfs = 
+	FindQueueFamilies(m_physicalDevice, m_surface);
+	CreateLogicalDevice(m_physicalDevice, qfs, m_surface);
+
+	CreateCommandPools(m_logicalDevice, qfs);
 
 	// Initialize VMA
-	// We will use later, stick with normal Buffer/Image creation for now
-	CreateVulkanMemoryAllocator(m_instance, m_physicalDevice, m_logicalDevice);
+	// We will use later, stick with normal Buffer/Image creation for now for learning purposes
+	// Note that there are VMA destruction code that are commented in the destructor
+	// CreateVulkanMemoryAllocator(m_instance, m_physicalDevice, m_logicalDevice);
 
 	vk::SurfaceFormatKHR surfaceFormatUsed = 
-		CreateSwapchain(m_physicalDevice, m_logicalDevice, m_surface, { win.GetClientWidth(), win.GetClientHeight() });
+	CreateSwapchain(m_physicalDevice, m_logicalDevice, m_surface, { win.GetClientWidth(), win.GetClientHeight() });
 	CreateSwapchainImageViews(m_swapchain, m_logicalDevice, surfaceFormatUsed);
-
 	CreateDepthResources(m_physicalDevice, m_logicalDevice, { win.GetClientWidth(), win.GetClientHeight() });
+	
+	// Frame synchronization
+	CreateSyncObjects(m_logicalDevice, s_maxFramesInFlight);
 
 }
 
@@ -51,17 +66,26 @@ GraphicsContext::~GraphicsContext()
 {
 	// ==================================== VMA related destructions
 
-	// Destroy vma resources here
-	// e.g vmaDestroyBuffer(m_allocator, buffer, allocation);
+	// Cleanup depth resource (VMA)
+	//vmaDestroyImage(m_allocator, m_vmaDepthImage, m_vmaDepthAlloc);
 
-	vmaDestroyAllocator(m_allocator);
+	//	vmaDestroyAllocator(m_allocator);
 
 	// ==================================== Logical device related destructions
+	m_logicalDevice.destroyCommandPool(m_gphCommandPool);
+
 	for (auto view : m_swapchainImageViews)
 		m_logicalDevice.destroyImageView(view);
 	
 	// This destroys the swapchain images too
 	m_logicalDevice.destroySwapchainKHR(m_swapchain);
+
+	// Cleanup depth resource
+	m_logicalDevice.destroyImageView(m_depthView);
+	m_logicalDevice.destroyImage(m_depthImage);
+	m_logicalDevice.freeMemory(m_depthMemory);
+
+
 
 	m_logicalDevice.destroy();
 
@@ -151,14 +175,13 @@ void GraphicsContext::CreateVulkanMemoryAllocator(const vk::Instance& instance, 
 	allocatorInfo.device = logicalDevice;
 	allocatorInfo.instance = instance;
 
-	
-	assert(vmaCreateAllocator(&allocatorInfo, &m_allocator) == VK_SUCCESS);
+	//assert(vmaCreateAllocator(&allocatorInfo, &m_allocator) == VK_SUCCESS);
 }
 
 void GraphicsContext::GetPhysicalDevice(const vk::Instance& instance) 
 {
 	// Simply get the one in front. We will assume that this is our primary graphics card
-	// We can extend this by having some score value checking for each physical device
+	// We can extend this by having some score value checking for each physical device in the future
 	m_physicalDevice = instance.enumeratePhysicalDevices().front();
 }
 
@@ -240,15 +263,12 @@ vk::Extent2D GraphicsContext::SelectSwapchainExtent(const vk::SurfaceCapabilitie
 		return capabilities.currentExtent;
 }
 
-void GraphicsContext::CreateLogicalDevice(const vk::PhysicalDevice& physicalDevice, vk::SurfaceKHR surface)
+void GraphicsContext::CreateLogicalDevice(const vk::PhysicalDevice& physicalDevice, const QueueFamilies& qfs, vk::SurfaceKHR surface)
 {
-	// Find queue family indicies
-	QueueFamilies qfms = FindQueueFamilies(physicalDevice, surface);
-
 	// The Vulkan spec states: The queueFamilyIndex member of each element of pQueueCreateInfos must be unique within pQueueCreateInfos 
 	// (https://vulkan.lunarg.com/doc/view/1.2.176.1/windows/1.2-extensions/vkspec.html#VUID-VkDeviceCreateInfo-queueFamilyIndex-00372)
 	std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
-	std::set<uint32_t> uniqueQfs = { qfms.gphIdx.value(), qfms.presentIdx.value() };
+	std::set<uint32_t> uniqueQfs = { qfs.gphIdx.value(), qfs.presentIdx.value() };
 
 	queueCreateInfos.reserve(queueCreateInfos.size());
 	float queuePriority = 1.0f;
@@ -293,7 +313,7 @@ vk::SurfaceFormatKHR GraphicsContext::CreateSwapchain(const vk::PhysicalDevice& 
 
 	// Recommended to have one more image than minimum
 	// We make sure that doesn't exceed maximum
-	uint32_t imageCount = std::clamp(surfaceCapabilities.minImageCount + 1, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount);
+	m_swapchainImageCount = std::clamp(surfaceCapabilities.minImageCount + 1, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount);
 
 
 	// --------------------------------------------------------
@@ -309,7 +329,7 @@ vk::SurfaceFormatKHR GraphicsContext::CreateSwapchain(const vk::PhysicalDevice& 
 	(
 		{},
 		surface,
-		surfaceCapabilities.minImageCount,
+		m_swapchainImageCount,
 		surfaceFormat.format,
 		vk::ColorSpaceKHR::eSrgbNonlinear,
 		extent,
@@ -413,7 +433,7 @@ void GraphicsContext::CreateDepthResources(const vk::PhysicalDevice& physicalDev
 
 	// Get properties of this format (We have to check tiling features supported by this device for this format)
 	vk::FormatProperties formatProperties = physicalDevice.getFormatProperties(depthFormat);
-	
+
 	// ImageTiling specifies tiling arrangement for the data in this image (how is it laid out)
 	// We prioritize optimal
 	vk::ImageTiling imageTiling;
@@ -449,13 +469,112 @@ void GraphicsContext::CreateDepthResources(const vk::PhysicalDevice& physicalDev
 	}
 
 	// ======================= Allocate memory for specified image
-	// TO DO
+	vk::MemoryRequirements memReq = logicalDevice.getImageMemoryRequirements(m_depthImage);
+	vk::PhysicalDeviceMemoryProperties physMemProps = physicalDevice.getMemoryProperties();
+
+	uint32_t typeIndex = UINT32_MAX;
+	vk::MemoryPropertyFlagBits chosenProperty = vk::MemoryPropertyFlagBits::eDeviceLocal;
+
+	// Find specific memory type index for memory allocation!
+	// Here we find the suitable memory type index based on our needs (e.g chosen property and from which heap)
+	for (uint32_t i = 0; i < physMemProps.memoryTypeCount; i++)
+	{
+		// memoryTypeBits is a bitmask and contains one bit set for every supported memory type for the resource. 
+		// Bit i is set if and only if the memory type i in the VkPhysicalDeviceMemoryProperties structure for the physical device is supported for the resource.
+		bool currMemTypeSupported = memReq.memoryTypeBits & (i >> 1);
+		bool propertySupported = (physMemProps.memoryTypes[i].propertyFlags & chosenProperty) == chosenProperty;
+
+		// We could add an extra check to select which heap we want but we will skip for now
+		if (currMemTypeSupported && propertySupported)
+		{
+			typeIndex = i;
+			break;
+		}
+	}
+	assert(typeIndex != UINT32_MAX);
+
+	try
+	{
+		m_depthMemory = logicalDevice.allocateMemory(vk::MemoryAllocateInfo(memReq.size, typeIndex));
+	}
+	catch (vk::SystemError& err)
+	{
+		std::cout << "vk::SystemError: " << err.what() << std::endl;
+		assert(false);
+	}
+	
+
+	// ======================= Bind memory to image!
+	logicalDevice.bindImageMemory(m_depthImage, m_depthMemory, 0);
 
 
+	// ======================= VMA ALTERNATIVE TO IMAGE CREATION (Handles image creation and memory allocation)
+
+	//VmaAllocationCreateInfo allocationInfo{};
+	//// https://gpuopen-librariesandsdks.github.io/VulkanMemoryAllocator/html/choosing_memory_type.html
+	//// We can leave all allocation flags off if we want (means no requirements specified for memory type)
+	//allocationInfo.usage = VmaMemoryUsage::VMA_MEMORY_USAGE_GPU_ONLY;
+
+	//VkImage tmpDepth;
+	//assert(vmaCreateImage(
+	//	m_allocator,
+	//	(VkImageCreateInfo*)&imageCreateInfo,
+	//	&allocationInfo,
+	//	&tmpDepth,
+	//	&m_vmaDepthAlloc,
+	//	nullptr) == VK_SUCCESS);
+	//m_vmaDepthImage = tmpDepth;
 
 
+	// ======================= Create view for image
+	
+	// Question: Does component mapping change anything when it comes to Depth texture? (We are using D32..)
+	vk::ComponentMapping componentMapping(vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG, vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA);
+	vk::ImageSubresourceRange subresRange(vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1);
+
+	vk::ImageViewCreateInfo viewCreateInfo({},
+		m_depthImage,
+		vk::ImageViewType::e2D,
+		depthFormat,
+		componentMapping,
+		subresRange
+	);
+
+	try
+	{
+		m_depthView = logicalDevice.createImageView(viewCreateInfo);
+		
+		//// VMA Alternative
+		//viewCreateInfo.setImage(m_vmaDepthImage);
+		//m_depthView = logicalDevice.createImageView(viewCreateInfo);
+	}
+	catch (vk::SystemError& err)
+	{
+		std::cout << "vk::SystemError: " << err.what() << std::endl;
+		assert(false);
+	}
 
 
+	
+}
+
+void GraphicsContext::CreateCommandPools(const vk::Device& logicalDevice, const QueueFamilies& qfs)
+{
+	try
+	{
+		m_gphCommandPool = m_logicalDevice.createCommandPool(vk::CommandPoolCreateInfo({}, qfs.gphIdx.value()));
+		// Other pools can be created here..
+	}
+	catch (vk::SystemError& err)
+	{
+		std::cout << "vk::SystemError: " << err.what() << std::endl;
+		assert(false);
+	}
+}
+
+void GraphicsContext::CreateSyncObjects(const vk::Device& logicalDevice, uint32_t maxFramesInFlight)
+{
+	
 }
 
 
