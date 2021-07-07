@@ -6,8 +6,10 @@ int main()
 {
 	Nagi::Window win(1920, 1080);
 	
-	Nagi::GraphicsContext gphCon(win);
+	Nagi::GraphicsContext gfxCon(win);
 
+	
+	auto sems = gfxCon.BeginFrame();
 
 	while (win.IsRunning())
 	{

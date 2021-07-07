@@ -22,8 +22,11 @@ public:
 	GraphicsContext(const GraphicsContext&) = delete;
 	GraphicsContext& operator=(const GraphicsContext&) = delete;
 
+	std::pair<vk::Semaphore, vk::Semaphore> BeginFrame();
+	void EndFrame();
+
 private:
-	static const uint32_t s_maxFramesInFlight = 2;
+	static constexpr uint32_t s_maxFramesInFlight = 2;
 
 	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -56,14 +59,18 @@ private:
 private:
 	vk::Instance m_instance;
 	vk::PhysicalDevice m_physicalDevice;
-	vk::Device m_logicalDevice;
+	vk::Device m_device;
+	vk::Queue m_gfxQueue;
+	vk::Queue m_presentQueue;
 
 	vk::DispatchLoaderDynamic m_didl;
 	vk::DebugUtilsMessengerEXT m_debugMessenger;
 
-	vk::CommandPool m_gphCmdPool;
-	std::vector<vk::CommandBuffer> m_gphCmdBuffers;
+	vk::CommandPool m_gfxCmdPool;
+	std::vector<vk::CommandBuffer> m_gfxCmdBuffers;
 
+	uint32_t m_currFrame;
+	uint32_t m_currImageIdx;
 	std::vector<PerFrameSyncResource> m_frameSyncResources;
 
 	// VMA
