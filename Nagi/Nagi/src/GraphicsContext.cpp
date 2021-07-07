@@ -6,7 +6,6 @@
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 
-
 namespace Nagi
 {
 
@@ -34,32 +33,50 @@ GraphicsContext::GraphicsContext(const Window& win, bool debugLayer)
 	// We limit the use of member variables in these creation helpers for learning purposes
 	// This way, we can make it easy to see what each step of the creation requires at a glance!
 
-	CreateInstance(win.GetRequiredExtensions(), debugLayer);
+	try
+	{
+		CreateInstance(win.GetRequiredExtensions(), debugLayer);
 
-	m_surface = win.GetSurface(m_instance);
-	CreateDebugMessenger(m_instance);
+		m_surface = win.GetSurface(m_instance);
+		if (debugLayer)
+			CreateDebugMessenger(m_instance);
 
-	GetPhysicalDevice(m_instance);
+		GetPhysicalDevice(m_instance);
 
-	QueueFamilies qfs = 
-	FindQueueFamilies(m_physicalDevice, m_surface);
-	CreateLogicalDevice(m_physicalDevice, qfs, m_surface);
+		QueueFamilies qfs =
+		FindQueueFamilies(m_physicalDevice, m_surface);
+		CreateLogicalDevice(m_physicalDevice, qfs, m_surface, debugLayer);
 
-	CreateCommandPools(m_logicalDevice, qfs);
+		CreateCommandPools(m_logicalDevice, qfs);
 
-	// Initialize VMA
-	// We will use later, stick with normal Buffer/Image creation for now for learning purposes
-	// Note that there are VMA destruction code that are commented in the destructor
-	// CreateVulkanMemoryAllocator(m_instance, m_physicalDevice, m_logicalDevice);
+		// Initialize VMA
+		// We will use later, stick with normal Buffer/Image creation for now for learning purposes
+		// Note that there are VMA destruction code that are commented in the destructor
+		// CreateVulkanMemoryAllocator(m_instance, m_physicalDevice, m_logicalDevice);
 
-	vk::SurfaceFormatKHR surfaceFormatUsed = 
-	CreateSwapchain(m_physicalDevice, m_logicalDevice, m_surface, { win.GetClientWidth(), win.GetClientHeight() });
-	CreateSwapchainImageViews(m_swapchain, m_logicalDevice, surfaceFormatUsed);
-	CreateDepthResources(m_physicalDevice, m_logicalDevice, { win.GetClientWidth(), win.GetClientHeight() });
-	
-	// Frame synchronization
-	CreateSyncObjects(m_logicalDevice, s_maxFramesInFlight);
+		vk::SurfaceFormatKHR surfaceFormatUsed =
+		CreateSwapchain(m_physicalDevice, m_logicalDevice, m_surface, { win.GetClientWidth(), win.GetClientHeight() });
+		CreateSwapchainImageViews(m_swapchain, m_logicalDevice, surfaceFormatUsed);
+		CreateDepthResources(m_physicalDevice, m_logicalDevice, { win.GetClientWidth(), win.GetClientHeight() });
 
+		// Frame synchronization
+		CreateSyncObjects(m_logicalDevice, s_maxFramesInFlight);
+	}
+	catch (vk::SystemError& err)
+	{
+		std::cout << "vk::SystemError: " << err.what() << std::endl;
+		assert(false);
+	}
+	catch (std::exception& err)
+	{
+		std::cout << "std::exception: " << err.what() << std::endl;
+		assert(false);
+	}
+	catch (...)
+	{
+		std::cout << "Unknown error\n";
+		assert(false);
+	}
 }
 
 GraphicsContext::~GraphicsContext()
@@ -127,15 +144,7 @@ void GraphicsContext::CreateInstance(std::vector<const char*> requiredExtensions
 		static_cast<uint32_t>(validationLayers.size()), validationLayers.data(),
 		static_cast<uint32_t>(requiredExtensions.size()), requiredExtensions.data());
 
-	try
-	{
-		m_instance = vk::createInstance(instCreateInfo);
-	}
-	catch (vk::SystemError& err)
-	{
-		std::cout << "vk::SystemError: " << err.what() << std::endl;
-		assert(false);
-	}
+	m_instance = vk::createInstance(instCreateInfo);
 
 
 }
@@ -263,7 +272,7 @@ vk::Extent2D GraphicsContext::SelectSwapchainExtent(const vk::SurfaceCapabilitie
 		return capabilities.currentExtent;
 }
 
-void GraphicsContext::CreateLogicalDevice(const vk::PhysicalDevice& physicalDevice, const QueueFamilies& qfs, vk::SurfaceKHR surface)
+void GraphicsContext::CreateLogicalDevice(const vk::PhysicalDevice& physicalDevice, const QueueFamilies& qfs, vk::SurfaceKHR surface, bool debugLayer)
 {
 	// The Vulkan spec states: The queueFamilyIndex member of each element of pQueueCreateInfos must be unique within pQueueCreateInfos 
 	// (https://vulkan.lunarg.com/doc/view/1.2.176.1/windows/1.2-extensions/vkspec.html#VUID-VkDeviceCreateInfo-queueFamilyIndex-00372)
@@ -277,19 +286,14 @@ void GraphicsContext::CreateLogicalDevice(const vk::PhysicalDevice& physicalDevi
 		queueCreateInfos.push_back(vk::DeviceQueueCreateInfo(vk::DeviceQueueCreateFlags(), qfmIdx, 1, &queuePriority));
 
 	// Enable validation layer on Device level (deprecated now) for backwards comp.
-	std::vector<const char*> enabledLayers = { "VK_LAYER_KHRONOS_validation" };
+	std::vector<const char*> enabledLayers;
+	if (debugLayer)
+		enabledLayers.push_back("VK_LAYER_KHRONOS_validation");
 
 	// Enable device specific extension
 	std::vector<const char*> enabledExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
-	try
-	{
-		m_logicalDevice = physicalDevice.createDevice(vk::DeviceCreateInfo(vk::DeviceCreateFlags(), queueCreateInfos, enabledLayers, enabledExtensions));
-	}
-	catch (vk::SystemError& err)
-	{
-		std::cout << "vk::SystemError: " << err.what() << std::endl;
-	}
+	m_logicalDevice = physicalDevice.createDevice(vk::DeviceCreateInfo(vk::DeviceCreateFlags(), queueCreateInfos, enabledLayers, enabledExtensions));
 }
 
 vk::SurfaceFormatKHR GraphicsContext::CreateSwapchain(const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice, vk::SurfaceKHR surface, std::pair<uint32_t, uint32_t> clientDimensions)
@@ -364,14 +368,7 @@ vk::SurfaceFormatKHR GraphicsContext::CreateSwapchain(const vk::PhysicalDevice& 
 		// Ownership must be explicitly transferred before use by another family ( We only have one here :) )
 		scCreateInfo.setImageSharingMode(vk::SharingMode::eExclusive);		
 
-	try
-	{
-		m_swapchain = m_logicalDevice.createSwapchainKHR(scCreateInfo);
-	}
-	catch (vk::SystemError& err)
-	{
-		std::cout << "vk::SystemError: " << err.what() << std::endl;
-	}
+	m_swapchain = m_logicalDevice.createSwapchainKHR(scCreateInfo);
 
 	// Return surface format, we will need this when we create swapchain image views
 	return surfaceFormat;
@@ -412,16 +409,8 @@ void GraphicsContext::CreateSwapchainImageViews(const vk::SwapchainKHR& swapchai
 			componentMapping,	
 			subresRange
 		);
-	
-		try
-		{
-			m_swapchainImageViews.push_back(logicalDevice.createImageView(viewCreateInfo));
-		}
-		catch (vk::SystemError& err)
-		{
-			std::cout << "vk::SystemError: " << err.what() << std::endl;
-			assert(false);
-		}
+
+		m_swapchainImageViews.push_back(logicalDevice.createImageView(viewCreateInfo));
 	}	
 }
 
@@ -458,15 +447,7 @@ void GraphicsContext::CreateDepthResources(const vk::PhysicalDevice& physicalDev
 		// Sharing mode exclusive --> Owned by one queue family at a time, hence no need for the rest of arguments (specifying queue families)
 	);
 
-	try
-	{
-		m_depthImage = logicalDevice.createImage(imageCreateInfo);
-	}
-	catch (vk::SystemError& err)
-	{
-		std::cout << "vk::SystemError: " << err.what() << std::endl;
-		assert(false);
-	}
+	m_depthImage = logicalDevice.createImage(imageCreateInfo);
 
 	// ======================= Allocate memory for specified image
 	vk::MemoryRequirements memReq = logicalDevice.getImageMemoryRequirements(m_depthImage);
@@ -493,15 +474,7 @@ void GraphicsContext::CreateDepthResources(const vk::PhysicalDevice& physicalDev
 	}
 	assert(typeIndex != UINT32_MAX);
 
-	try
-	{
-		m_depthMemory = logicalDevice.allocateMemory(vk::MemoryAllocateInfo(memReq.size, typeIndex));
-	}
-	catch (vk::SystemError& err)
-	{
-		std::cout << "vk::SystemError: " << err.what() << std::endl;
-		assert(false);
-	}
+	m_depthMemory = logicalDevice.allocateMemory(vk::MemoryAllocateInfo(memReq.size, typeIndex));
 	
 
 	// ======================= Bind memory to image!
@@ -540,19 +513,11 @@ void GraphicsContext::CreateDepthResources(const vk::PhysicalDevice& physicalDev
 		subresRange
 	);
 
-	try
-	{
-		m_depthView = logicalDevice.createImageView(viewCreateInfo);
+	m_depthView = logicalDevice.createImageView(viewCreateInfo);
 		
-		//// VMA Alternative
-		//viewCreateInfo.setImage(m_vmaDepthImage);
-		//m_depthView = logicalDevice.createImageView(viewCreateInfo);
-	}
-	catch (vk::SystemError& err)
-	{
-		std::cout << "vk::SystemError: " << err.what() << std::endl;
-		assert(false);
-	}
+	//// VMA Alternative
+	//viewCreateInfo.setImage(m_vmaDepthImage);
+	//m_depthView = logicalDevice.createImageView(viewCreateInfo);
 
 
 	
@@ -560,16 +525,8 @@ void GraphicsContext::CreateDepthResources(const vk::PhysicalDevice& physicalDev
 
 void GraphicsContext::CreateCommandPools(const vk::Device& logicalDevice, const QueueFamilies& qfs)
 {
-	try
-	{
-		m_gphCommandPool = m_logicalDevice.createCommandPool(vk::CommandPoolCreateInfo({}, qfs.gphIdx.value()));
-		// Other pools can be created here..
-	}
-	catch (vk::SystemError& err)
-	{
-		std::cout << "vk::SystemError: " << err.what() << std::endl;
-		assert(false);
-	}
+	m_gphCommandPool = m_logicalDevice.createCommandPool(vk::CommandPoolCreateInfo({}, qfs.gphIdx.value()));
+	// Other pools can be created here..
 }
 
 void GraphicsContext::CreateSyncObjects(const vk::Device& logicalDevice, uint32_t maxFramesInFlight)
