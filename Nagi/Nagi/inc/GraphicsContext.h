@@ -22,7 +22,16 @@ public:
 	GraphicsContext(const GraphicsContext&) = delete;
 	GraphicsContext& operator=(const GraphicsContext&) = delete;
 
-	std::pair<vk::Semaphore, vk::Semaphore> BeginFrame();
+	// arg1 Has to be used on the first queue submission of the frame!
+	// ret2 Has to be used on the last queue submission of the frame!
+	// ret3 Has to be used on the last queue submission of the frame!
+	// ret4 Is the command buffer to be used to re-record this frame
+	std::tuple<vk::Semaphore, vk::Semaphore, vk::CommandBuffer> BeginFrame();
+
+	// One queue submit per frame is assumed right now until further exploration
+	void SubmitQueue(const vk::SubmitInfo& info);
+
+	// Last external subpass must transition the swapchain image to proper presentation layout!
 	void EndFrame();
 
 private:

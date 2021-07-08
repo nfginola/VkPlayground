@@ -17,7 +17,7 @@ struct PerFrameSyncResource
 };
 
 struct QueueFamilies
-{
+{	
 	std::optional<uint32_t> gphIdx;
 	std::optional<uint32_t> presentIdx;
 
@@ -116,18 +116,20 @@ GraphicsContext::~GraphicsContext()
 	m_instance.destroy();
 }
 
-std::pair<vk::Semaphore, vk::Semaphore> GraphicsContext::BeginFrame()
+
+std::tuple<vk::Semaphore, vk::Semaphore, vk::CommandBuffer> GraphicsContext::BeginFrame()
 {
 	try
 	{
 		// Wait for frame resources..
-		auto waitRes = m_device.waitForFences({ m_frameSyncResources[m_currFrame].inFlightFence.get() }, VK_TRUE, std::numeric_limits<uint64_t>::max());		// CPU blocked by GPU
+		auto waitRes = m_device.waitForFences({ m_frameSyncResources[m_currFrame].inFlightFence.get() }, VK_TRUE, std::numeric_limits<uint64_t>::max());	// CPU blocked by GPU
 
 		// Handle if wait times out
 		// if (waitRes ...)
 
 		// Reset fence (unsignal) so that we can use it on subsequent Queue submit(s?) (GPU can signal)
 		m_device.resetFences({ m_frameSyncResources[m_currFrame].inFlightFence.get() });
+		// At this point, this frames GPU resource are available for use so we are safe to re-record to the command buffer for example
 
 		auto imageAcquireResults = m_device.acquireNextImageKHR(m_swapchain, std::numeric_limits<uint64_t>::max(), { m_frameSyncResources[m_currFrame].imageAvailableSemaphore.get() });
 		m_currImageIdx = imageAcquireResults.value;
@@ -135,11 +137,13 @@ std::pair<vk::Semaphore, vk::Semaphore> GraphicsContext::BeginFrame()
 		// Resize or handle failed acquisition
 		//if (imageAcquireResults.result...
 		
-		// Return relevant semaphores for render pass use
 		return 
 		{ 
-			m_frameSyncResources[m_currFrame].imageAvailableSemaphore.get(), 
-			m_frameSyncResources[m_currFrame].renderFinishedSemaphore.get() 
+			// Arguments needed in VkSubmitInfo
+			m_frameSyncResources[m_currFrame].imageAvailableSemaphore.get(),
+			m_frameSyncResources[m_currFrame].renderFinishedSemaphore.get(),
+			//m_frameSyncResources[m_currFrame].inFlightFence.get(),
+			m_gfxCmdBuffers[m_currFrame]		// Even though command buffer is tied to frame resource, lets keep it separate for now
 		};
 	}
 	catch (vk::SystemError& err)
@@ -148,26 +152,43 @@ std::pair<vk::Semaphore, vk::Semaphore> GraphicsContext::BeginFrame()
 		assert(false);
 	}
 
-	
-	// We wont be returning this since we will crash the program if anything is wrong
-	return
+	return {};
+}
+
+// CharlesG: MaxFramesInFlight Command Buffers. One for recording this 'frame' and X for frame (N-1, N-2, ..) (which may be in execution) 
+void GraphicsContext::SubmitQueue(const vk::SubmitInfo& info)
+{
+	try
 	{
-		m_frameSyncResources[m_currFrame].imageAvailableSemaphore.get(),
-		m_frameSyncResources[m_currFrame].renderFinishedSemaphore.get()
-	};
+		m_gfxQueue.submit({ info }, m_frameSyncResources[m_currFrame].inFlightFence.get());
+	}
+	catch (vk::SystemError& err)
+	{
+		std::cout << "vk::SystemError: " << err.what() << std::endl;
+		assert(false);
+	}
 }
 
 void GraphicsContext::EndFrame()
 {
-	vk::PresentInfoKHR presentInfo(m_frameSyncResources[m_currFrame].renderFinishedSemaphore.get(), m_swapchain, m_currImageIdx);
-	
-	auto presentResults = m_presentQueue.presentKHR(presentInfo);
+	try
+	{
+		vk::PresentInfoKHR presentInfo(m_frameSyncResources[m_currFrame].renderFinishedSemaphore.get(), m_swapchain, m_currImageIdx);
+		auto presentResults = m_presentQueue.presentKHR(presentInfo);
 
-	// Resize or handle failed presentation
-	//if (imageAcquireResults.result...
+		// Resize or handle failed presentation
+		//if (imageAcquireResults.result...
+	}
+	catch (vk::SystemError& err)
+	{
+		std::cout << "vk::SystemError: " << err.what() << std::endl;
+		assert(false);
+	}
 
 	m_currFrame = (m_currFrame + 1) % s_maxFramesInFlight;
 }
+
+
 
 VKAPI_ATTR VkBool32 VKAPI_CALL GraphicsContext::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
@@ -351,9 +372,11 @@ void GraphicsContext::CreateLogicalDevice(const vk::PhysicalDevice& physicalDevi
 
 	m_device = physicalDevice.createDevice(vk::DeviceCreateInfo(vk::DeviceCreateFlags(), queueCreateInfos, enabledLayers, enabledExtensions));
 
+	
 	// Retrieve the queues
 	m_gfxQueue = m_device.getQueue(qfs.gphIdx.value(), 0);
 	m_presentQueue = m_device.getQueue(qfs.presentIdx.value(), 0);
+
 }
 
 vk::SurfaceFormatKHR GraphicsContext::CreateSwapchain(const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice, vk::SurfaceKHR surface, std::pair<uint32_t, uint32_t> clientDimensions)
@@ -541,6 +564,7 @@ void GraphicsContext::CreateDepthResources(const vk::PhysicalDevice& physicalDev
 	logicalDevice.bindImageMemory(m_depthImage, m_depthMemory, 0);
 
 
+
 	// ======================= VMA ALTERNATIVE TO IMAGE CREATION (Handles image creation and memory allocation)
 
 	//VmaAllocationCreateInfo allocationInfo{};
@@ -551,7 +575,7 @@ void GraphicsContext::CreateDepthResources(const vk::PhysicalDevice& physicalDev
 	//VkImage tmpDepth;
 	//assert(vmaCreateImage(
 	//	m_allocator,
-	//	(VkImageCreateInfo*)&imageCreateInfo,
+	//	(VkImageCreateInfo*)&imageCreateInfo,	// Theres an operator for vk::ImageCreateInfo that returns the underlying thing
 	//	&allocationInfo,
 	//	&tmpDepth,
 	//	&m_vmaDepthAlloc,

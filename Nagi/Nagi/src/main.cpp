@@ -5,18 +5,21 @@
 int main()
 {
 	Nagi::Window win(1920, 1080);
-	
 	Nagi::GraphicsContext gfxCon(win);
-
 	
-	auto sems = gfxCon.BeginFrame();
+
+
 
 	while (win.IsRunning())
 	{
 		win.ProcessEvents();
+		
+		auto[imageAvailableSem, renderFinishedSem, inFlightFence] = 
+		gfxCon.BeginFrame();
 
+		gfxCon.SubmitQueue({});
 
-
+		gfxCon.EndFrame();
 	}
 
 
