@@ -9,12 +9,7 @@
 namespace Nagi
 {
 
-struct PerFrameSyncResource
-{
-	vk::UniqueSemaphore imageAvailableSemaphore;	// To halt the pipeline if Swapchain image is not yet available (Swapchain not done with it)
-	vk::UniqueSemaphore renderFinishedSemaphore;	// To wait for the render to be finished before letting the Swapchain acquire the image to present
-	vk::UniqueFence inFlightFence;					// To make sure that we are not using resources that are in flight! (e.g Command Buffer still in use when we want to use it again)
-};
+
 
 struct QueueFamilies
 {	
@@ -34,35 +29,38 @@ GraphicsContext::GraphicsContext(const Window& win, bool debugLayer) :
 	// We limit the use of member variables in these creation helpers for learning purposes
 	// This way, we can make it easy to see what each step of the creation requires at a glance!
 
+
 	try
 	{
-		CreateInstance(win.GetRequiredExtensions(), debugLayer);
+		createInstance(win.getRequiredExtensions(), debugLayer);
 
-		m_surface = win.GetSurface(m_instance);
+		m_surface = win.getSurface(m_instance);
 		if (debugLayer)
-			CreateDebugMessenger(m_instance);
+			createDebugMessenger(m_instance);
 
-		GetPhysicalDevice(m_instance);
+		getPhysicalDevice(m_instance);
 
 		QueueFamilies qfs =
-		FindQueueFamilies(m_physicalDevice, m_surface);
-		CreateLogicalDevice(m_physicalDevice, qfs, m_surface, debugLayer);
+		findQueueFamilies(m_physicalDevice, m_surface);
+		createLogicalDevice(m_physicalDevice, qfs, m_surface, debugLayer);
 
-		CreateCommandPools(m_device, qfs);
+		createCommandPools(m_device, qfs);
 
 		// Initialize VMA
 		// We will use later, stick with normal Buffer/Image creation for now for learning purposes
 		// Note that there are VMA destruction code that are commented in the destructor
 		// CreateVulkanMemoryAllocator(m_instance, m_physicalDevice, m_logicalDevice);
 
+		std::pair<uint32_t, uint32_t> clientDim{ win.getClientWidth(), win.getClientHeight() };
+
 		vk::SurfaceFormatKHR surfaceFormatUsed =
-		CreateSwapchain(m_physicalDevice, m_device, m_surface, { win.GetClientWidth(), win.GetClientHeight() });
-		CreateSwapchainImageViews(m_swapchain, m_device, surfaceFormatUsed);
-		CreateDepthResources(m_physicalDevice, m_device, { win.GetClientWidth(), win.GetClientHeight() });
+		createSwapchain(m_physicalDevice, m_device, m_surface, clientDim);
+		createSwapchainImageViews(m_swapchain, m_device, surfaceFormatUsed);
+		createDepthResources(m_physicalDevice, m_device, clientDim);
 
 		// Frame synchronization
-		CreateSyncObjects(m_device, s_maxFramesInFlight);
-		CreateCommandBuffers(m_device, m_gfxCmdPool, s_maxFramesInFlight);
+		createSyncObjects(m_device, s_maxFramesInFlight);
+		createCommandBuffers(m_device, m_gfxCmdPool, s_maxFramesInFlight);
 	}
 	catch (vk::SystemError& err)
 	{
@@ -106,6 +104,13 @@ GraphicsContext::~GraphicsContext()
 	m_device.destroyImage(m_depthImage);
 	m_device.freeMemory(m_depthMemory);
 
+	for (auto res : m_frameSyncResources)
+	{
+		m_device.destroySemaphore(res.imageAvailableSemaphore);
+		m_device.destroySemaphore(res.renderFinishedSemaphore);
+		m_device.destroyFence(res.inFlightFence);
+	}
+
 
 	m_device.destroy();
 
@@ -117,34 +122,41 @@ GraphicsContext::~GraphicsContext()
 }
 
 
-std::tuple<vk::Semaphore, vk::Semaphore, vk::CommandBuffer> GraphicsContext::BeginFrame()
+FrameResource GraphicsContext::beginFrame()
 {
 	try
 	{
 		// Wait for frame resources..
-		auto waitRes = m_device.waitForFences({ m_frameSyncResources[m_currFrame].inFlightFence.get() }, VK_TRUE, std::numeric_limits<uint64_t>::max());	// CPU blocked by GPU
+		auto waitRes = m_device.waitForFences({ m_frameSyncResources[m_currFrame].inFlightFence }, VK_TRUE, std::numeric_limits<uint64_t>::max());	// CPU blocked by GPU
 
 		// Handle if wait times out
 		// if (waitRes ...)
 
 		// Reset fence (unsignal) so that we can use it on subsequent Queue submit(s?) (GPU can signal)
-		m_device.resetFences({ m_frameSyncResources[m_currFrame].inFlightFence.get() });
+		m_device.resetFences({ m_frameSyncResources[m_currFrame].inFlightFence });
 		// At this point, this frames GPU resource are available for use so we are safe to re-record to the command buffer for example
 
-		auto imageAcquireResults = m_device.acquireNextImageKHR(m_swapchain, std::numeric_limits<uint64_t>::max(), { m_frameSyncResources[m_currFrame].imageAvailableSemaphore.get() });
+		auto imageAcquireResults = m_device.acquireNextImageKHR(m_swapchain, std::numeric_limits<uint64_t>::max(), { m_frameSyncResources[m_currFrame].imageAvailableSemaphore });
 		m_currImageIdx = imageAcquireResults.value;
-		
+
 		// Resize or handle failed acquisition
 		//if (imageAcquireResults.result...
-		
-		return 
-		{ 
-			// Arguments needed in VkSubmitInfo
-			m_frameSyncResources[m_currFrame].imageAvailableSemaphore.get(),
-			m_frameSyncResources[m_currFrame].renderFinishedSemaphore.get(),
-			//m_frameSyncResources[m_currFrame].inFlightFence.get(),
-			m_gfxCmdBuffers[m_currFrame]		// Even though command buffer is tied to frame resource, lets keep it separate for now
+
+		return
+		{
+			&m_gfxCmdBuffers[m_currFrame],
+			m_currImageIdx,
+			&m_frameSyncResources[m_currFrame]
 		};
+		
+		//return 
+		//{ 
+		//	// Arguments needed in VkSubmitInfo
+		//	m_frameSyncResources[m_currFrame].imageAvailableSemaphore.get(),
+		//	m_frameSyncResources[m_currFrame].renderFinishedSemaphore.get(),
+		//	//m_frameSyncResources[m_currFrame].inFlightFence.get(),
+		//	m_gfxCmdBuffers[m_currFrame]		// Even though command buffer is tied to frame resource, lets keep it separate for now
+		//};
 	}
 	catch (vk::SystemError& err)
 	{
@@ -156,11 +168,11 @@ std::tuple<vk::Semaphore, vk::Semaphore, vk::CommandBuffer> GraphicsContext::Beg
 }
 
 // CharlesG: MaxFramesInFlight Command Buffers. One for recording this 'frame' and X for frame (N-1, N-2, ..) (which may be in execution) 
-void GraphicsContext::SubmitQueue(const vk::SubmitInfo& info)
+void GraphicsContext::submitQueue(const vk::SubmitInfo& info)
 {
 	try
 	{
-		m_gfxQueue.submit({ info }, m_frameSyncResources[m_currFrame].inFlightFence.get());
+		m_gfxQueue.submit({ info }, m_frameSyncResources[m_currFrame].inFlightFence);
 	}
 	catch (vk::SystemError& err)
 	{
@@ -169,11 +181,11 @@ void GraphicsContext::SubmitQueue(const vk::SubmitInfo& info)
 	}
 }
 
-void GraphicsContext::EndFrame()
+void GraphicsContext::endFrame()
 {
 	try
 	{
-		vk::PresentInfoKHR presentInfo(m_frameSyncResources[m_currFrame].renderFinishedSemaphore.get(), m_swapchain, m_currImageIdx);
+		vk::PresentInfoKHR presentInfo(m_frameSyncResources[m_currFrame].renderFinishedSemaphore, m_swapchain, m_currImageIdx);	
 		auto presentResults = m_presentQueue.presentKHR(presentInfo);
 
 		// Resize or handle failed presentation
@@ -188,15 +200,45 @@ void GraphicsContext::EndFrame()
 	m_currFrame = (m_currFrame + 1) % s_maxFramesInFlight;
 }
 
+vk::Device GraphicsContext::getDevice()
+{
+	return m_device;
+}
+
+uint32_t GraphicsContext::getSwapchainImageCount() const
+{
+	return m_swapchainImageCount;
+}
+
+const std::vector<vk::ImageView>& GraphicsContext::getSwapchainViews() const
+{
+	return m_swapchainImageViews;
+}
+
+const vk::ImageView& GraphicsContext::getDepthView() const
+{
+	return m_depthView;
+}
+
+const vk::Extent2D& GraphicsContext::getSwapchainExtent() const
+{
+	return m_swapchainExtent;
+}
+
+const vk::Format& GraphicsContext::getSwapchainImageFormat() const
+{
+	return m_swapchainFormat;
+}
 
 
-VKAPI_ATTR VkBool32 VKAPI_CALL GraphicsContext::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
+
+VKAPI_ATTR VkBool32 VKAPI_CALL GraphicsContext::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
 	std::cerr << "Validation Layer: " << pCallbackData->pMessage << std::endl;
 	return VK_FALSE;
 }
 
-void GraphicsContext::CreateInstance(std::vector<const char*> requiredExtensions, bool debugLayer)
+void GraphicsContext::createInstance(std::vector<const char*> requiredExtensions, bool debugLayer)
 {
 	vk::ApplicationInfo appInfo("Nagi App", 1, "Nagi Engine", 1, VK_API_VERSION_1_1);
 
@@ -226,7 +268,7 @@ void GraphicsContext::CreateInstance(std::vector<const char*> requiredExtensions
 
 }
 
-void GraphicsContext::CreateDebugMessenger(const vk::Instance& instance)
+void GraphicsContext::createDebugMessenger(const vk::Instance& instance)
 {
 	m_didl = vk::DispatchLoaderDynamic(instance, vkGetInstanceProcAddr);
 	// Note to self:  (Compare with old C-style project)
@@ -247,13 +289,13 @@ void GraphicsContext::CreateDebugMessenger(const vk::Instance& instance)
 			vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
 			vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
 
-			DebugCallback
+			debugCallback
 		},
 		nullptr,	// User data
 		m_didl);
 }
 
-void GraphicsContext::CreateVulkanMemoryAllocator(const vk::Instance& instance, const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice)
+void GraphicsContext::createVulkanMemoryAllocator(const vk::Instance& instance, const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice)
 {
 	VmaAllocatorCreateInfo allocatorInfo = {};
 	allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_2;
@@ -264,14 +306,14 @@ void GraphicsContext::CreateVulkanMemoryAllocator(const vk::Instance& instance, 
 	//assert(vmaCreateAllocator(&allocatorInfo, &m_allocator) == VK_SUCCESS);
 }
 
-void GraphicsContext::GetPhysicalDevice(const vk::Instance& instance) 
+void GraphicsContext::getPhysicalDevice(const vk::Instance& instance) 
 {
 	// Simply get the one in front. We will assume that this is our primary graphics card
 	// We can extend this by having some score value checking for each physical device in the future
 	m_physicalDevice = instance.enumeratePhysicalDevices().front();
 }
 
-QueueFamilies GraphicsContext::FindQueueFamilies(const vk::PhysicalDevice& physicalDevice, vk::SurfaceKHR surface) const
+QueueFamilies GraphicsContext::findQueueFamilies(const vk::PhysicalDevice& physicalDevice, vk::SurfaceKHR surface) const
 {
 	QueueFamilies qfms{};
 	std::vector<vk::QueueFamilyProperties> qfps = physicalDevice.getQueueFamilyProperties();
@@ -304,7 +346,7 @@ QueueFamilies GraphicsContext::FindQueueFamilies(const vk::PhysicalDevice& physi
 	return qfms;
 }
 
-vk::SurfaceFormatKHR GraphicsContext::SelectSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& surfaceFormats) const
+vk::SurfaceFormatKHR GraphicsContext::selectSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& surfaceFormats) const
 {
 	auto selectedFormatIt = std::find_if(surfaceFormats.cbegin(), surfaceFormats.cend(),
 		[](const vk::SurfaceFormatKHR& surfaceFormat)
@@ -317,7 +359,7 @@ vk::SurfaceFormatKHR GraphicsContext::SelectSurfaceFormat(const std::vector<vk::
 	return *selectedFormatIt;
 }
 
-vk::PresentModeKHR GraphicsContext::SelectPresentMode(const std::vector<vk::PresentModeKHR>& presentModes) const
+vk::PresentModeKHR GraphicsContext::selectPresentMode(const std::vector<vk::PresentModeKHR>& presentModes) const
 {
 	auto selectedPresentModeIt = std::find_if(presentModes.cbegin(), presentModes.cend(),
 		[](const vk::PresentModeKHR& presentMode)
@@ -332,7 +374,7 @@ vk::PresentModeKHR GraphicsContext::SelectPresentMode(const std::vector<vk::Pres
 	return *selectedPresentModeIt;
 }
 
-vk::Extent2D GraphicsContext::SelectSwapchainExtent(const vk::SurfaceCapabilitiesKHR& capabilities, std::pair<uint32_t, uint32_t> clientDimensions)
+vk::Extent2D GraphicsContext::selectSwapchainExtent(const vk::SurfaceCapabilitiesKHR& capabilities, std::pair<uint32_t, uint32_t> clientDimensions)
 {
 	if (capabilities.currentExtent.width == std::numeric_limits<uint32_t>::max())
 	{
@@ -349,7 +391,7 @@ vk::Extent2D GraphicsContext::SelectSwapchainExtent(const vk::SurfaceCapabilitie
 		return capabilities.currentExtent;
 }
 
-void GraphicsContext::CreateLogicalDevice(const vk::PhysicalDevice& physicalDevice, const QueueFamilies& qfs, vk::SurfaceKHR surface, bool debugLayer)
+void GraphicsContext::createLogicalDevice(const vk::PhysicalDevice& physicalDevice, const QueueFamilies& qfs, vk::SurfaceKHR surface, bool debugLayer)
 {
 	// The Vulkan spec states: The queueFamilyIndex member of each element of pQueueCreateInfos must be unique within pQueueCreateInfos (hence we use set)
 	// (https://vulkan.lunarg.com/doc/view/1.2.176.1/windows/1.2-extensions/vkspec.html#VUID-VkDeviceCreateInfo-queueFamilyIndex-00372)
@@ -379,7 +421,7 @@ void GraphicsContext::CreateLogicalDevice(const vk::PhysicalDevice& physicalDevi
 
 }
 
-vk::SurfaceFormatKHR GraphicsContext::CreateSwapchain(const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice, vk::SurfaceKHR surface, std::pair<uint32_t, uint32_t> clientDimensions)
+vk::SurfaceFormatKHR GraphicsContext::createSwapchain(const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice, vk::SurfaceKHR surface, std::pair<uint32_t, uint32_t> clientDimensions)
 {
 	// ================= Gather surface details
 	// Get VkFormats supported by the surface
@@ -394,9 +436,11 @@ vk::SurfaceFormatKHR GraphicsContext::CreateSwapchain(const vk::PhysicalDevice& 
 	vk::SurfaceCapabilitiesKHR surfaceCapabilities = physicalDevice.getSurfaceCapabilitiesKHR(surface);
 
 	// ================= Select swapchain settings
-	vk::SurfaceFormatKHR surfaceFormat = SelectSurfaceFormat(supportedFormats);
-	vk::PresentModeKHR presentMode = SelectPresentMode(supportedPresentModes);
-	vk::Extent2D extent = SelectSwapchainExtent(surfaceCapabilities, clientDimensions);
+	vk::SurfaceFormatKHR surfaceFormat = selectSurfaceFormat(supportedFormats);
+	m_swapchainFormat = surfaceFormat.format;
+	vk::PresentModeKHR presentMode = selectPresentMode(supportedPresentModes);
+	vk::Extent2D extent = selectSwapchainExtent(surfaceCapabilities, clientDimensions);
+	m_swapchainExtent = extent;
 
 	// Recommended to have one more image than minimum
 	// We make sure that doesn't exceed maximum
@@ -433,7 +477,7 @@ vk::SurfaceFormatKHR GraphicsContext::CreateSwapchain(const vk::PhysicalDevice& 
 	);
 
 
-	QueueFamilies qfs = FindQueueFamilies(physicalDevice, surface);
+	QueueFamilies qfs = findQueueFamilies(physicalDevice, surface);
 	std::vector<uint32_t> qfIndices = { qfs.gphIdx.value(), qfs.presentIdx.value() };
 
 
@@ -457,7 +501,7 @@ vk::SurfaceFormatKHR GraphicsContext::CreateSwapchain(const vk::PhysicalDevice& 
 	return surfaceFormat;
 }
 
-void GraphicsContext::CreateSwapchainImageViews(const vk::SwapchainKHR& swapchain, const vk::Device& logicalDevice, const vk::SurfaceFormatKHR& surfaceFormat)
+void GraphicsContext::createSwapchainImageViews(const vk::SwapchainKHR& swapchain, const vk::Device& logicalDevice, const vk::SurfaceFormatKHR& surfaceFormat)
 {
 	// Get the swapchain images
 	m_swapchainImages = logicalDevice.getSwapchainImagesKHR(swapchain);
@@ -497,7 +541,7 @@ void GraphicsContext::CreateSwapchainImageViews(const vk::SwapchainKHR& swapchai
 	}	
 }
 
-void GraphicsContext::CreateDepthResources(const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice, std::pair<uint32_t, uint32_t> clientDimensions)
+void GraphicsContext::createDepthResources(const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice, std::pair<uint32_t, uint32_t> clientDimensions)
 {
 	// ========================= Create Image
 	// Declare that we want a 32 bit signed floating point component
@@ -607,13 +651,15 @@ void GraphicsContext::CreateDepthResources(const vk::PhysicalDevice& physicalDev
 	
 }
 
-void GraphicsContext::CreateCommandPools(const vk::Device& logicalDevice, const QueueFamilies& qfs)
+void GraphicsContext::createCommandPools(const vk::Device& logicalDevice, const QueueFamilies& qfs)
 {
-	m_gfxCmdPool = logicalDevice.createCommandPool(vk::CommandPoolCreateInfo({}, qfs.gphIdx.value()));
+	// Resettable for re-recording..
+	m_gfxCmdPool = logicalDevice.createCommandPool(vk::CommandPoolCreateInfo(vk::CommandPoolCreateFlagBits::eResetCommandBuffer, qfs.gphIdx.value()));
+
 	// Other pools can be created here..
 }
 
-void GraphicsContext::CreateSyncObjects(const vk::Device& logicalDevice, uint32_t maxFramesInFlight)
+void GraphicsContext::createSyncObjects(const vk::Device& logicalDevice, uint32_t maxFramesInFlight)
 {
 	vk::FenceCreateInfo fenceCreateInfo(vk::FenceCreateFlagBits::eSignaled);
 	vk::SemaphoreCreateInfo semCreateInfo;
@@ -623,14 +669,14 @@ void GraphicsContext::CreateSyncObjects(const vk::Device& logicalDevice, uint32_
 	{
 		m_frameSyncResources.push_back(
 		{
-			logicalDevice.createSemaphoreUnique(semCreateInfo),		// imageAvailable
-			logicalDevice.createSemaphoreUnique(semCreateInfo),		// renderFinished
-			logicalDevice.createFenceUnique(fenceCreateInfo)		// inFlight
+			logicalDevice.createSemaphore(semCreateInfo),		// imageAvailable
+			logicalDevice.createSemaphore(semCreateInfo),		// renderFinished
+			logicalDevice.createFence(fenceCreateInfo)			// inFlight
 		});
 	}
 }
 
-void GraphicsContext::CreateCommandBuffers(const vk::Device& logicalDevice, const vk::CommandPool& cmdPool, uint32_t maxFramesInFlight)
+void GraphicsContext::createCommandBuffers(const vk::Device& logicalDevice, const vk::CommandPool& cmdPool, uint32_t maxFramesInFlight)
 {
 	vk::CommandBufferAllocateInfo allocateInfo(cmdPool, vk::CommandBufferLevel::ePrimary, maxFramesInFlight);
 

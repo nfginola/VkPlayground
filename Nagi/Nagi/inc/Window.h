@@ -21,18 +21,18 @@ public:
 	Window(const Window&) = delete;
 	Window& operator=(const Window&) = delete;
 
-	uint32_t GetClientWidth() const;
-	uint32_t GetClientHeight() const;
-	bool IsRunning() const;
-	void ProcessEvents() const;
-	void SetResizeCallback(std::function<void(int, int)> function);
-	void SetKeyCallback(std::function<void(GLFWwindow*, int, int, int, int)> function);
-	vk::SurfaceKHR GetSurface(const vk::Instance& vInst) const;
-	const std::vector<const char*>& GetRequiredExtensions() const;
+	uint32_t getClientWidth() const;
+	uint32_t getClientHeight() const;
+	bool isRunning() const;
+	void processEvents() const;
+	void setResizeCallback(std::function<void(int, int)> function);
+	void setKeyCallback(std::function<void(GLFWwindow*, int, int, int, int)> function);
+	vk::SurfaceKHR getSurface(const vk::Instance& vInst) const;
+	const std::vector<const char*>& getRequiredExtensions() const;
 
 	// GLFW callbacks which we re-route to a specific Window instance
-	static void FramebufferResizeCallback(GLFWwindow* window, int width, int height);
-	static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+	static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+	static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 private:
 	GLFWwindow* m_window;

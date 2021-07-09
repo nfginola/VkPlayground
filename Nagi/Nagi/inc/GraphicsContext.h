@@ -8,9 +8,23 @@
 namespace Nagi
 {
 
-struct PerFrameSyncResource;
 struct QueueFamilies;
 class Window;
+
+struct PerFrameSyncResource
+{
+	vk::Semaphore imageAvailableSemaphore;		// To halt the pipeline if Swapchain image is not yet available (Swapchain not done with it)
+	vk::Semaphore renderFinishedSemaphore;		// To wait for the render to be finished before letting the Swapchain acquire the image to present
+	vk::Fence inFlightFence;					// To make sure that we are not using resources that are in flight! (e.g Command Buffer still in use when we want to use it again)
+};
+
+struct FrameResource
+{
+	vk::CommandBuffer* gfxCmdBuffer;
+	uint32_t imageIdx;
+	PerFrameSyncResource* sync;
+};
+
 
 class GraphicsContext
 {
@@ -22,22 +36,29 @@ public:
 	GraphicsContext(const GraphicsContext&) = delete;
 	GraphicsContext& operator=(const GraphicsContext&) = delete;
 
-	// arg1 Has to be used on the first queue submission of the frame!
-	// ret2 Has to be used on the last queue submission of the frame!
-	// ret3 Has to be used on the last queue submission of the frame!
-	// ret4 Is the command buffer to be used to re-record this frame
-	std::tuple<vk::Semaphore, vk::Semaphore, vk::CommandBuffer> BeginFrame();
+	FrameResource beginFrame();
 
 	// One queue submit per frame is assumed right now until further exploration
-	void SubmitQueue(const vk::SubmitInfo& info);
+	void submitQueue(const vk::SubmitInfo& info);
 
 	// Last external subpass must transition the swapchain image to proper presentation layout!
-	void EndFrame();
+	void endFrame();
+
+	// Return device for now (until we can find better abstraction)
+	vk::Device getDevice();
+
+	// Temporary dependencies needed by the outside
+	uint32_t getSwapchainImageCount() const;
+	const std::vector<vk::ImageView>& getSwapchainViews() const;
+	const vk::ImageView& getDepthView() const;
+	const vk::Extent2D& getSwapchainExtent() const;
+	const vk::Format& getSwapchainImageFormat() const;
+
 
 private:
 	static constexpr uint32_t s_maxFramesInFlight = 2;
 
-	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
+	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 		VkDebugUtilsMessageTypeFlagsEXT messageType,
 		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
@@ -45,25 +66,25 @@ private:
 
 	// Arguments for these functions are verbose on purpose
 	// It is to make the dependency clear (e.g what does a swapchain need?)
-	void CreateInstance(std::vector<const char*> requiredExtensions, bool debugLayer);
-	void CreateDebugMessenger(const vk::Instance& instance);
+	void createInstance(std::vector<const char*> requiredExtensions, bool debugLayer);
+	void createDebugMessenger(const vk::Instance& instance);
 
-	void CreateVulkanMemoryAllocator(const vk::Instance& instance, const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice);
+	void createVulkanMemoryAllocator(const vk::Instance& instance, const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice);
 
-	void GetPhysicalDevice(const vk::Instance& instance);
-	void CreateLogicalDevice(const vk::PhysicalDevice& physDevice, const QueueFamilies& qfs, vk::SurfaceKHR surface, bool debugLayer);
-	vk::SurfaceFormatKHR CreateSwapchain(const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice, vk::SurfaceKHR surface, std::pair<uint32_t, uint32_t> clientDimensions);
-	void CreateSwapchainImageViews(const vk::SwapchainKHR& swapchain, const vk::Device& logicalDevice, const vk::SurfaceFormatKHR& surfaceFormat);
-	void CreateDepthResources(const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice, std::pair<uint32_t, uint32_t> clientDimensions);
-	void CreateCommandPools(const vk::Device& logicalDevice, const QueueFamilies& qfs);
-	void CreateSyncObjects(const vk::Device& logicalDevice, uint32_t maxFramesInFlight);
-	void CreateCommandBuffers(const vk::Device& logicalDevice, const vk::CommandPool& cmdPool, uint32_t maxFramesInFlight);
+	void getPhysicalDevice(const vk::Instance& instance);
+	void createLogicalDevice(const vk::PhysicalDevice& physDevice, const QueueFamilies& qfs, vk::SurfaceKHR surface, bool debugLayer);
+	vk::SurfaceFormatKHR createSwapchain(const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice, vk::SurfaceKHR surface, std::pair<uint32_t, uint32_t> clientDimensions);
+	void createSwapchainImageViews(const vk::SwapchainKHR& swapchain, const vk::Device& logicalDevice, const vk::SurfaceFormatKHR& surfaceFormat);
+	void createDepthResources(const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice, std::pair<uint32_t, uint32_t> clientDimensions);
+	void createCommandPools(const vk::Device& logicalDevice, const QueueFamilies& qfs);
+	void createSyncObjects(const vk::Device& logicalDevice, uint32_t maxFramesInFlight);
+	void createCommandBuffers(const vk::Device& logicalDevice, const vk::CommandPool& cmdPool, uint32_t maxFramesInFlight);
 		
 	// Helpers
-	QueueFamilies FindQueueFamilies(const vk::PhysicalDevice& physDevice, vk::SurfaceKHR surface) const;
-	vk::SurfaceFormatKHR SelectSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& surfaceFormats) const;
-	vk::PresentModeKHR SelectPresentMode(const std::vector<vk::PresentModeKHR>& presentModes) const;
-	vk::Extent2D SelectSwapchainExtent(const vk::SurfaceCapabilitiesKHR& capabilities, std::pair<uint32_t, uint32_t> clientDimensions);
+	QueueFamilies findQueueFamilies(const vk::PhysicalDevice& physDevice, vk::SurfaceKHR surface) const;
+	vk::SurfaceFormatKHR selectSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& surfaceFormats) const;
+	vk::PresentModeKHR selectPresentMode(const std::vector<vk::PresentModeKHR>& presentModes) const;
+	vk::Extent2D selectSwapchainExtent(const vk::SurfaceCapabilitiesKHR& capabilities, std::pair<uint32_t, uint32_t> clientDimensions);
 
 private:
 	vk::Instance m_instance;
@@ -87,6 +108,8 @@ private:
 
 	vk::SurfaceKHR m_surface;
 	vk::SwapchainKHR m_swapchain;
+	vk::Extent2D m_swapchainExtent;
+	vk::Format m_swapchainFormat;
 	uint32_t m_swapchainImageCount;
 	std::vector<vk::Image> m_swapchainImages;
 	std::vector<vk::ImageView> m_swapchainImageViews;

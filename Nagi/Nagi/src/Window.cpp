@@ -17,8 +17,8 @@ Window::Window(int clientWidth, int clientHeight, const char* title) :
 	m_window = glfwCreateWindow(clientWidth, clientHeight, title, nullptr, nullptr);
 
 	glfwSetWindowUserPointer(m_window, this);
-	glfwSetFramebufferSizeCallback(m_window, FramebufferResizeCallback);
-	glfwSetKeyCallback(m_window, KeyCallback);
+	glfwSetFramebufferSizeCallback(m_window, framebufferResizeCallback);
+	glfwSetKeyCallback(m_window, keyCallback);
 
 	// Get required extensions
 	uint32_t glfwExtensionCount = 0;
@@ -36,59 +36,60 @@ Window::~Window()
 	glfwTerminate();
 }
 
-uint32_t Window::GetClientWidth() const
+uint32_t Window::getClientWidth() const
 {
 	return static_cast<uint32_t>(m_clientDimensions.first);
 }
 
-uint32_t Window::GetClientHeight() const
+uint32_t Window::getClientHeight() const
 {
 	return static_cast<uint32_t>(m_clientDimensions.second);
 }
 
-bool Window::IsRunning() const
+bool Window::isRunning() const
 {
 	return !glfwWindowShouldClose(m_window);
 }
 
-void Window::ProcessEvents() const
+void Window::processEvents() const
 {
 	glfwPollEvents();
 }
 
-void Window::SetResizeCallback(std::function<void(int, int)> function)
+void Window::setResizeCallback(std::function<void(int, int)> function)
 {
 	m_resizeCallback = function;
 }
 
-void Window::SetKeyCallback(std::function<void(GLFWwindow*, int, int, int, int)> function)
+void Window::setKeyCallback(std::function<void(GLFWwindow*, int, int, int, int)> function)
 {
 	m_keyCallback = function;
 }
 
-vk::SurfaceKHR Window::GetSurface(const vk::Instance& vInst) const
+vk::SurfaceKHR Window::getSurface(const vk::Instance& vInst) const
 {
-	VkSurfaceKHR tmpSurface;
-	assert(glfwCreateWindowSurface(vInst, m_window, nullptr, &tmpSurface) == VK_SUCCESS);
+	VkSurfaceKHR tmpSurface = VK_NULL_HANDLE;
+	auto res = glfwCreateWindowSurface(vInst, m_window, nullptr, &tmpSurface);
+	if (res != VK_SUCCESS)
+		throw std::runtime_error("glfw: Could not create window surface");
 
-	vk::SurfaceKHR surface(tmpSurface);
-	return surface;
+	return vk::SurfaceKHR(tmpSurface);
 }
 
-const std::vector<const char*>& Window::GetRequiredExtensions() const 
+const std::vector<const char*>& Window::getRequiredExtensions() const 
 {
 	return m_reqExtensions;
 }
 
 
-void Window::FramebufferResizeCallback(GLFWwindow* window, int width, int height)
+void Window::framebufferResizeCallback(GLFWwindow* window, int width, int height)
 {
 	auto app = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
 	if (app->m_resizeCallback)
 		app->m_resizeCallback(width, height);
 }
 
-void Window::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GLFW_TRUE);
