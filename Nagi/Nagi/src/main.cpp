@@ -61,6 +61,7 @@ int main()
 
 		vk::SubpassDescription subpassDesc({}, vk::PipelineBindPoint::eGraphics, {}, colorRef, {}, &depthRef);
 
+		//// Image layout is not transitiooning at the right time.. we have no color output stage anywhere here!
 		//vk::SubpassDependency extInDep(
 		//	VK_SUBPASS_EXTERNAL,
 		//	0,
@@ -69,6 +70,16 @@ int main()
 		//	vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests,
 		//	vk::AccessFlagBits::eDepthStencilAttachmentWrite,	// why only write? (stated on sync examples Khronos Group)
 		//	vk::AccessFlagBits::eDepthStencilAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentRead
+		//);
+		
+		//// Not caring about depth (To try out the validation layer)
+		//vk::SubpassDependency extInDep(
+		//	VK_SUBPASS_EXTERNAL,
+		//	0,
+		//	vk::PipelineStageFlagBits::eColorAttachmentOutput,		
+		//	vk::PipelineStageFlagBits::eColorAttachmentOutput,									
+		//	{},		
+		//	vk::AccessFlagBits::eColorAttachmentWrite
 		//);
 		
 		// Corrected (sync validation WAW hazard)
@@ -87,17 +98,6 @@ int main()
 			vk::AccessFlagBits::eDepthStencilAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentRead | // assign mem dep on the depth resource for which to halt
 			vk::AccessFlagBits::eColorAttachmentWrite							// ensure that the layout transition happens after color output is unblocked but before color output writing through mem dep!
 		);
-
-
-		//// Not caring about depth
-		//vk::SubpassDependency extInDep(
-		//	VK_SUBPASS_EXTERNAL,
-		//	0,
-		//	vk::PipelineStageFlagBits::eColorAttachmentOutput,		
-		//	vk::PipelineStageFlagBits::eColorAttachmentOutput,									
-		//	{},		
-		//	vk::AccessFlagBits::eColorAttachmentWrite
-		//);
 		
 		// Using implicit external subpass
 
@@ -243,7 +243,7 @@ int main()
 			gfxCon.endFrame();
 		}
 
-		// Idle to wait for GPU resources to stop being used before destruction
+		// Idle to wait for GPU resources to stop being used before resource destruction
 		dev.waitIdle();
 
 	}
