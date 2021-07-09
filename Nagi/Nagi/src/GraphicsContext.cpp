@@ -83,6 +83,8 @@ GraphicsContext::GraphicsContext(const Window& win, bool debugLayer) :
 
 GraphicsContext::~GraphicsContext()
 {
+	m_device.waitIdle();
+
 	// ==================================== VMA related destructions
 
 	// Cleanup depth resource (VMA)

@@ -224,7 +224,7 @@ int main()
 
 			cmd->beginRenderPass(rpInfo, {});
 			cmd->bindPipeline(vk::PipelineBindPoint::eGraphics, gfxPipeline.get());
-			cmd->draw(3, 2, 0, 0);
+			cmd->draw(3, 3, 0, 0);
 			cmd->endRenderPass();
 
 			cmd->end();
