@@ -50,10 +50,11 @@ public:
 	// Temporary dependencies needed by the outside
 	uint32_t getSwapchainImageCount() const;
 	const std::vector<vk::ImageView>& getSwapchainViews() const;
-	const vk::ImageView& getDepthView() const;
 	const vk::Extent2D& getSwapchainExtent() const;
 	const vk::Format& getSwapchainImageFormat() const;
 
+	const vk::ImageView& getDepthView() const;
+	vk::Format getDepthFormat() const;
 
 private:
 	static constexpr uint32_t s_maxFramesInFlight = 2;
@@ -117,6 +118,7 @@ private:
 	vk::Image m_depthImage;
 	vk::DeviceMemory m_depthMemory;
 	vk::ImageView m_depthView;
+	vk::Format m_depthFormat;
 
 	// Vma depth
 	//vk::Image m_vmaDepthImage;

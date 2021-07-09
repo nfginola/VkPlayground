@@ -222,6 +222,11 @@ const vk::ImageView& GraphicsContext::getDepthView() const
 	return m_depthView;
 }
 
+vk::Format GraphicsContext::getDepthFormat() const
+{
+	return m_depthFormat;
+}
+
 const vk::Extent2D& GraphicsContext::getSwapchainExtent() const
 {
 	return m_swapchainExtent;
@@ -548,6 +553,7 @@ void GraphicsContext::createDepthResources(const vk::PhysicalDevice& physicalDev
 	// ========================= Create Image
 	// Declare that we want a 32 bit signed floating point component
 	const vk::Format depthFormat = vk::Format::eD32Sfloat;
+	m_depthFormat = depthFormat;
 
 	// Get properties of this format (We have to check tiling features supported by this device for this format)
 	vk::FormatProperties formatProperties = physicalDevice.getFormatProperties(depthFormat);

@@ -45,7 +45,7 @@ int main()
 
 		// Depth
 		attachmentDescs[1] = vk::AttachmentDescription({},
-			vk::Format::eD32Sfloat,
+			gfxCon.getDepthFormat(),
 			vk::SampleCountFlagBits::e1,
 			vk::AttachmentLoadOp::eClear,
 			vk::AttachmentStoreOp::eDontCare,
