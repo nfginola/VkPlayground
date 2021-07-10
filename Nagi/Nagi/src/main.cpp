@@ -12,8 +12,5 @@ int main()
 
 	Nagi::MinimalTriangleApp app(win, gfxCon);
 
-
-
-
 	return 0;
 }

@@ -1,6 +1,10 @@
 #pragma once
 #include "Application.h"
 
+#include "GraphicsContext.h"
+#include "Window.h"
+#include "Utilities.h"
+
 namespace Nagi
 {
 
@@ -22,8 +26,15 @@ public:
 	MinimalTriangleApp& operator=(const Application&) = delete;
 
 private:
-	int a;
+	void createRenderPass();
+	void createGraphicsPipeline(vk::RenderPass& compatibleRendPass);
+	void createFramebuffers();
 
+private:
+	vk::UniqueRenderPass m_rendPass;
+	vk::UniquePipeline m_gfxPipeline;
+	std::vector<vk::UniqueFramebuffer> m_framebuffers;
+	vk::Extent2D m_scExtent;
 };
 
 
