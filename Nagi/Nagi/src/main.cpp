@@ -86,18 +86,30 @@ int main()
 		vk::SubpassDependency extInDep(
 			VK_SUBPASS_EXTERNAL,
 			0,
-			// We have early AND late because the accessFlags only applies to explicitly specified stages (the mem dep does NOT apply to the implicit stages that come with exec dep)
+			// We have early AND late because the accessFlags only applies to explicitly specified stages (the mem access flags does NOT apply to the implicit stages that come with exec dep)
 			vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests |	// wait for prev frame depth testing (happens in early and late frag test)
 			vk::PipelineStageFlagBits::eColorAttachmentOutput,													// form exec dep chain with present sem
 
 			vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests |	// halt this frames depth testing before the prev is done
-			vk::PipelineStageFlagBits::eColorAttachmentOutput,													// form exec dep chain with present sem (note that we have mem dep for this (dst) stage!)
+			vk::PipelineStageFlagBits::eColorAttachmentOutput,													// form exec dep chain with present sem (note that we have mem dep for this (dst stage) on access mask!)
 
-			{},	// Sync from previous guaranteed by the semaphore (?? I remember something like this from krOoze..)
-			// Semaphore guarantees something memory..
+			{},	// Waiting on semaphore guarantees memory dependency already! No need to supply mem access to wait for in src stages (Once colorAttachmentOutput stage is opened up, all memory writes are visible
+			// https://vulkan.lunarg.com/doc/view/1.2.141.2/linux/chunked_spec/chap6.html (6.4.2)
+
 			vk::AccessFlagBits::eDepthStencilAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentRead | // assign mem dep on the depth resource for which to halt
 			vk::AccessFlagBits::eColorAttachmentWrite							// ensure that the layout transition happens after color output is unblocked but before color output writing through mem dep!
 		);
+		/*
+			We can look at the WSI + External subpass sync with Pipeline Barriers instead:
+
+			Barrier1 ( srcStage="semSignal",	dstStage=ColorOutput, srcAccessMask=ALL,	dstAccessMask=ALL						  )		--> Semaphore (full memory barrier)
+			Barrier2 ( srcStage=ColorOutput,	dstStage=ColorOutput, srcAccessMask=0,		dstAccessMask=depthReadWrite | colorWrite )		--> Subpass dependency
+
+			Subpass dependency is placed there with Barrier1 dst intersecting Barrier2 src to create an execution depedency chain.
+			This in turns guarantees that the image layout transition implicitly done through the subpass dependency is done AFTER the swapchain image is acquired but before it used (e.g written to).
+
+			Depth stages with read/write is added to also sync the depth image usage (fix depth WAW hazard)
+		*/
 		
 		// Using implicit external subpass
 
@@ -126,7 +138,7 @@ int main()
 		vk::PipelineRasterizationStateCreateInfo rsC({},
 			false,
 			false,
-			vk::PolygonMode::eFill,
+			vk::PolygonMode::eFill,				// eLine topology for wireframe
 			vk::CullModeFlagBits::eBack,
 			vk::FrontFace::eCounterClockwise,	// default
 			{}, {}, {}, {},						// depth bias
@@ -187,9 +199,10 @@ int main()
 			)
 		).value;
 
+
 		// Create framebuffers
-		// dep: (1) sc view and (2) depth view
-		// dep: (3) swapchain image count
+		// resource deps: (1) sc view, (2) depth view (3) swapchain image count
+		// Note: Can we remove these deps? sc image count dep may propagate to other per-frame resources.. (buffers to update, etc.)
 		uint32_t scImageCount = gfxCon.getSwapchainImageCount();
 		auto scViews = gfxCon.getSwapchainViews();
 		auto depthV = gfxCon.getDepthView();
@@ -220,7 +233,7 @@ int main()
 			vk::RenderPassBeginInfo rpInfo(rendPass.get(), fbs[frameRes.imageIdx].get(), vk::Rect2D({ 0, 0 }, scExtent), clearValues);
 
 			// Record command buffer
-			cmd->begin(vk::CommandBufferBeginInfo());
+			cmd->begin(vk::CommandBufferBeginInfo());		// implicitly calls resetCommandBuffer
 
 			cmd->beginRenderPass(rpInfo, {});
 			cmd->bindPipeline(vk::PipelineBindPoint::eGraphics, gfxPipeline.get());

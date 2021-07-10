@@ -60,6 +60,8 @@ GraphicsContext::GraphicsContext(const Window& win, bool debugLayer) :
 
 		// Frame synchronization
 		createSyncObjects(m_device, s_maxFramesInFlight);
+
+		// Command buffers for rendering commands
 		createCommandBuffers(m_device, m_gfxCmdPool, s_maxFramesInFlight);
 	}
 	catch (vk::SystemError& err)
