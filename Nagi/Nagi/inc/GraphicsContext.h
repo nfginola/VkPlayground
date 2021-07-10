@@ -1,9 +1,7 @@
 #pragma once
 #include <vulkan/vulkan.hpp>
 #include "vk_mem_alloc.h"
-
-// Forward declare VmaAllocator
-//typedef struct VmaAllocator_T* VmaAllocator;
+#include "Singleton.h"
 
 namespace Nagi
 {
@@ -26,7 +24,7 @@ struct FrameResource
 };
 
 
-class GraphicsContext
+class GraphicsContext : Utils::Singleton<GraphicsContext>
 {
 public:
 	GraphicsContext(const Window& win, bool debugLayer = true);
@@ -59,12 +57,6 @@ public:
 private:
 	static constexpr uint32_t s_maxFramesInFlight = 2;
 
-	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-		VkDebugUtilsMessageTypeFlagsEXT messageType,
-		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-		void* pUserData);
-
 	// Arguments for these functions are verbose on purpose
 	// It is to make the dependency clear (e.g what does a swapchain need?)
 	void createInstance(std::vector<const char*> requiredExtensions, bool debugLayer);
@@ -86,6 +78,12 @@ private:
 	vk::SurfaceFormatKHR selectSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& surfaceFormats) const;
 	vk::PresentModeKHR selectPresentMode(const std::vector<vk::PresentModeKHR>& presentModes) const;
 	vk::Extent2D selectSwapchainExtent(const vk::SurfaceCapabilitiesKHR& capabilities, std::pair<uint32_t, uint32_t> clientDimensions);
+
+	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+		VkDebugUtilsMessageTypeFlagsEXT messageType,
+		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+		void* pUserData);
 
 private:
 	vk::Instance m_instance;

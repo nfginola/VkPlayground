@@ -61,7 +61,7 @@ void Window::setResizeCallback(std::function<void(int, int)> function)
 	m_resizeCallback = function;
 }
 
-void Window::setKeyCallback(std::function<void(GLFWwindow*, int, int, int, int)> function)
+void Window::setKeyCallback(std::function<void(int, int, int, int)> function)
 {
 	m_keyCallback = function;
 }
@@ -97,7 +97,7 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 	// Handle application specific responses
 	auto app = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
 	if (app->m_keyCallback)
-		app->m_keyCallback(app->m_window, key, scancode, action, mods);
+		app->m_keyCallback(key, scancode, action, mods);
 }
 
 }

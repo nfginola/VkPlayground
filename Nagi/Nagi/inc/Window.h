@@ -1,6 +1,7 @@
 #pragma once
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include "Singleton.h"
 
 namespace vk
 {
@@ -11,7 +12,7 @@ namespace vk
 namespace Nagi
 {
 
-class Window
+class Window : Utils::Singleton<Window>
 {
 public:
 	Window(int width, int height, const char* title = "Nagi Engine");
@@ -26,11 +27,11 @@ public:
 	bool isRunning() const;
 	void processEvents() const;
 	void setResizeCallback(std::function<void(int, int)> function);
-	void setKeyCallback(std::function<void(GLFWwindow*, int, int, int, int)> function);
+	void setKeyCallback(std::function<void(int, int, int, int)> function);
 	vk::SurfaceKHR getSurface(const vk::Instance& vInst) const;
 	const std::vector<const char*>& getRequiredExtensions() const;
 
-	// GLFW callbacks which we re-route to a specific Window instance
+	// GLFW callbacks which we re-route to our Window instance
 	static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 	static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
@@ -38,7 +39,8 @@ private:
 	GLFWwindow* m_window;
 	std::pair<int, int> m_clientDimensions;
 	std::function<void(int, int)> m_resizeCallback;
-	std::function<void(GLFWwindow*, int, int, int, int)> m_keyCallback;
+	std::function<void(int, int, int, int)> m_keyCallback;
+	//std::function<void(int, int)> m_cursorCallba
 	std::vector<const char*> m_reqExtensions;
 };
 
