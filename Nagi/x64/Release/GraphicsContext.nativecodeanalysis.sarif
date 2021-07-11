@@ -1,0 +1,2092 @@
+{
+  "version": "2.1.0",
+  "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.5.json",
+  "runs": [
+    {
+      "results": [
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkResult' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 1314,
+                  "startColumn": 16,
+                  "endLine": 1314,
+                  "endColumn": 62
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkAcquireNextImage2KHR@DispatchLoaderStatic@vk@@QEBA?AW4VkResult@@PEAUVkDevice_T@@PEBUVkAcquireNextImageInfoKHR@@PEAI@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkSubpassContents' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 1489,
+                  "startColumn": 10,
+                  "endLine": 1489,
+                  "endColumn": 10
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkCmdBeginRenderPass@DispatchLoaderStatic@vk@@QEBAXPEAUVkCommandBuffer_T@@PEBUVkRenderPassBeginInfo@@W4VkSubpassContents@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkPipelineBindPoint' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 1528,
+                  "startColumn": 10,
+                  "endLine": 1528,
+                  "endColumn": 10
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkCmdBindDescriptorSets@DispatchLoaderStatic@vk@@QEBAXPEAUVkCommandBuffer_T@@W4VkPipelineBindPoint@@PEAUVkPipelineLayout_T@@IIPEBQEAUVkDescriptorSet_T@@IPEBI@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkIndexType' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 1547,
+                  "startColumn": 10,
+                  "endLine": 1547,
+                  "endColumn": 10
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkCmdBindIndexBuffer@DispatchLoaderStatic@vk@@QEBAXPEAUVkCommandBuffer_T@@PEAUVkBuffer_T@@_KW4VkIndexType@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkImageLayout' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 1570,
+                  "startColumn": 10,
+                  "endLine": 1570,
+                  "endColumn": 10
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkCmdBindShadingRateImageNV@DispatchLoaderStatic@vk@@QEBAXPEAUVkCommandBuffer_T@@PEAUVkImageView_T@@W4VkImageLayout@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkFilter' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 1609,
+                  "startColumn": 10,
+                  "endLine": 1609,
+                  "endColumn": 10
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkCmdBlitImage@DispatchLoaderStatic@vk@@QEBAXPEAUVkCommandBuffer_T@@PEAUVkImage_T@@W4VkImageLayout@@12IPEBUVkImageBlit@@W4VkFilter@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkCopyAccelerationStructureModeKHR' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 1706,
+                  "startColumn": 10,
+                  "endLine": 1706,
+                  "endColumn": 10
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkCmdCopyAccelerationStructureNV@DispatchLoaderStatic@vk@@QEBAXPEAUVkCommandBuffer_T@@PEAUVkAccelerationStructureNV_T@@1W4VkCopyAccelerationStructureModeKHR@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkCoarseSampleOrderTypeNV' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 2254,
+                  "startColumn": 7,
+                  "endLine": 2254,
+                  "endColumn": 7
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkCmdSetCoarseSampleOrderNV@DispatchLoaderStatic@vk@@QEBAXPEAUVkCommandBuffer_T@@W4VkCoarseSampleOrderTypeNV@@IPEBUVkCoarseSampleOrderCustomNV@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkCompareOp' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 2301,
+                  "startColumn": 10,
+                  "endLine": 2301,
+                  "endColumn": 10
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkCmdSetDepthCompareOpEXT@DispatchLoaderStatic@vk@@QEBAXPEAUVkCommandBuffer_T@@W4VkCompareOp@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkFragmentShadingRateNV' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 2360,
+                  "startColumn": 10,
+                  "endLine": 2360,
+                  "endColumn": 10
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkCmdSetFragmentShadingRateEnumNV@DispatchLoaderStatic@vk@@QEBAXPEAUVkCommandBuffer_T@@W4VkFragmentShadingRateNV@@QEBW4VkFragmentShadingRateCombinerOpKHR@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkFragmentShadingRateCombinerOpKHR' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 2360,
+                  "startColumn": 10,
+                  "endLine": 2360,
+                  "endColumn": 10
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkCmdSetFragmentShadingRateEnumNV@DispatchLoaderStatic@vk@@QEBAXPEAUVkCommandBuffer_T@@W4VkFragmentShadingRateNV@@QEBW4VkFragmentShadingRateCombinerOpKHR@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkFrontFace' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 2376,
+                  "startColumn": 10,
+                  "endLine": 2376,
+                  "endColumn": 10
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkCmdSetFrontFaceEXT@DispatchLoaderStatic@vk@@QEBAXPEAUVkCommandBuffer_T@@W4VkFrontFace@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkLogicOp' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 2393,
+                  "startColumn": 10,
+                  "endLine": 2393,
+                  "endColumn": 10
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkCmdSetLogicOpEXT@DispatchLoaderStatic@vk@@QEBAXPEAUVkCommandBuffer_T@@W4VkLogicOp@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkPrimitiveTopology' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 2430,
+                  "startColumn": 10,
+                  "endLine": 2430,
+                  "endColumn": 10
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkCmdSetPrimitiveTopologyEXT@DispatchLoaderStatic@vk@@QEBAXPEAUVkCommandBuffer_T@@W4VkPrimitiveTopology@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkStencilOp' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 2476,
+                  "startColumn": 10,
+                  "endLine": 2476,
+                  "endColumn": 10
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkCmdSetStencilOpEXT@DispatchLoaderStatic@vk@@QEBAXPEAUVkCommandBuffer_T@@IW4VkStencilOp@@11W4VkCompareOp@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkQueryType' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 2662,
+                  "startColumn": 10,
+                  "endLine": 2662,
+                  "endColumn": 10
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkCmdWriteAccelerationStructuresPropertiesKHR@DispatchLoaderStatic@vk@@QEBAXPEAUVkCommandBuffer_T@@IPEBQEAUVkAccelerationStructureKHR_T@@W4VkQueryType@@PEAUVkQueryPool_T@@I@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkPipelineStageFlagBits' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 2693,
+                  "startColumn": 10,
+                  "endLine": 2693,
+                  "endColumn": 10
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkCmdWriteBufferMarkerAMD@DispatchLoaderStatic@vk@@QEBAXPEAUVkCommandBuffer_T@@W4VkPipelineStageFlagBits@@PEAUVkBuffer_T@@_KI@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkDebugReportObjectTypeEXT' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 3263,
+                  "startColumn": 10,
+                  "endLine": 3263,
+                  "endColumn": 10
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkDebugReportMessageEXT@DispatchLoaderStatic@vk@@QEBAXPEAUVkInstance_T@@IW4VkDebugReportObjectTypeEXT@@_K2HPEBD3@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkAccelerationStructureBuildTypeKHR' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 3648,
+                  "startColumn": 10,
+                  "endLine": 3648,
+                  "endColumn": 10
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkGetAccelerationStructureBuildSizesKHR@DispatchLoaderStatic@vk@@QEBAXPEAUVkDevice_T@@W4VkAccelerationStructureBuildTypeKHR@@PEBUVkAccelerationStructureBuildGeometryInfoKHR@@PEBIPEAUVkAccelerationStructureBuildSizesInfoKHR@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkAccelerationStructureCompatibilityKHR' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 3776,
+                  "startColumn": 10,
+                  "endLine": 3776,
+                  "endColumn": 10
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkGetDeviceAccelerationStructureCompatibilityKHR@DispatchLoaderStatic@vk@@QEBAXPEAUVkDevice_T@@PEBUVkAccelerationStructureVersionInfoKHR@@PEAW4VkAccelerationStructureCompatibilityKHR@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkExternalMemoryHandleTypeFlagBits' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 4037,
+                  "startColumn": 14,
+                  "endLine": 4037,
+                  "endColumn": 14
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkGetMemoryFdPropertiesKHR@DispatchLoaderStatic@vk@@QEBA?AW4VkResult@@PEAUVkDevice_T@@W4VkExternalMemoryHandleTypeFlagBits@@HPEAUVkMemoryFdPropertiesKHR@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkPerformanceParameterTypeINTEL' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 4114,
+                  "startColumn": 14,
+                  "endLine": 4114,
+                  "endColumn": 14
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkGetPerformanceParameterINTEL@DispatchLoaderStatic@vk@@QEBA?AW4VkResult@@PEAUVkDevice_T@@W4VkPerformanceParameterTypeINTEL@@PEAUVkPerformanceValueINTEL@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkTimeDomainEXT' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 4121,
+                  "startColumn": 14,
+                  "endLine": 4121,
+                  "endColumn": 14
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkGetPhysicalDeviceCalibrateableTimeDomainsEXT@DispatchLoaderStatic@vk@@QEBA?AW4VkResult@@PEAUVkPhysicalDevice_T@@PEAIPEAW4VkTimeDomainEXT@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkFormat' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 4211,
+                  "startColumn": 14,
+                  "endLine": 4211,
+                  "endColumn": 14
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkGetPhysicalDeviceExternalImageFormatPropertiesNV@DispatchLoaderStatic@vk@@QEBA?AW4VkResult@@PEAUVkPhysicalDevice_T@@W4VkFormat@@W4VkImageType@@W4VkImageTiling@@IIIPEAUVkExternalImageFormatPropertiesNV@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkImageType' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 4211,
+                  "startColumn": 14,
+                  "endLine": 4211,
+                  "endColumn": 14
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkGetPhysicalDeviceExternalImageFormatPropertiesNV@DispatchLoaderStatic@vk@@QEBA?AW4VkResult@@PEAUVkPhysicalDevice_T@@W4VkFormat@@W4VkImageType@@W4VkImageTiling@@IIIPEAUVkExternalImageFormatPropertiesNV@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkImageTiling' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 4211,
+                  "startColumn": 14,
+                  "endLine": 4211,
+                  "endColumn": 14
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkGetPhysicalDeviceExternalImageFormatPropertiesNV@DispatchLoaderStatic@vk@@QEBA?AW4VkResult@@PEAUVkPhysicalDevice_T@@W4VkFormat@@W4VkImageType@@W4VkImageTiling@@IIIPEAUVkExternalImageFormatPropertiesNV@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkSampleCountFlagBits' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 4338,
+                  "startColumn": 10,
+                  "endLine": 4338,
+                  "endColumn": 10
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkGetPhysicalDeviceMultisamplePropertiesEXT@DispatchLoaderStatic@vk@@QEBAXPEAUVkPhysicalDevice_T@@W4VkSampleCountFlagBits@@PEAUVkMultisamplePropertiesEXT@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkPresentModeKHR' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 4512,
+                  "startColumn": 14,
+                  "endLine": 4512,
+                  "endColumn": 14
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkGetPhysicalDeviceSurfacePresentModesKHR@DispatchLoaderStatic@vk@@QEBA?AW4VkResult@@PEAUVkPhysicalDevice_T@@PEAUVkSurfaceKHR_T@@PEAIPEAW4VkPresentModeKHR@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkObjectType' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 4630,
+                  "startColumn": 10,
+                  "endLine": 4630,
+                  "endColumn": 10
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkGetPrivateDataEXT@DispatchLoaderStatic@vk@@QEBAXPEAUVkDevice_T@@W4VkObjectType@@_KPEAUVkPrivateDataSlotEXT_T@@PEA_K@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkShaderGroupShaderKHR' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 4706,
+                  "startColumn": 18,
+                  "endLine": 4706,
+                  "endColumn": 18
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkGetRayTracingShaderGroupStackSizeKHR@DispatchLoaderStatic@vk@@QEBA_KPEAUVkDevice_T@@PEAUVkPipeline_T@@IW4VkShaderGroupShaderKHR@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkShaderStageFlagBits' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 4767,
+                  "startColumn": 14,
+                  "endLine": 4767,
+                  "endColumn": 14
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkGetShaderInfoAMD@DispatchLoaderStatic@vk@@QEBA?AW4VkResult@@PEAUVkDevice_T@@PEAUVkPipeline_T@@W4VkShaderStageFlagBits@@W4VkShaderInfoTypeAMD@@PEA_KPEAX@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkShaderInfoTypeAMD' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 4767,
+                  "startColumn": 14,
+                  "endLine": 4767,
+                  "endColumn": 14
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkGetShaderInfoAMD@DispatchLoaderStatic@vk@@QEBA?AW4VkResult@@PEAUVkDevice_T@@PEAUVkPipeline_T@@W4VkShaderStageFlagBits@@W4VkShaderInfoTypeAMD@@PEA_KPEAX@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkSurfaceCounterFlagBitsEXT' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 4777,
+                  "startColumn": 14,
+                  "endLine": 4777,
+                  "endColumn": 14
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkGetSwapchainCounterEXT@DispatchLoaderStatic@vk@@QEBA?AW4VkResult@@PEAUVkDevice_T@@PEAUVkSwapchainKHR_T@@W4VkSurfaceCounterFlagBitsEXT@@PEA_K@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26812",
+          "message": {
+            "text": "The enum type 'VkDebugUtilsMessageSeverityFlagBitsEXT' is unscoped. Prefer 'enum class' over 'enum' (Enum.3)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 5102,
+                  "startColumn": 10,
+                  "endLine": 5102,
+                  "endColumn": 10
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?vkSubmitDebugUtilsMessageEXT@DispatchLoaderStatic@vk@@QEBAXPEAUVkInstance_T@@W4VkDebugUtilsMessageSeverityFlagBitsEXT@@IPEBUVkDebugUtilsMessengerCallbackDataEXT@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26495",
+          "message": {
+            "text": "Variable 'vk::DeviceOrHostAddressConstKHR::hostAddress' is uninitialized. Always initialize a member variable (type.6)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 19968,
+                  "startColumn": 5,
+                  "endLine": 19968,
+                  "endColumn": 5
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0DeviceOrHostAddressConstKHR@vk@@QEAA@AEBT01@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "targetSymbol": "vk::DeviceOrHostAddressConstKHR::hostAddress"
+          }
+        },
+        {
+          "ruleId": "C26495",
+          "message": {
+            "text": "Variable 'vk::DeviceOrHostAddressConstKHR::deviceAddress' is uninitialized. Always initialize a member variable (type.6)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 19968,
+                  "startColumn": 5,
+                  "endLine": 19968,
+                  "endColumn": 5
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0DeviceOrHostAddressConstKHR@vk@@QEAA@AEBT01@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "targetSymbol": "vk::DeviceOrHostAddressConstKHR::deviceAddress"
+          }
+        },
+        {
+          "ruleId": "C26495",
+          "message": {
+            "text": "Variable 'vk::AccelerationStructureGeometryDataKHR::aabbs' is uninitialized. Always initialize a member variable (type.6)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 20314,
+                  "startColumn": 5,
+                  "endLine": 20314,
+                  "endColumn": 5
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0AccelerationStructureGeometryDataKHR@vk@@QEAA@AEBT01@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "targetSymbol": "vk::AccelerationStructureGeometryDataKHR::aabbs"
+          }
+        },
+        {
+          "ruleId": "C26495",
+          "message": {
+            "text": "Variable 'vk::AccelerationStructureGeometryDataKHR::instances' is uninitialized. Always initialize a member variable (type.6)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 20314,
+                  "startColumn": 5,
+                  "endLine": 20314,
+                  "endColumn": 5
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0AccelerationStructureGeometryDataKHR@vk@@QEAA@AEBT01@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "targetSymbol": "vk::AccelerationStructureGeometryDataKHR::instances"
+          }
+        },
+        {
+          "ruleId": "C26495",
+          "message": {
+            "text": "Variable 'vk::AccelerationStructureGeometryDataKHR::triangles' is uninitialized. Always initialize a member variable (type.6)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 20314,
+                  "startColumn": 5,
+                  "endLine": 20314,
+                  "endColumn": 5
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0AccelerationStructureGeometryDataKHR@vk@@QEAA@AEBT01@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "targetSymbol": "vk::AccelerationStructureGeometryDataKHR::triangles"
+          }
+        },
+        {
+          "ruleId": "C26495",
+          "message": {
+            "text": "Variable 'vk::DeviceOrHostAddressKHR::hostAddress' is uninitialized. Always initialize a member variable (type.6)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 20470,
+                  "startColumn": 5,
+                  "endLine": 20470,
+                  "endColumn": 5
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0DeviceOrHostAddressKHR@vk@@QEAA@AEBT01@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "targetSymbol": "vk::DeviceOrHostAddressKHR::hostAddress"
+          }
+        },
+        {
+          "ruleId": "C26495",
+          "message": {
+            "text": "Variable 'vk::DeviceOrHostAddressKHR::deviceAddress' is uninitialized. Always initialize a member variable (type.6)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 20470,
+                  "startColumn": 5,
+                  "endLine": 20470,
+                  "endColumn": 5
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0DeviceOrHostAddressKHR@vk@@QEAA@AEBT01@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "targetSymbol": "vk::DeviceOrHostAddressKHR::deviceAddress"
+          }
+        },
+        {
+          "ruleId": "C26495",
+          "message": {
+            "text": "Variable 'vk::ClearValue::color' is uninitialized. Always initialize a member variable (type.6)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 28889,
+                  "startColumn": 5,
+                  "endLine": 28889,
+                  "endColumn": 5
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0ClearValue@vk@@QEAA@AEBT01@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "targetSymbol": "vk::ClearValue::color"
+          }
+        },
+        {
+          "ruleId": "C26495",
+          "message": {
+            "text": "Variable 'vk::ClearValue::depthStencil' is uninitialized. Always initialize a member variable (type.6)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 28889,
+                  "startColumn": 5,
+                  "endLine": 28889,
+                  "endColumn": 5
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0ClearValue@vk@@QEAA@AEBT01@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "targetSymbol": "vk::ClearValue::depthStencil"
+          }
+        },
+        {
+          "ruleId": "C26451",
+          "message": {
+            "text": "Arithmetic overflow: Using operator '*' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '*' to avoid overflow (io.2)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 50693,
+                  "startColumn": 36,
+                  "endLine": 50693,
+                  "endColumn": 51
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0ShaderModuleCreateInfo@vk@@QEAA@V?$Flags@W4ShaderModuleCreateFlagBits@vk@@@1@AEBV?$ArrayProxyNoTemporaries@$$CBI@1@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26451",
+          "message": {
+            "text": "Arithmetic overflow: Using operator '*' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '*' to avoid overflow (io.2)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 50735,
+                  "startColumn": 18,
+                  "endLine": 50735,
+                  "endColumn": 33
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?setCode@ShaderModuleCreateInfo@vk@@QEAAAEAU12@AEBV?$ArrayProxyNoTemporaries@$$CBI@2@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C26495",
+          "message": {
+            "text": "Variable 'vk::PerformanceValueDataINTEL::valueFloat' is uninitialized. Always initialize a member variable (type.6)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 54990,
+                  "startColumn": 5,
+                  "endLine": 54990,
+                  "endColumn": 5
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0PerformanceValueDataINTEL@vk@@QEAA@AEBT01@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "targetSymbol": "vk::PerformanceValueDataINTEL::valueFloat"
+          }
+        },
+        {
+          "ruleId": "C26495",
+          "message": {
+            "text": "Variable 'vk::PerformanceValueDataINTEL::value64' is uninitialized. Always initialize a member variable (type.6)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 54990,
+                  "startColumn": 5,
+                  "endLine": 54990,
+                  "endColumn": 5
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0PerformanceValueDataINTEL@vk@@QEAA@AEBT01@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "targetSymbol": "vk::PerformanceValueDataINTEL::value64"
+          }
+        },
+        {
+          "ruleId": "C26495",
+          "message": {
+            "text": "Variable 'vk::PerformanceValueDataINTEL::valueBool' is uninitialized. Always initialize a member variable (type.6)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 54990,
+                  "startColumn": 5,
+                  "endLine": 54990,
+                  "endColumn": 5
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0PerformanceValueDataINTEL@vk@@QEAA@AEBT01@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "targetSymbol": "vk::PerformanceValueDataINTEL::valueBool"
+          }
+        },
+        {
+          "ruleId": "C26495",
+          "message": {
+            "text": "Variable 'vk::PerformanceValueDataINTEL::valueString' is uninitialized. Always initialize a member variable (type.6)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 54990,
+                  "startColumn": 5,
+                  "endLine": 54990,
+                  "endColumn": 5
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0PerformanceValueDataINTEL@vk@@QEAA@AEBT01@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "targetSymbol": "vk::PerformanceValueDataINTEL::valueString"
+          }
+        },
+        {
+          "ruleId": "C26495",
+          "message": {
+            "text": "Variable 'vk::PerformanceValueDataINTEL::value32' is uninitialized. Always initialize a member variable (type.6)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 54990,
+                  "startColumn": 5,
+                  "endLine": 54990,
+                  "endColumn": 5
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0PerformanceValueDataINTEL@vk@@QEAA@AEBT01@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "targetSymbol": "vk::PerformanceValueDataINTEL::value32"
+          }
+        },
+        {
+          "ruleId": "C26495",
+          "message": {
+            "text": "Variable 'vk::PipelineExecutableStatisticValueKHR::u64' is uninitialized. Always initialize a member variable (type.6)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 55465,
+                  "startColumn": 5,
+                  "endLine": 55465,
+                  "endColumn": 5
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0PipelineExecutableStatisticValueKHR@vk@@QEAA@AEBT01@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "targetSymbol": "vk::PipelineExecutableStatisticValueKHR::u64"
+          }
+        },
+        {
+          "ruleId": "C26495",
+          "message": {
+            "text": "Variable 'vk::PipelineExecutableStatisticValueKHR::i64' is uninitialized. Always initialize a member variable (type.6)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 55465,
+                  "startColumn": 5,
+                  "endLine": 55465,
+                  "endColumn": 5
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0PipelineExecutableStatisticValueKHR@vk@@QEAA@AEBT01@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "targetSymbol": "vk::PipelineExecutableStatisticValueKHR::i64"
+          }
+        },
+        {
+          "ruleId": "C26495",
+          "message": {
+            "text": "Variable 'vk::PipelineExecutableStatisticValueKHR::f64' is uninitialized. Always initialize a member variable (type.6)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 55465,
+                  "startColumn": 5,
+                  "endLine": 55465,
+                  "endColumn": 5
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0PipelineExecutableStatisticValueKHR@vk@@QEAA@AEBT01@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "targetSymbol": "vk::PipelineExecutableStatisticValueKHR::f64"
+          }
+        },
+        {
+          "ruleId": "C26495",
+          "message": {
+            "text": "Variable 'vk::PipelineExecutableStatisticValueKHR::b32' is uninitialized. Always initialize a member variable (type.6)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 55465,
+                  "startColumn": 5,
+                  "endLine": 55465,
+                  "endColumn": 5
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0PipelineExecutableStatisticValueKHR@vk@@QEAA@AEBT01@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "targetSymbol": "vk::PipelineExecutableStatisticValueKHR::b32"
+          }
+        },
+        {
+          "ruleId": "C26495",
+          "message": {
+            "text": "Variable 'vk::PerformanceCounterResultKHR::float32' is uninitialized. Always initialize a member variable (type.6)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 74135,
+                  "startColumn": 5,
+                  "endLine": 74135,
+                  "endColumn": 5
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0PerformanceCounterResultKHR@vk@@QEAA@AEBT01@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "targetSymbol": "vk::PerformanceCounterResultKHR::float32"
+          }
+        },
+        {
+          "ruleId": "C26495",
+          "message": {
+            "text": "Variable 'vk::PerformanceCounterResultKHR::int32' is uninitialized. Always initialize a member variable (type.6)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 74135,
+                  "startColumn": 5,
+                  "endLine": 74135,
+                  "endColumn": 5
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0PerformanceCounterResultKHR@vk@@QEAA@AEBT01@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "targetSymbol": "vk::PerformanceCounterResultKHR::int32"
+          }
+        },
+        {
+          "ruleId": "C26495",
+          "message": {
+            "text": "Variable 'vk::PerformanceCounterResultKHR::float64' is uninitialized. Always initialize a member variable (type.6)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 74135,
+                  "startColumn": 5,
+                  "endLine": 74135,
+                  "endColumn": 5
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0PerformanceCounterResultKHR@vk@@QEAA@AEBT01@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "targetSymbol": "vk::PerformanceCounterResultKHR::float64"
+          }
+        },
+        {
+          "ruleId": "C26495",
+          "message": {
+            "text": "Variable 'vk::PerformanceCounterResultKHR::uint64' is uninitialized. Always initialize a member variable (type.6)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 74135,
+                  "startColumn": 5,
+                  "endLine": 74135,
+                  "endColumn": 5
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0PerformanceCounterResultKHR@vk@@QEAA@AEBT01@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "targetSymbol": "vk::PerformanceCounterResultKHR::uint64"
+          }
+        },
+        {
+          "ruleId": "C26495",
+          "message": {
+            "text": "Variable 'vk::PerformanceCounterResultKHR::uint32' is uninitialized. Always initialize a member variable (type.6)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 74135,
+                  "startColumn": 5,
+                  "endLine": 74135,
+                  "endColumn": 5
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0PerformanceCounterResultKHR@vk@@QEAA@AEBT01@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "targetSymbol": "vk::PerformanceCounterResultKHR::uint32"
+          }
+        },
+        {
+          "ruleId": "C26495",
+          "message": {
+            "text": "Variable 'vk::PerformanceCounterResultKHR::int64' is uninitialized. Always initialize a member variable (type.6)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+                },
+                "region": {
+                  "startLine": 74135,
+                  "startColumn": 5,
+                  "endLine": 74135,
+                  "endColumn": 5
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??0PerformanceCounterResultKHR@vk@@QEAA@AEBT01@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "targetSymbol": "vk::PerformanceCounterResultKHR::int64"
+          }
+        },
+        {
+          "ruleId": "C26817",
+          "message": {
+            "text": "Potentially expensive copy of variable 'res' in range-for loop. Consider making it a const reference (es.71)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///E:/Github/Nagi/Nagi/Nagi/src/GraphicsContext.cpp"
+                },
+                "region": {
+                  "startLine": 105,
+                  "startColumn": 12,
+                  "endLine": 105,
+                  "endColumn": 12
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "??1GraphicsContext@Nagi@@QEAA@XZ",
+                  "kind": "function"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ruleId": "C6001",
+          "message": {
+            "text": "Using uninitialized memory 'imageTiling'."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///E:/Github/Nagi/Nagi/Nagi/src/GraphicsContext.cpp"
+                },
+                "region": {
+                  "startLine": 569,
+                  "startColumn": 3,
+                  "endLine": 569,
+                  "endColumn": 3
+                }
+              },
+              "logicalLocations": [
+                {
+                  "decoratedName": "?CreateDepthResources@GraphicsContext@Nagi@@AEAAXAEBVPhysicalDevice@vk@@AEBVDevice@4@U?$pair@II@std@@@Z",
+                  "kind": "function"
+                }
+              ]
+            }
+          ],
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///E:/Github/Nagi/Nagi/Nagi/src/GraphicsContext.cpp"
+                          },
+                          "region": {
+                            "startLine": 545,
+                            "startColumn": 19
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///E:/Github/Nagi/Nagi/Nagi/src/GraphicsContext.cpp"
+                          },
+                          "region": {
+                            "startLine": 548,
+                            "startColumn": 23
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///E:/Github/Nagi/Nagi/Nagi/src/GraphicsContext.cpp"
+                          },
+                          "region": {
+                            "startLine": 552,
+                            "startColumn": 18
+                          }
+                        },
+                        "message": {
+                          "text": "'imageTiling' is not initialized"
+                        }
+                      },
+                      "kinds": [
+                        "declaration"
+                      ],
+                      "importance": "essential"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///E:/Github/Nagi/Nagi/Nagi/src/GraphicsContext.cpp"
+                          },
+                          "region": {
+                            "startLine": 553,
+                            "startColumn": 45
+                          }
+                        },
+                        "message": {
+                          "text": "Skip this branch, (assume '<branch condition>' is false)"
+                        }
+                      },
+                      "kinds": [
+                        "branch"
+                      ],
+                      "importance": "important"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///E:/Github/Nagi/Nagi/Nagi/src/GraphicsContext.cpp"
+                          },
+                          "region": {
+                            "startLine": 555,
+                            "startColumn": 49
+                          }
+                        },
+                        "message": {
+                          "text": "Skip this branch, (assume '<branch condition>' is false)"
+                        }
+                      },
+                      "kinds": [
+                        "branch"
+                      ],
+                      "importance": "important"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///E:/Github/Nagi/Nagi/Nagi/src/GraphicsContext.cpp"
+                          },
+                          "region": {
+                            "startLine": 560,
+                            "startColumn": 22
+                          }
+                        },
+                        "message": {
+                          "text": "'imageTiling' is an In/Out argument to 'vk::ImageCreateInfo::{ctor}' (declared at c:\\vulkansdk\\1.2.176.1\\include\\vulkan\\vulkan.hpp:46626)"
+                        }
+                      },
+                      "kinds": [
+                        "declaration"
+                      ],
+                      "importance": "important"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///E:/Github/Nagi/Nagi/Nagi/src/GraphicsContext.cpp"
+                          },
+                          "region": {
+                            "startLine": 574,
+                            "startColumn": 15
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///E:/Github/Nagi/Nagi/Nagi/src/GraphicsContext.cpp"
+                          },
+                          "region": {
+                            "startLine": 577,
+                            "startColumn": 25
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///E:/Github/Nagi/Nagi/Nagi/src/GraphicsContext.cpp"
+                          },
+                          "region": {
+                            "startLine": 578,
+                            "startColumn": 37
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///E:/Github/Nagi/Nagi/Nagi/src/GraphicsContext.cpp"
+                          },
+                          "region": {
+                            "startLine": 580,
+                            "startColumn": 11
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///E:/Github/Nagi/Nagi/Nagi/src/GraphicsContext.cpp"
+                          },
+                          "region": {
+                            "startLine": 581,
+                            "startColumn": 29
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///E:/Github/Nagi/Nagi/Nagi/src/GraphicsContext.cpp"
+                          },
+                          "region": {
+                            "startLine": 585,
+                            "startColumn": 16
+                          }
+                        }
+                      },
+                      "importance": "unimportant"
+                    },
+                    {
+                      "location": {
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "file:///E:/Github/Nagi/Nagi/Nagi/src/GraphicsContext.cpp"
+                          },
+                          "region": {
+                            "startLine": 569,
+                            "startColumn": 3
+                          }
+                        },
+                        "message": {
+                          "text": "'imageTiling' is used, but may not have been initialized"
+                        }
+                      },
+                      "kinds": [
+                        "usage"
+                      ],
+                      "importance": "essential"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "tool": {
+        "driver": {
+          "name": "PREfast",
+          "fullName": "PREfast Code Analysis",
+          "version": "14.29.30038.1",
+          "informationUri": "https://aka.ms/cpp/ca"
+        }
+      },
+      "invocations": [
+        {
+          "commandLine": "\"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30037\\bin\\HostX86\\x64\\c1xx.dll\" -ACf{1F7B090C-16DB-4822-966A-A93D26ED4681} -ACpmspft140.dll -Alint -D_PREFAST_ -D_AST_FE_ -Analyze -zm0x00D2C1C0 -allChunksReserved -il C:\\Users\\Nadhif\\AppData\\Local\\Temp\\_CL_0008203east -typedil -f src\\GraphicsContext.cpp -Ze -D_MSC_EXTENSIONS -Zp16 -pc \\:/ -D_MSC_VER=1929 -D_MSC_FULL_VER=192930038 -D_MSC_BUILD=1 -D_M_AMD64=100 -ZILP448 -D_M_X64=100 -D_WIN64 -D_WIN32 -GR -D_CPPRTTI -I C:\\VulkanSDK\\1.2.176.1\\Include -I E:\\Github\\Nagi\\Nagi\\Nagi\\libs\\glm-master -I E:\\Github\\Nagi\\Nagi\\Nagi\\libs\\stb-master -I E:\\Github\\Nagi\\Nagi\\Nagi\\libs\\tinyobjloader-master -I E:\\Github\\Nagi\\Nagi\\Nagi\\libs\\glfw-3.3.4.bin.WIN64\\include -I E:\\Github\\Nagi\\Nagi\\Nagi\\libs\\VulkanMemoryAllocator-master\\include -I E:\\Github\\Nagi\\Nagi\\Nagi\\inc -I C:\\DEV\\vcpkg\\installed\\x64-windows\\include -nologo -W 3 -diagnostics:column -D_GUARDOVERFLOW_CRT_ALLOCATORS=1 -GF -Og -Ot -Oy -Oi -ltcg -DCODE_ANALYSIS -DNDEBUG -D_CONSOLE -D_UNICODE -DUNICODE -EHs -D_CPPUNWIND -EHc -MD -D_MT -D_DLL -GS -D_M_FP_PRECISE -permissive- -Zc:wchar_t -Zc:forScope -std:c++17 -Yupch.h -Fpx64\\Release\\Nagi.pch -Fox64\\Release\\GraphicsContext.obj -Fdx64\\Release\\vc142.pdb -external:W 3 -Gd -analyze:projectdirectory E:\\Github\\Nagi\\Nagi\\Nagi -analyze:rulesetdirectory ;C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Team Tools\\Static Analysis Tools\\\\Rule Sets; -analyze:ruleset C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\Team Tools\\Static Analysis Tools\\Rule Sets\\NativeRecommendedRules.ruleset -analyze:quiet -analyze:plugin C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30037\\bin\\HostX86\\x86\\EspXEngine.dll -FC -errorreport:prompt -external:I C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30037\\include -I C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30037\\include -external:I C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30037\\atlmfc\\include -I C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30037\\atlmfc\\include -external:I C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Auxiliary\\VS\\include -I C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Auxiliary\\VS\\include -external:I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\ucrt -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\ucrt -external:I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\um -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\um -external:I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\shared -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\shared -external:I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\winrt -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\winrt -external:I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\cppwinrt -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\cppwinrt -external:I C:\\Program Files (x86)\\Windows Kits\\NETFXSDK\\4.8\\Include\\um -I C:\\Program Files (x86)\\Windows Kits\\NETFXSDK\\4.8\\Include\\um -I C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30037\\include -I C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30037\\atlmfc\\include -I C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Auxiliary\\VS\\include -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\ucrt -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\um -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\shared -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\winrt -I C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.18362.0\\cppwinrt -I C:\\Program Files (x86)\\Windows Kits\\NETFXSDK\\4.8\\Include\\um",
+          "executionSuccessful": true
+        }
+      ],
+      "artifacts": [
+        {
+          "location": {
+            "uri": "file:///C:/VulkanSDK/1.2.176.1/Include/vulkan/vulkan.hpp"
+          },
+          "roles": [
+            "resultFile"
+          ],
+          "hashes": {
+            "md5": "399e55a71ba5661b81c10a7ab66f0a93"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///e:/github/nagi/nagi/nagi/src/window.cpp"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "md5": "a3ff3988b43104b3af635534929c4abc"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///e:/github/nagi/nagi/nagi/inc/pch.h"
+          },
+          "hashes": {
+            "md5": "8db8aafc1849573a8769ed24f4845c87"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///e:/github/nagi/nagi/nagi/inc/window.h"
+          },
+          "hashes": {
+            "md5": "43a1e63abdef2e60ba12a96961a3e002"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///e:/github/nagi/nagi/nagi/libs/glfw-3.3.4.bin.win64/include/glfw/glfw3.h"
+          },
+          "hashes": {
+            "md5": "cb78a68ecb2094263249bb04c907f62f"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///c:/vulkansdk/1.2.176.1/include/vulkan/vulkan.h"
+          },
+          "hashes": {
+            "md5": "a11337d663bdd5d1c1181cddefd3ff53"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///c:/vulkansdk/1.2.176.1/include/vulkan/vk_platform.h"
+          },
+          "hashes": {
+            "md5": "eaf3021c108d147f169992088aeefa41"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///c:/vulkansdk/1.2.176.1/include/vulkan/vulkan_core.h"
+          },
+          "hashes": {
+            "md5": "efa1cb902a031f84c5d12c13e18eba87"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///E:/Github/Nagi/Nagi/Nagi/src/GraphicsContext.cpp"
+          },
+          "roles": [
+            "analysisTarget",
+            "resultFile"
+          ],
+          "hashes": {
+            "md5": "7b880de86ab4a62dfbb7c3846295e81c"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///e:/github/nagi/nagi/nagi/inc/graphicscontext.h"
+          },
+          "hashes": {
+            "md5": "b5039da4f51c03936a2e941b8e0276d2"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///e:/github/nagi/nagi/nagi/libs/vulkanmemoryallocator-master/include/vk_mem_alloc.h"
+          },
+          "hashes": {
+            "md5": "5e8de0804f9f2c26a51f07d7d7f30b7f"
+          }
+        }
+      ]
+    }
+  ]
+}
