@@ -33,6 +33,8 @@ public:
 	GraphicsContext() = delete;
 	GraphicsContext(const GraphicsContext&) = delete;
 	GraphicsContext& operator=(const GraphicsContext&) = delete;
+	GraphicsContext(GraphicsContext&&) = delete;
+	GraphicsContext operator=(GraphicsContext&&) = delete;
 
 	// Should be called as late as possible (Fence wait can be CPU blocking!)
 	// MAYBE REPLACE??
@@ -47,7 +49,9 @@ public:
 	void endFrame();
 
 	// Return device for now (until we can find better abstraction)
-	vk::Device getDevice();
+	vk::Device getDevice() const;
+
+	VmaAllocator getResourceAllocator() const;
 
 	// Temporary dependencies needed by the outside, maybe we can refactor to
 	// SwapchainInfo and DepthInfo
@@ -108,7 +112,7 @@ private:
 	std::vector<PerFrameSyncResource> m_frameSyncResources;
 
 	// VMA
-	//VmaAllocator m_allocator;
+	VmaAllocator m_allocator;
 
 	vk::SurfaceKHR m_surface;
 	vk::SwapchainKHR m_swapchain;
