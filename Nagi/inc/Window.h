@@ -1,7 +1,7 @@
 #pragma once
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#include "Singleton.h"
+#include "SingleInstance.h"
 
 namespace vk
 {
@@ -12,7 +12,7 @@ namespace vk
 namespace Nagi
 {
 
-class Window : Utils::Singleton<Window>
+class Window : Utils::SingleInstance<Window>
 {
 public:
 	Window(int width, int height, const char* title = "Nagi Engine");

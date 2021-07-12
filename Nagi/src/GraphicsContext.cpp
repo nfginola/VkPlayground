@@ -3,8 +3,8 @@
 #include "Window.h"
 
 // VMA
-//#define VMA_IMPLEMENTATION
-//#include "vk_mem_alloc.h"
+#define VMA_IMPLEMENTATION
+#include "vk_mem_alloc.h"
 
 namespace Nagi
 {
@@ -49,7 +49,7 @@ GraphicsContext::GraphicsContext(const Window& win, bool debugLayer) :
 		// Initialize VMA
 		// We will use later, stick with normal Buffer/Image creation for now for learning purposes
 		// Note that there are VMA destruction code that are commented in the destructor
-		// CreateVulkanMemoryAllocator(m_instance, m_physicalDevice, m_logicalDevice);
+		createVulkanMemoryAllocator(m_instance, m_physicalDevice, m_device);
 
 		std::pair<uint32_t, uint32_t> clientDim{ win.getClientWidth(), win.getClientHeight() };
 
@@ -92,7 +92,7 @@ GraphicsContext::~GraphicsContext()
 	// Cleanup depth resource (VMA)
 	//vmaDestroyImage(m_allocator, m_vmaDepthImage, m_vmaDepthAlloc);
 
-	//	vmaDestroyAllocator(m_allocator);
+	vmaDestroyAllocator(m_allocator);
 
 	// ==================================== Logical device related destructions
 	m_device.destroyCommandPool(m_gfxCmdPool);	// All cmd buffers associated with this pool is cleaned up automatically
@@ -204,9 +204,14 @@ void GraphicsContext::endFrame()
 	m_currFrame = (m_currFrame + 1) % s_maxFramesInFlight;
 }
 
-vk::Device GraphicsContext::getDevice()
+vk::Device GraphicsContext::getDevice() const
 {
 	return m_device;
+}
+
+VmaAllocator GraphicsContext::getResourceAllocator() const
+{
+	return m_allocator;
 }
 
 uint32_t GraphicsContext::getSwapchainImageCount() const
@@ -312,7 +317,7 @@ void GraphicsContext::createVulkanMemoryAllocator(const vk::Instance& instance, 
 	allocatorInfo.device = logicalDevice;
 	allocatorInfo.instance = instance;
 	
-	//assert(vmaCreateAllocator(&allocatorInfo, &m_allocator) == VK_SUCCESS);
+	assert(vmaCreateAllocator(&allocatorInfo, &m_allocator) == VK_SUCCESS);
 }
 
 void GraphicsContext::getPhysicalDevice(const vk::Instance& instance) 

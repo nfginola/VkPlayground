@@ -169,6 +169,7 @@
   <ItemGroup>
     <ClCompile Include="src\Application\Application.cpp" />
     <ClCompile Include="src\Application\MinimalTriangleApp.cpp" />
+    <ClCompile Include="src\Application\MinimalTriangleWithBuffersApp.cpp" />
     <ClCompile Include="src\GraphicsContext.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\pch.cpp">
@@ -181,11 +182,13 @@
     <ClCompile Include="src\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="inc\Application\AppDefines.h" />
     <ClInclude Include="inc\Application\Application.h" />
     <ClInclude Include="inc\Application\MinimalTriangleApp.h" />
+    <ClInclude Include="inc\Application\MinimalTriangleWithBuffersApp.h" />
     <ClInclude Include="inc\GraphicsContext.h" />
     <ClInclude Include="inc\pch.h" />
-    <ClInclude Include="inc\Singleton.h" />
+    <ClInclude Include="inc\SingleInstance.h" />
     <ClInclude Include="inc\Utilities.h" />
     <ClInclude Include="inc\Window.h" />
   </ItemGroup>

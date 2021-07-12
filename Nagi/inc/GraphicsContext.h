@@ -1,7 +1,7 @@
 #pragma once
 #include <vulkan/vulkan.hpp>
 #include "vk_mem_alloc.h"
-#include "Singleton.h"
+#include "SingleInstance.h"
 
 namespace Nagi
 {
@@ -24,7 +24,7 @@ struct FrameResource
 };
 
 
-class GraphicsContext : Utils::Singleton<GraphicsContext>
+class GraphicsContext : Utils::SingleInstance<GraphicsContext>
 {
 public:
 	GraphicsContext(const Window& win, bool debugLayer = true);
