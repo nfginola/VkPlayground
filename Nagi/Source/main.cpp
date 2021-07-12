@@ -1,11 +1,9 @@
 #include "pch.h"
 
-#include "GraphicsContext.h"
-#include "Window.h"
-
 #include "Application/AppDefines.h"
 #include "Application/MinimalTriangleApp.h"
 #include "Application/MinimalTriangleWithBuffersApp.h"
+#include "Application/QuadApp.h"
 
 int main()
 {
@@ -16,6 +14,8 @@ int main()
 	Nagi::MinimalTriangleApp app(win, gfxCon);
 #elif APP_MINIMAL_TRI_BUFFER
 	Nagi::MinimalTriangleWithBuffersApp app(win, gfxCon);
+#elif APP_QUAD
+	Nagi::QuadApp app(win, gfxCon);
 #endif
 
 	return 0;
