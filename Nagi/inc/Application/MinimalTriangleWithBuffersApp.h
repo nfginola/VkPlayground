@@ -53,6 +53,13 @@ private:
 
 	};
 
+	struct Buffer
+	{
+		VmaAllocation alloc;
+		vk::Buffer resource;
+	};
+
+
 private:
 	void createRenderPass();
 	void createGraphicsPipeline(vk::RenderPass& compatibleRendPass);
@@ -66,10 +73,12 @@ private:
 	vk::Extent2D m_scExtent;
 
 	// VMA vertex/index buffer
-	VmaAllocation m_vbAlloc;
-	vk::Buffer m_vb;
-	VmaAllocation m_ibAlloc;
-	vk::Buffer m_ib;
+	//VmaAllocation m_vbAlloc;
+	//vk::Buffer m_vb;
+	//VmaAllocation m_ibAlloc;
+	//vk::Buffer m_ib;
+	Buffer m_vb;
+	Buffer m_ib;
 };
 
 

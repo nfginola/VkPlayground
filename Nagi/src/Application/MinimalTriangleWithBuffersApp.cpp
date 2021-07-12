@@ -37,11 +37,11 @@ MinimalTriangleWithBuffersApp::MinimalTriangleWithBuffersApp(Window& window, Gra
 			cmd->bindPipeline(vk::PipelineBindPoint::eGraphics, m_gfxPipeline.get());
 
 			// Bind vertex buffer
-			std::array<vk::Buffer, 1> vbs{ m_vb };
+			std::array<vk::Buffer, 1> vbs{ m_vb.resource };
 			std::array<vk::DeviceSize, 1> offsets{ 0 };
 			cmd->bindVertexBuffers(0, vbs, offsets);
 
-			cmd->bindIndexBuffer(m_ib, 0, vk::IndexType::eUint32);
+			cmd->bindIndexBuffer(m_ib.resource, 0, vk::IndexType::eUint32);
 
 			cmd->draw(3, 1, 0, 0);
 			cmd->endRenderPass();
@@ -88,8 +88,8 @@ MinimalTriangleWithBuffersApp::MinimalTriangleWithBuffersApp(Window& window, Gra
 
 MinimalTriangleWithBuffersApp::~MinimalTriangleWithBuffersApp()
 {
-	vmaDestroyBuffer(m_gfxCon.getResourceAllocator(), m_vb, m_vbAlloc);
-	vmaDestroyBuffer(m_gfxCon.getResourceAllocator(), m_ib, m_ibAlloc);
+	vmaDestroyBuffer(m_gfxCon.getResourceAllocator(), m_vb.resource, m_vb.alloc);
+	vmaDestroyBuffer(m_gfxCon.getResourceAllocator(), m_ib.resource, m_ib.alloc);
 }
 
 void MinimalTriangleWithBuffersApp::createRenderPass()
@@ -326,20 +326,20 @@ void MinimalTriangleWithBuffersApp::createVertexIndexBuffer(VmaAllocator allocat
 	VmaAllocationCreateInfo indexBufAllocCI{};
 	indexBufAllocCI.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 
-	auto res = vmaCreateBuffer(allocator, (VkBufferCreateInfo*)&vertBufCI, &vertBufAllocCI, (VkBuffer*)&m_vb, &m_vbAlloc, nullptr);
+	auto res = vmaCreateBuffer(allocator, (VkBufferCreateInfo*)&vertBufCI, &vertBufAllocCI, (VkBuffer*)&m_vb.resource, &m_vb.alloc, nullptr);
 	if (res != VK_SUCCESS) throw std::runtime_error("Couldnt create vertex buffer");
-	res = vmaCreateBuffer(allocator, (VkBufferCreateInfo*)&indexBufCI, &indexBufAllocCI, (VkBuffer*)&m_ib, &m_ibAlloc, nullptr);
+	res = vmaCreateBuffer(allocator, (VkBufferCreateInfo*)&indexBufCI, &indexBufAllocCI, (VkBuffer*)&m_ib.resource, &m_ib.alloc, nullptr);
 	if (res != VK_SUCCESS) throw std::runtime_error("Couldnt create index buffer");
 
 	// Copy data
 	void* data = nullptr;
-	vmaMapMemory(allocator, m_vbAlloc, &data);
+	vmaMapMemory(allocator, m_vb.alloc, &data);
 	memcpy(data, vertices.data(), vertices.size() * sizeof(Vertex));
-	vmaUnmapMemory(allocator, m_vbAlloc);
+	vmaUnmapMemory(allocator, m_vb.alloc);
 
-	vmaMapMemory(allocator, m_ibAlloc, &data);
+	vmaMapMemory(allocator, m_ib.alloc, &data);
 	memcpy(data, indices.data(), indices.size() * sizeof(uint32_t));
-	vmaUnmapMemory(allocator, m_ibAlloc);
+	vmaUnmapMemory(allocator, m_ib.alloc);
 
 	// Traditionally, without VMA, this is done with a staging buffer which is host visible and the vertex buffer which is device local.
 	// We would have to Map/Unmap (copy) the data onto the staging buffer where we then call a copy command on the GPU to copy it from the staging buffer to the vertex buffer.
