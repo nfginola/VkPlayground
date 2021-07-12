@@ -167,6 +167,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Application\QuadApp.cpp" />
     <ClCompile Include="src\Application\Application.cpp" />
     <ClCompile Include="src\Application\MinimalTriangleApp.cpp" />
     <ClCompile Include="src\Application\MinimalTriangleWithBuffersApp.cpp" />
@@ -191,6 +192,7 @@
     <ClInclude Include="inc\SingleInstance.h" />
     <ClInclude Include="inc\Utilities.h" />
     <ClInclude Include="inc\Window.h" />
+    <ClInclude Include="inc\Application\QuadApp.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

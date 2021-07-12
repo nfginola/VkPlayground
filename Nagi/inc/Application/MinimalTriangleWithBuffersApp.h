@@ -1,18 +1,22 @@
 #pragma once
-#include "Application/Application.h"
+#include "Application.h"
 
 namespace Nagi
 {
 
 /*
 
-Creates a triangle with minimal resources!
+Creates a triangle with vertex/index buffers!
 
+(Based on MinimalTriangleApp)
 Changes from MinimalTriangleApp:
 - Create vertex/index buffer with VMA
 - Read from a different shader for pipeline (_buf)
 - Fill input state to describe vertex input (slot buffer is bound to + shader input location)
 - Bind vertex/index buffer on Draw
+
+Purpose:
+- Get to know VMA and get my hands dirty with describing input state, filling vb/ib and binding vb/ib
 
 */
 

@@ -14,6 +14,9 @@ Creates a triangle with minimal resources!
 We are drawing it with the immediate buffer in the shader which
 we index with the help of simple vertexID and instanceID
 
+Purpose:
+- Understand the minimum set of Vulkan API resources for a render and how they are interlinked.
+
 */
 
 class MinimalTriangleApp : public Application
