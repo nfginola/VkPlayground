@@ -6,8 +6,11 @@ namespace Nagi
 
 /*
 
-Creates a quad and uses some Uniform Buffers and Push Constants!
+Creates a quad in world space with a proper camera and projection matrix.
 
+Purpose
+- Get familiar with Push Constants
+- Get familiar with UBO binding through Descriptor sets
 
 */
 
@@ -54,12 +57,68 @@ private:
 		vk::Buffer resource;
 	};
 
+	struct PushConstant
+	{
+		glm::mat4 mat;
+		glm::vec4 rand;
+	};
+
+	struct UBO
+	{
+		glm::mat4 mat;
+		glm::vec4 bogus;
+	};
+
+	// Handle key down / just pressed
+	class Keystate
+	{
+	public:
+		// Called on GLFW key down
+		void onPress()
+		{
+			m_isDown = true;
+			if (m_justPressed)
+				m_justPressed = false;
+			else
+				m_justPressed = true;
+		};
+
+		// Called on GLFW key release
+		void onRelease()
+		{
+			m_isDown = false;
+			m_justPressed = false;
+		};
+
+		bool isDown()
+		{
+			return m_isDown;
+		};
+
+		bool justPressed()
+		{
+			// Turns off isPressed after the first time its retrieved 
+			bool ret = m_justPressed;
+			m_justPressed = false;
+			return ret;
+		};
+
+	private:
+		bool m_justPressed = false;
+		bool m_isDown = false;
+	};
+
 private:
 	void createRenderPass();
 	void createGraphicsPipeline(vk::RenderPass& compatibleRendPass);
 	void createFramebuffers();
 
 	void createVertexIndexBuffer(VmaAllocator allocator);
+
+	void createUBO();
+	void setupDescriptorSetLayout();
+	void createDescriptorPool();
+	void allocateDescriptorSets();
 
 private:
 	vk::UniqueRenderPass m_rendPass;
@@ -69,6 +128,15 @@ private:
 
 	Buffer m_vb;
 	Buffer m_ib;
+
+	// We need one for each frame
+	std::vector<Buffer> m_ubos;
+	std::vector<vk::DescriptorSet> m_descriptorSets;
+
+	vk::UniquePipelineLayout m_pipelineLayout;		// Needed for Push Constant
+
+	vk::UniqueDescriptorSetLayout m_descriptorSetLayout;	// Needed for UBO thing
+	vk::UniqueDescriptorPool m_descriptorPool;
 };
 
 }

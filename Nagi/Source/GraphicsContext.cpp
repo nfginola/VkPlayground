@@ -150,7 +150,8 @@ FrameResource GraphicsContext::beginFrame()
 		{
 			&m_gfxCmdBuffers[m_currFrame],
 			m_currImageIdx,
-			&m_frameSyncResources[m_currFrame]
+			&m_frameSyncResources[m_currFrame],
+			m_currFrame
 		};
 		
 		//return 
@@ -204,7 +205,7 @@ void GraphicsContext::endFrame()
 	m_currFrame = (m_currFrame + 1) % s_maxFramesInFlight;
 }
 
-vk::Device GraphicsContext::getDevice() const
+const vk::Device& GraphicsContext::getDevice() const
 {
 	return m_device;
 }
@@ -254,6 +255,9 @@ VKAPI_ATTR VkBool32 VKAPI_CALL GraphicsContext::debugCallback(VkDebugUtilsMessag
 
 void GraphicsContext::createInstance(std::vector<const char*> requiredExtensions, bool debugLayer)
 {
+
+
+
 	vk::ApplicationInfo appInfo("Nagi App", 1, "Nagi Engine", 1, VK_API_VERSION_1_1);
 
 	std::vector<const char*> validationLayers;
@@ -276,6 +280,13 @@ void GraphicsContext::createInstance(std::vector<const char*> requiredExtensions
 	vk::InstanceCreateInfo instCreateInfo({}, &appInfo,
 		static_cast<uint32_t>(validationLayers.size()), validationLayers.data(),
 		static_cast<uint32_t>(requiredExtensions.size()), requiredExtensions.data());
+
+	// Enable Best Practices Feature
+	auto enabled = vk::ValidationFeatureEnableEXT::eBestPractices;
+	vk::ValidationFeaturesEXT features;
+	features.enabledValidationFeatureCount = 1;
+	features.pEnabledValidationFeatures = &enabled;
+	instCreateInfo.pNext = &features;
 
 	m_instance = vk::createInstance(instCreateInfo);
 
@@ -668,6 +679,10 @@ void GraphicsContext::createDepthResources(const vk::PhysicalDevice& physicalDev
 
 void GraphicsContext::createCommandPools(const vk::Device& logicalDevice, const QueueFamilies& qfs)
 {
+	// vkguide recommends creating a Command Pool per FRAME (so, a frame resource)
+	// 	   https://vkguide.dev/docs/chapter-4/double_buffering/
+	// 	   for when resetting a Command Pool (which resets all the command buffers created from it)
+	// 	   when would we have to reset ALL the command buffers??? Follow up sometime later
 	// Resettable for re-recording..
 	m_gfxCmdPool = logicalDevice.createCommandPool(vk::CommandPoolCreateInfo(vk::CommandPoolCreateFlagBits::eResetCommandBuffer, qfs.gphIdx.value()));
 

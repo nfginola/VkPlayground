@@ -1,26 +1,105 @@
 #include "pch.h"
 #include "Application/QuadApp.h"
 
+
+
 namespace Nagi
 {
 
 QuadApp::QuadApp(Window& window, GraphicsContext& gfxCon) :
 	Application(window, gfxCon)
 {
+	glm::vec3 pos{ 0.f, 1.f, 1.f };
+
+	std::array<Keystate, 5> keystates;
+	auto& aKey = keystates[0];
+	auto& dKey = keystates[1];
+	auto& wKey = keystates[2];
+	auto& sKey = keystates[3];
+	auto& eKey = keystates[4];
+
+	window.setKeyCallback([&keystates](int key, int scancode, int action, int mods)
+		{
+			static std::function handleFunc = [&action, &keystates](int keystateID)
+			{
+				if (action == GLFW_PRESS)
+					keystates[keystateID].onPress();
+				else if (action == GLFW_RELEASE)
+					keystates[keystateID].onRelease();
+			};
+
+
+			if (key == GLFW_KEY_A)
+				handleFunc(0);
+			else if (key == GLFW_KEY_D)
+				handleFunc(1);
+			else if (key == GLFW_KEY_W)
+				handleFunc(2);
+			else if (key == GLFW_KEY_S)
+				handleFunc(3);
+			else if (key == GLFW_KEY_E)
+				handleFunc(4);
+		});
+
+
+
 	try
 	{
+		createUBO();
+		setupDescriptorSetLayout();
+		createDescriptorPool();
+		allocateDescriptorSets();
+
 		createRenderPass();
 		createGraphicsPipeline(m_rendPass.get());
 		createFramebuffers();
 
 		createVertexIndexBuffer(gfxCon.getResourceAllocator());
 
+
 		while (m_window.isRunning())
 		{
 			m_window.processEvents();
 
+			// Update camera (no frame-time fix for now)
+			if (aKey.isDown())
+				pos[0] += -0.1f;
+			else if (dKey.isDown())
+				pos[0] += 0.1f;
+			else if (wKey.isDown())
+				pos[2] += -0.1f;
+			else if (sKey.isDown())
+				pos[2] += 0.1f;
+
+			if (eKey.justPressed())
+				std::cout << "hello from E world..\n";
+
+			// Update data for shader
+			PushConstant frameConstants{};
+			frameConstants.rand = glm::vec4(0.f, 1.f, 0.f, 1.f);
+			auto matView = glm::lookAtRH(pos, glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
+			auto matProj = glm::perspectiveRH(glm::radians(70.f), (float)m_scExtent.width / m_scExtent.height, 0.01f, 50.f);
+			//auto rot = glm::rotate(glm::mat4(1.f), glm::radians(45.f), glm::vec3(0.f, 1.f, 0.f));
+			auto matModel = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, 0.f));
+			frameConstants.mat = matProj * matView * matModel;
+
+
+
+			// GPU BELOW
 			auto frameRes = gfxCon.beginFrame();
 			auto& cmd = frameRes.gfxCmdBuffer;
+
+
+			// ================================================ Update UBO
+			void* data;
+			vmaMapMemory(m_gfxCon.getResourceAllocator(), m_ubos[frameRes.imageIdx].alloc, &data);
+			memcpy(data, &frameConstants, sizeof(UBO));
+			vmaUnmapMemory(m_gfxCon.getResourceAllocator(), m_ubos[frameRes.imageIdx].alloc);
+			
+			// reset push constant (to verify that we are using the UBO!)
+			memset(&frameConstants, 0, sizeof(PushConstant));
+
+
 
 			// Setup render pass info
 			std::array<vk::ClearValue, 2> clearValues = {
@@ -36,6 +115,15 @@ QuadApp::QuadApp(Window& window, GraphicsContext& gfxCon) :
 			cmd->beginRenderPass(rpInfo, {});
 			cmd->bindPipeline(vk::PipelineBindPoint::eGraphics, m_gfxPipeline.get());
 
+			// Bind UBO after Pipeline
+			//vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, object.material->pipelineLayout, 0, 1, &get_current_frame().globalDescriptor, 0, nullptr);
+			cmd->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelineLayout.get(), 0, m_descriptorSets[frameRes.frameIdx], {});
+
+
+			// Flip viewport height https://www.saschawillems.de/blog/2019/03/29/flipping-the-vulkan-viewport/
+			// We set this on Graphics Pipeline instead of changing it dynamically
+			//cmd->setViewport(0, vk::Viewport(0.f, (float)m_scExtent.height, m_scExtent.width, -(float)m_scExtent.height, 0.0, 1.0));
+
 			// Bind vertex buffer
 			std::array<vk::Buffer, 1> vbs{ m_vb.resource };
 			std::array<vk::DeviceSize, 1> offsets{ 0 };
@@ -43,7 +131,11 @@ QuadApp::QuadApp(Window& window, GraphicsContext& gfxCon) :
 
 			cmd->bindIndexBuffer(m_ib.resource, 0, vk::IndexType::eUint32);
 
-			cmd->draw(3, 1, 0, 0);
+			// ===================================================== Push constants (command constants)
+			cmd->pushConstants<PushConstant>(m_pipelineLayout.get(), vk::ShaderStageFlagBits::eVertex, 0, { frameConstants });
+			
+			cmd->drawIndexed(6, 1, 0, 0, 0);
+			//cmd->draw(6, 1, 0, 0);
 			cmd->endRenderPass();
 
 			cmd->end();
@@ -90,6 +182,11 @@ QuadApp::~QuadApp()
 {
 	vmaDestroyBuffer(m_gfxCon.getResourceAllocator(), m_vb.resource, m_vb.alloc);
 	vmaDestroyBuffer(m_gfxCon.getResourceAllocator(), m_ib.resource, m_ib.alloc);
+
+	for (int i = 0; i < GraphicsContext::s_maxFramesInFlight; ++i)
+		vmaDestroyBuffer(m_gfxCon.getResourceAllocator(), m_ubos[i].resource, m_ubos[i].alloc);
+
+
 }
 
 void QuadApp::createRenderPass()
@@ -135,55 +232,22 @@ void QuadApp::createRenderPass()
 
 	vk::SubpassDescription subpassDesc({}, vk::PipelineBindPoint::eGraphics, {}, colorRef, {}, &depthRef);
 
-	//// Image layout is not transitiooning at the right time.. we have no color output stage anywhere here!
-	//vk::SubpassDependency extInDep(
-	//	VK_SUBPASS_EXTERNAL,
-	//	0,
-	//	// wait for prev until depth testing of prev frame finished (write on srcStages) before starting depth test on this frame 
-	//	vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests,
-	//	vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests,
-	//	vk::AccessFlagBits::eDepthStencilAttachmentWrite,	// why only write? (stated on sync examples Khronos Group)
-	//	vk::AccessFlagBits::eDepthStencilAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentRead
-	//);
-
-	//// Not caring about depth (To try out the validation layer)
-	//vk::SubpassDependency extInDep(
-	//	VK_SUBPASS_EXTERNAL,
-	//	0,
-	//	vk::PipelineStageFlagBits::eColorAttachmentOutput,		
-	//	vk::PipelineStageFlagBits::eColorAttachmentOutput,									
-	//	{},		
-	//	vk::AccessFlagBits::eColorAttachmentWrite
-	//);
 
 	// Corrected (sync validation WAW hazard)
 	vk::SubpassDependency extInDep(
 		VK_SUBPASS_EXTERNAL,
 		0,
-		// We have early AND late because the accessFlags only applies to explicitly specified stages (the mem access flags does NOT apply to the implicit stages that come with exec dep)
-		vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests |	// wait for prev frame depth testing (happens in early and late frag test)
-		vk::PipelineStageFlagBits::eColorAttachmentOutput,													// form exec dep chain with present sem
+	
+		vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests |
+		vk::PipelineStageFlagBits::eColorAttachmentOutput,												
 
-		vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests |	// halt this frames depth testing before the prev is done
-		vk::PipelineStageFlagBits::eColorAttachmentOutput,													// form exec dep chain with present sem (note that we have mem dep for this (dst stage) on access mask!)
+		vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests |
+		vk::PipelineStageFlagBits::eColorAttachmentOutput,												
 
-		{},	// Waiting on semaphore guarantees memory dependency already! No need to supply mem access to wait for in src stages (Once colorAttachmentOutput stage is opened up, all memory writes are visible
-		// https://vulkan.lunarg.com/doc/view/1.2.141.2/linux/chunked_spec/chap6.html (6.4.2)
-
-		vk::AccessFlagBits::eDepthStencilAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentRead | // assign mem dep on the depth resource for which to halt
-		vk::AccessFlagBits::eColorAttachmentWrite							// ensure that the layout transition happens after color output is unblocked but before color output writing through mem dep!
+		{},	
+		vk::AccessFlagBits::eDepthStencilAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentRead | 
+		vk::AccessFlagBits::eColorAttachmentWrite						
 	);
-	/*
-		We can look at the WSI + External subpass sync with Pipeline Barriers instead:
-
-		Barrier1 ( srcStage="semSignal",	dstStage=ColorOutput, srcAccessMask=ALL,	dstAccessMask=ALL						  )		--> Semaphore (full memory barrier)
-		Barrier2 ( srcStage=ColorOutput,	dstStage=ColorOutput, srcAccessMask=0,		dstAccessMask=depthReadWrite | colorWrite )		--> Subpass dependency
-
-		Subpass dependency is placed there with Barrier1 dst intersecting Barrier2 src to create an execution depedency chain.
-		This in turns guarantees that the image layout transition implicitly done through the subpass dependency is done AFTER the swapchain image is acquired but before it used (e.g written to).
-
-		Depth stages with read/write is added to also sync the depth image usage (fix depth WAW hazard)
-	*/
 
 	// Using implicit external subpass
 
@@ -196,9 +260,8 @@ void QuadApp::createGraphicsPipeline(vk::RenderPass& compatibleRendPass)
 	auto dev = m_gfxCon.getDevice();
 	m_scExtent = m_gfxCon.getSwapchainExtent();
 
-	// Change: Now we load vsMinTri_buf (Buffer version of minimal triangle)
-	auto vertBin = Nagi::Utils::readFile("compiled_shaders/vsMinTri_buf.spv");
-	auto fragBin = Nagi::Utils::readFile("compiled_shaders/psMinTri_buf.spv");
+	auto vertBin = Nagi::Utils::readFile("compiled_shaders/vertQuad.spv");
+	auto fragBin = Nagi::Utils::readFile("compiled_shaders/fragQuad.spv");
 	auto vertMod = dev.createShaderModuleUnique(vk::ShaderModuleCreateInfo({}, vertBin.size(), reinterpret_cast<uint32_t*>(vertBin.data())));
 	auto fragMod = dev.createShaderModuleUnique(vk::ShaderModuleCreateInfo({}, fragBin.size(), reinterpret_cast<uint32_t*>(fragBin.data())));
 	std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStageC = {
@@ -206,14 +269,19 @@ void QuadApp::createGraphicsPipeline(vk::RenderPass& compatibleRendPass)
 		vk::PipelineShaderStageCreateInfo({}, vk::ShaderStageFlagBits::eFragment, fragMod.get(), "main")
 	};
 
-	// Change: Now we fill the Input state 
 	std::vector<vk::VertexInputBindingDescription> bindingDescs{ Vertex::getBindingDescription() };
 	auto inputAttrDescs{ Vertex::getAttributeDescriptions() };
 	vk::PipelineVertexInputStateCreateInfo vertInC({}, bindingDescs, inputAttrDescs);
 
 	vk::PipelineInputAssemblyStateCreateInfo iaC({}, vk::PrimitiveTopology::eTriangleList);
+	
+	// viewports origin is at top left (0, 0)
+	// https://www.saschawillems.de/blog/2019/03/29/flipping-the-vulkan-viewport/
+	// Flip viewport height https://www.saschawillems.de/blog/2019/03/29/flipping-the-vulkan-viewport/
+	vk::Viewport vp = vk::Viewport(0.f, static_cast<float>(m_scExtent.height), m_scExtent.width, -static_cast<float>(m_scExtent.height), 0.0, 1.0);
 
-	vk::Viewport vp = vk::Viewport(0.f, 0.f, static_cast<float>(m_scExtent.width), static_cast<float>(m_scExtent.height), 0.0, 1.0);
+	//vk::Viewport vp = vk::Viewport(0.f, 0.f, static_cast<float>(m_scExtent.width), static_cast<float>(m_scExtent.height), 0.0, 1.0);
+
 	vk::Rect2D scissor = vk::Rect2D({ 0, 0 }, m_scExtent);
 	vk::PipelineViewportStateCreateInfo vpC({}, 1, &vp, 1, &scissor);	// no stencil
 
@@ -261,9 +329,17 @@ void QuadApp::createGraphicsPipeline(vk::RenderPass& compatibleRendPass)
 		{}		// we are not blending so this the blendConstants are irrelevant
 	);
 
-	// no descriptor sets or push constants yet
-	// but we MUST supply a pipeline layout
-	auto pipelineLayout = dev.createPipelineLayoutUnique(vk::PipelineLayoutCreateInfo());
+	// Change: We are now using pipeline layout for Push Constants and Descriptor Sets
+
+
+	// 1. Push Constant
+	vk::PushConstantRange pushRange(vk::ShaderStageFlagBits::eVertex, 0, sizeof(PushConstant));
+	
+	// Change: We now have to store the layout as it is used when pushing constants on the command buffer
+	// watch out so you dont accidentally use the other constructor which takes in size! :)
+
+	// Now added descriptor set layout 
+	m_pipelineLayout = dev.createPipelineLayoutUnique(vk::PipelineLayoutCreateInfo({}, m_descriptorSetLayout.get(), pushRange));
 
 	m_gfxPipeline = dev.createGraphicsPipelineUnique({},
 		vk::GraphicsPipelineCreateInfo({},
@@ -277,7 +353,7 @@ void QuadApp::createGraphicsPipeline(vk::RenderPass& compatibleRendPass)
 			&dsC,
 			&cbC,
 			{},
-			pipelineLayout.get(),
+			m_pipelineLayout.get(),
 			compatibleRendPass,
 			0
 		)
@@ -306,15 +382,18 @@ void QuadApp::createFramebuffers()
 
 void QuadApp::createVertexIndexBuffer(VmaAllocator allocator)
 {
-	// CCW
+	// Local space (RH)
 	std::vector<Vertex> vertices{
-		{ { 0.f, -0.5f, 0.f }, { 0.f, 1.f }, { 1.f, 0.f, 0.f } },
-		{ { -0.5f, 0.5f, 0.f }, { 0.f, 0.f }, { 0.f, 1.f, 0.f } },
-		{ { 0.5f, 0.5f, 0.f }, { 1.f, 0.f }, { 0.f, 0.f, 1.f } },
+		{ { -0.5f, 0.5f, 0.f }, { 0.f, 0.f }, { 1.f, 0.f, 0.f } },
+		{ { 0.5f, 0.5f, 0.f }, { 1.f, 0.f }, { 1.f, 0.f, 0.f } },
+		{ { 0.5f, -0.5f, 0.f }, { 1.f, 1.f }, { 0.f, 1.f, 0.f } },
+		{ { -0.5f, -0.5f, 0.f }, { 0.f, 1.f }, { 0.f, 0.f, 1.f } }
 	};
 
+	// CCW
 	std::vector<uint32_t> indices{
-		0, 1, 2
+		0, 2, 1,
+		0, 3, 2
 	};
 
 	vk::BufferCreateInfo vertBufCI({}, vertices.size() * sizeof(Vertex), vk::BufferUsageFlagBits::eVertexBuffer);
@@ -345,5 +424,95 @@ void QuadApp::createVertexIndexBuffer(VmaAllocator allocator)
 	// We would have to Map/Unmap (copy) the data onto the staging buffer where we then call a copy command on the GPU to copy it from the staging buffer to the vertex buffer.
 	// Here we rely on VMA figuring that out. Responsbility of whether VMA does the staging copy or not is not our responsibility :)
 }
+
+void QuadApp::createUBO()
+{
+	vk::BufferCreateInfo uboCI({}, sizeof(UBO), vk::BufferUsageFlagBits::eUniformBuffer);
+	VmaAllocationCreateInfo uboAllocCI{};
+	uboAllocCI.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;		// We have to map and unmap to fill the data
+
+	m_ubos.reserve(GraphicsContext::s_maxFramesInFlight);
+	for (int i = 0; i < GraphicsContext::s_maxFramesInFlight; ++i)
+	{
+		Buffer buf;
+
+		auto res = vmaCreateBuffer(m_gfxCon.getResourceAllocator(), (VkBufferCreateInfo*)&uboCI, &uboAllocCI, (VkBuffer*)&buf.resource, &buf.alloc, nullptr);
+		if (res != VK_SUCCESS) throw std::runtime_error("Couldnt create vertex buffer");
+
+		m_ubos.push_back(buf);
+	}
+
+
+}
+
+void QuadApp::setupDescriptorSetLayout()
+{
+	// Layout bindings for this SET
+	/*
+		example set:
+
+		set 0:
+			uniform UBOMats mats
+			uniform sampler2D sampler
+			uniform unt texIDs[50]
+
+		DescriptorSetLayoutBinding is a descriptor for exactly one resource in that set 
+
+		
+		Only coupling is to Shader
+	*/
+	std::array<vk::DescriptorSetLayoutBinding, 1> setLayoutBindings;
+	setLayoutBindings[0].binding = 0;		// location within a set
+	setLayoutBindings[0].descriptorType = vk::DescriptorType::eUniformBuffer;		
+	setLayoutBindings[0].descriptorCount = 1;	// can be an array, but we have one UBO now :)
+	setLayoutBindings[0].stageFlags = vk::ShaderStageFlagBits::eVertex;
+	setLayoutBindings[0].pImmutableSamplers = {};		// no immutable samplers (what are those?)
+
+	vk::DescriptorSetLayoutCreateInfo layoutCI({}, setLayoutBindings);
+
+	m_descriptorSetLayout =	m_gfxCon.getDevice().createDescriptorSetLayoutUnique(layoutCI);
+
+}
+
+void QuadApp::createDescriptorPool()
+{
+	// Not coupled to anything
+
+	std::array<vk::DescriptorPoolSize, 1> descriptorPoolSizes;
+
+	// Mirror the Set Layout Binding
+	descriptorPoolSizes[0].type = vk::DescriptorType::eUniformBuffer;
+	descriptorPoolSizes[0].descriptorCount = 2;		// Allow two Uniform Buffer handles
+
+	vk::DescriptorPoolCreateInfo poolCI({}, 
+		2,										// max sets, just set a value, this means we have room to allocate 10 DescriptorSet with the specified DescriptorPoolSize content in each set
+		descriptorPoolSizes
+	);
+	
+	m_descriptorPool = m_gfxCon.getDevice().createDescriptorPoolUnique(poolCI);
+
+}
+
+void QuadApp::allocateDescriptorSets()
+{
+	// Coupling is the Set Layout and Pool
+
+	vk::DescriptorSetAllocateInfo allocInfo(m_descriptorPool.get(), m_descriptorSetLayout.get());
+	
+	for (int i = 0; i < GraphicsContext::s_maxFramesInFlight; ++i)
+	{
+		m_descriptorSets.push_back(m_gfxCon.getDevice().allocateDescriptorSets(allocInfo)[0]);
+
+		// We have a set, and now we need to point it to the UBOs
+
+		vk::DescriptorBufferInfo binfo(m_ubos[i].resource, 0, sizeof(UBO));
+		vk::WriteDescriptorSet setWrite(m_descriptorSets[i], 0 /* we will write to binding 0 in this Set */, 0, vk::DescriptorType::eUniformBuffer, {}, binfo);
+
+		m_gfxCon.getDevice().updateDescriptorSets(setWrite, {});
+	}
+
+}
+	
+	
 
 }

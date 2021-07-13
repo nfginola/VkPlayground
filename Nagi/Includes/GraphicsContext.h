@@ -21,6 +21,7 @@ struct FrameResource
 	vk::CommandBuffer* gfxCmdBuffer;
 	uint32_t imageIdx;
 	PerFrameSyncResource* sync;
+	uint32_t frameIdx;
 };
 
 
@@ -49,7 +50,7 @@ public:
 	void endFrame();
 
 	// Return device for now (until we can find better abstraction)
-	vk::Device getDevice() const;
+	const vk::Device& getDevice() const;
 
 	VmaAllocator getResourceAllocator() const;
 
@@ -63,8 +64,8 @@ public:
 	const vk::ImageView& getDepthView() const;
 	vk::Format getDepthFormat() const;
 
-private:
 	static constexpr uint32_t s_maxFramesInFlight = 2;
+private:
 
 	// Arguments for these functions are verbose on purpose (instead of using member variables inside)
 	// It is to make the dependency clear (e.g what does a swapchain need?)

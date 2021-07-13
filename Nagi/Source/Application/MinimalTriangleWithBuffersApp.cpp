@@ -42,8 +42,9 @@ MinimalTriangleWithBuffersApp::MinimalTriangleWithBuffersApp(Window& window, Gra
 			cmd->bindVertexBuffers(0, vbs, offsets);
 
 			cmd->bindIndexBuffer(m_ib.resource, 0, vk::IndexType::eUint32);
-
-			cmd->draw(3, 1, 0, 0);
+			
+			//cmd->draw(3, 1, 0, 0);
+			cmd->drawIndexed(3, 1, 0, 0, 0);
 			cmd->endRenderPass();
 
 			cmd->end();
@@ -130,60 +131,24 @@ void MinimalTriangleWithBuffersApp::createRenderPass()
 	);
 
 	// Reference to the attachment descriptions
-	vk::AttachmentReference colorRef(0, vk::ImageLayout::eAttachmentOptimalKHR);				// 2nd arg -> layout to use during in subpass using this ref
+	vk::AttachmentReference colorRef(0, vk::ImageLayout::eAttachmentOptimalKHR);			
 	vk::AttachmentReference depthRef(1, vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
 	vk::SubpassDescription subpassDesc({}, vk::PipelineBindPoint::eGraphics, {}, colorRef, {}, &depthRef);
 
-	//// Image layout is not transitiooning at the right time.. we have no color output stage anywhere here!
-	//vk::SubpassDependency extInDep(
-	//	VK_SUBPASS_EXTERNAL,
-	//	0,
-	//	// wait for prev until depth testing of prev frame finished (write on srcStages) before starting depth test on this frame 
-	//	vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests,
-	//	vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests,
-	//	vk::AccessFlagBits::eDepthStencilAttachmentWrite,	// why only write? (stated on sync examples Khronos Group)
-	//	vk::AccessFlagBits::eDepthStencilAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentRead
-	//);
-
-	//// Not caring about depth (To try out the validation layer)
-	//vk::SubpassDependency extInDep(
-	//	VK_SUBPASS_EXTERNAL,
-	//	0,
-	//	vk::PipelineStageFlagBits::eColorAttachmentOutput,		
-	//	vk::PipelineStageFlagBits::eColorAttachmentOutput,									
-	//	{},		
-	//	vk::AccessFlagBits::eColorAttachmentWrite
-	//);
-
-	// Corrected (sync validation WAW hazard)
 	vk::SubpassDependency extInDep(
 		VK_SUBPASS_EXTERNAL,
 		0,
-		// We have early AND late because the accessFlags only applies to explicitly specified stages (the mem access flags does NOT apply to the implicit stages that come with exec dep)
-		vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests |	// wait for prev frame depth testing (happens in early and late frag test)
-		vk::PipelineStageFlagBits::eColorAttachmentOutput,													// form exec dep chain with present sem
+		vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests |	
+		vk::PipelineStageFlagBits::eColorAttachmentOutput,													
 
-		vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests |	// halt this frames depth testing before the prev is done
-		vk::PipelineStageFlagBits::eColorAttachmentOutput,													// form exec dep chain with present sem (note that we have mem dep for this (dst stage) on access mask!)
+		vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests |
+		vk::PipelineStageFlagBits::eColorAttachmentOutput,												
 
-		{},	// Waiting on semaphore guarantees memory dependency already! No need to supply mem access to wait for in src stages (Once colorAttachmentOutput stage is opened up, all memory writes are visible
-		// https://vulkan.lunarg.com/doc/view/1.2.141.2/linux/chunked_spec/chap6.html (6.4.2)
-
-		vk::AccessFlagBits::eDepthStencilAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentRead | // assign mem dep on the depth resource for which to halt
-		vk::AccessFlagBits::eColorAttachmentWrite							// ensure that the layout transition happens after color output is unblocked but before color output writing through mem dep!
+		{},	
+		vk::AccessFlagBits::eDepthStencilAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentRead | 
+		vk::AccessFlagBits::eColorAttachmentWrite						
 	);
-	/*
-		We can look at the WSI + External subpass sync with Pipeline Barriers instead:
-
-		Barrier1 ( srcStage="semSignal",	dstStage=ColorOutput, srcAccessMask=ALL,	dstAccessMask=ALL						  )		--> Semaphore (full memory barrier)
-		Barrier2 ( srcStage=ColorOutput,	dstStage=ColorOutput, srcAccessMask=0,		dstAccessMask=depthReadWrite | colorWrite )		--> Subpass dependency
-
-		Subpass dependency is placed there with Barrier1 dst intersecting Barrier2 src to create an execution depedency chain.
-		This in turns guarantees that the image layout transition implicitly done through the subpass dependency is done AFTER the swapchain image is acquired but before it used (e.g written to).
-
-		Depth stages with read/write is added to also sync the depth image usage (fix depth WAW hazard)
-	*/
 
 	// Using implicit external subpass
 
