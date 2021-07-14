@@ -154,7 +154,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.2.176.1\Include;$(ProjectDir)libs\glm-master;$(ProjectDir)libs\stb-master;$(ProjectDir)libs\tinyobjloader-master;$(ProjectDir)libs\glfw-3.3.4.bin.WIN64\include;$(ProjectDir)libs\VulkanMemoryAllocator-master\include;$(ProjectDir)inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.2.182.0\Include;$(ProjectDir)Dependencies\glm-master;$(ProjectDir)Dependencies\stb-master;$(ProjectDir)Dependencies\tinyobjloader-master;$(ProjectDir)Dependencies\glfw-3.3.4.bin.WIN64\include;$(ProjectDir)Dependencies\VulkanMemoryAllocator-master\include;$(ProjectDir)Includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -163,7 +163,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\VulkanSDK\1.2.176.1\Lib;$(ProjectDir)libs\glfw-3.3.4.bin.WIN64\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\VulkanSDK\1.2.182.0\Lib;$(ProjectDir)Dependencies\glfw-3.3.4.bin.WIN64\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

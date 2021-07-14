@@ -360,7 +360,8 @@ void GraphicsContext::createVulkanMemoryAllocator(const vk::Instance& instance, 
 	allocatorInfo.device = logicalDevice;
 	allocatorInfo.instance = instance;
 	
-	assert(vmaCreateAllocator(&allocatorInfo, &m_allocator) == VK_SUCCESS);
+	if (vmaCreateAllocator(&allocatorInfo, &m_allocator) != VK_SUCCESS)
+		throw std::runtime_error("VMA couldnt be created!");
 }
 
 void GraphicsContext::getPhysicalDevice(const vk::Instance& instance) 

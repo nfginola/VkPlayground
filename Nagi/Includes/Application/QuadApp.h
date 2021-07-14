@@ -157,6 +157,8 @@ private:
 	vk::Extent2D m_scExtent;
 
 	Texture m_image;
+	vk::UniqueSampler m_sampler;
+	vk::DescriptorSet m_materialDescSet;
 
 	Buffer m_vb;
 	Buffer m_ib;
@@ -167,9 +169,10 @@ private:
 
 	std::vector<FrameData> m_frameData;
 
-	vk::UniquePipelineLayout m_pipelineLayout;		// Needed for Push Constant
+	vk::UniquePipelineLayout m_pipelineLayout;
 
 	vk::UniqueDescriptorSetLayout m_descriptorSetLayout;	// Needed for UBO thing
+	vk::UniqueDescriptorSetLayout m_materialSetLayout;
 	vk::UniqueDescriptorPool m_descriptorPool;
 };
 

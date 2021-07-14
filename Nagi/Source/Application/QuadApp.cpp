@@ -87,6 +87,7 @@ QuadApp::QuadApp(Window& window, GraphicsContext& gfxCon) :
 			frameConstants.rand = glm::vec4(0.f, 1.f, 0.f, 1.f);
 			auto matView = glm::lookAtRH(pos, glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
 			auto matProj = glm::perspectiveRH(glm::radians(70.f), (float)m_scExtent.width / m_scExtent.height, 0.01f, 50.f);
+			matProj[1][1] *= -1;
 			//auto rot = glm::rotate(glm::mat4(1.f), glm::radians(45.f), glm::vec3(0.f, 1.f, 0.f));
 			auto matModel = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, 0.f));
 			frameConstants.mat = matProj * matView * matModel;
@@ -128,6 +129,8 @@ QuadApp::QuadApp(Window& window, GraphicsContext& gfxCon) :
 			//vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, object.material->pipelineLayout, 0, 1, &get_current_frame().globalDescriptor, 0, nullptr);
 			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelineLayout.get(), 0, m_frameData[frameRes.frameIdx].descriptorSet, {});
 
+			// Bind texture
+			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelineLayout.get(), 1, m_materialDescSet, {});
 
 			// Flip viewport height https://www.saschawillems.de/blog/2019/03/29/flipping-the-vulkan-viewport/
 			// We set this on Graphics Pipeline instead of changing it dynamically
@@ -291,9 +294,10 @@ void QuadApp::createGraphicsPipeline(vk::RenderPass& compatibleRendPass)
 	// viewports origin is at top left (0, 0)
 	// https://www.saschawillems.de/blog/2019/03/29/flipping-the-vulkan-viewport/
 	// Flip viewport height https://www.saschawillems.de/blog/2019/03/29/flipping-the-vulkan-viewport/
-	vk::Viewport vp = vk::Viewport(0.f, static_cast<float>(m_scExtent.height), static_cast<float>(m_scExtent.width), -static_cast<float>(m_scExtent.height), 0.0, 1.0);
-
-	//vk::Viewport vp = vk::Viewport(0.f, 0.f, static_cast<float>(m_scExtent.width), static_cast<float>(m_scExtent.height), 0.0, 1.0);
+	//vk::Viewport vp = vk::Viewport(0.f, static_cast<float>(m_scExtent.height), static_cast<float>(m_scExtent.width), -static_cast<float>(m_scExtent.height), 0.0, 1.0);
+	
+	// We just decide to flip the projection Y to fix this instead of having to fix the viewport (which may affect renderpass etc.)
+	vk::Viewport vp = vk::Viewport(0.f, 0.f, static_cast<float>(m_scExtent.width), static_cast<float>(m_scExtent.height), 0.0, 1.0);
 
 	vk::Rect2D scissor = vk::Rect2D({ 0, 0 }, m_scExtent);
 	vk::PipelineViewportStateCreateInfo vpC({}, 1, &vp, 1, &scissor);	// no stencil
@@ -352,7 +356,9 @@ void QuadApp::createGraphicsPipeline(vk::RenderPass& compatibleRendPass)
 	// watch out so you dont accidentally use the other constructor which takes in size! :)
 
 	// Now added descriptor set layout 
-	m_pipelineLayout = dev.createPipelineLayoutUnique(vk::PipelineLayoutCreateInfo({}, m_descriptorSetLayout.get(), pushRange));
+	std::vector<vk::DescriptorSetLayout> compatibleLayouts{ m_descriptorSetLayout.get(), m_materialSetLayout.get() };			// Order in this array defines set numbers!! set 0, 1, 2, 3.. etc.
+	//std::vector<vk::DescriptorSetLayout> compatibleLayouts{ m_materialSetLayout.get(), m_descriptorSetLayout.get() };
+	m_pipelineLayout = dev.createPipelineLayoutUnique(vk::PipelineLayoutCreateInfo({}, compatibleLayouts, pushRange));
 
 	m_gfxPipeline = dev.createGraphicsPipelineUnique({},
 		vk::GraphicsPipelineCreateInfo({},
@@ -489,6 +495,8 @@ void QuadApp::setupDescriptorSetLayout()
 		
 		Only coupling is to Shader
 	*/
+
+	// Per scene set (camera)
 	std::array<vk::DescriptorSetLayoutBinding, 1> setLayoutBindings;
 	setLayoutBindings[0].binding = 0;		// location within a set
 	setLayoutBindings[0].descriptorType = vk::DescriptorType::eUniformBuffer;		
@@ -500,20 +508,42 @@ void QuadApp::setupDescriptorSetLayout()
 
 	m_descriptorSetLayout =	m_gfxCon.getDevice().createDescriptorSetLayoutUnique(layoutCI);
 
+
+
+
+	// Material set
+	std::array<vk::DescriptorSetLayoutBinding, 1> texLayBinding;
+	texLayBinding[0].binding = 0;
+	texLayBinding[0].descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	texLayBinding[0].descriptorCount = 1;
+	texLayBinding[0].stageFlags = vk::ShaderStageFlagBits::eFragment;
+	texLayBinding[0].pImmutableSamplers = {};
+
+	vk::DescriptorSetLayoutCreateInfo matLayoutCI({}, texLayBinding);
+
+	m_materialSetLayout = m_gfxCon.getDevice().createDescriptorSetLayoutUnique(matLayoutCI);
+
+
+
+	
+
+
+
+
 }
 
 void QuadApp::createDescriptorPool()
 {
 	// Kinda coupled to Set Layout Binding (we have to make sure that we create a pool big enough to accomodate our needs)
 
-	std::array<vk::DescriptorPoolSize, 1> descriptorPoolSizes;
+	std::vector<vk::DescriptorPoolSize> descriptorPoolSizes{
+		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 2),
+		vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 1)		// for texture
+	};
 
-	// Mirror the Set Layout Binding
-	descriptorPoolSizes[0].type = vk::DescriptorType::eUniformBuffer;
-	descriptorPoolSizes[0].descriptorCount = 2;		// Allow two Uniform Buffer handles
 
 	vk::DescriptorPoolCreateInfo poolCI({}, 
-		2,										// max sets, just set a value, this means we have room to allocate 10 DescriptorSet with the specified DescriptorPoolSize content in each set
+		10,										// max sets, just set a value, this means we have room to allocate 10 DescriptorSet with the specified DescriptorPoolSize content in each set
 		descriptorPoolSizes
 	);
 	
@@ -530,7 +560,7 @@ void QuadApp::allocateDescriptorSets()
 	for (int i = 0; i < GraphicsContext::s_maxFramesInFlight; ++i)
 	{
 		//m_descriptorSets.push_back(m_gfxCon.getDevice().allocateDescriptorSets(allocInfo)[0]);
-		m_frameData[i].descriptorSet = m_gfxCon.getDevice().allocateDescriptorSets(allocInfo)[0];
+		m_frameData[i].descriptorSet = m_gfxCon.getDevice().allocateDescriptorSets(allocInfo).front();
 
 		// We have a set, and now we need to point it to the UBOs
 
@@ -539,6 +569,15 @@ void QuadApp::allocateDescriptorSets()
 
 		m_gfxCon.getDevice().updateDescriptorSets(setWrite, {});
 	}
+
+	// Material set
+	vk::DescriptorSetAllocateInfo texAllocInfo(m_descriptorPool.get(), m_materialSetLayout.get());
+	m_materialDescSet = m_gfxCon.getDevice().allocateDescriptorSets(texAllocInfo).front();
+
+	// Write to it (bind image and sampler)
+	vk::DescriptorImageInfo imageInfo(m_sampler.get(), m_image.view.get(), vk::ImageLayout::eShaderReadOnlyOptimal);
+	vk::WriteDescriptorSet imageSetWrite(m_materialDescSet, 0, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo, {}, {});
+	m_gfxCon.getDevice().updateDescriptorSets(imageSetWrite, {});
 
 }
 
@@ -550,7 +589,7 @@ void QuadApp::loadImage()
 	stbi_uc* pixels = stbi_load("Resources/Textures/images.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
 	if (!pixels)
-		assert(false);
+		throw std::runtime_error("Can't find the image resource!");
 
 	size_t imageSize = texWidth * texHeight * sizeof(uint32_t);
 
@@ -589,7 +628,8 @@ void QuadApp::loadImage()
 	VmaAllocationCreateInfo texAlloc{};
 	texAlloc.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-	assert(vmaCreateImage(allocator, (VkImageCreateInfo*)&imCI, &texAlloc, (VkImage*)&m_image.resource, &m_image.alloc, nullptr) == VK_SUCCESS);
+	if (vmaCreateImage(allocator, (VkImageCreateInfo*)&imCI, &texAlloc, (VkImage*)&m_image.resource, &m_image.alloc, nullptr) != VK_SUCCESS)
+		throw std::runtime_error("Could not create image");
 
 	// Initial Layout of image is Undefined, we need to transition its layout!
 	auto& uploadContext = m_gfxCon.getUploadContext();
@@ -669,6 +709,9 @@ void QuadApp::loadImage()
 
 	m_image.view = m_gfxCon.getDevice().createImageViewUnique(viewCreateInfo);
 
+	// Create sampler, allocate material set and bind combined image sampler 
+	vk::SamplerCreateInfo sCI({});	// nearest and repeat
+	m_sampler = m_gfxCon.getDevice().createSamplerUnique(sCI);
 
 	// No need for staging buffer anymore
 	vmaDestroyBuffer(allocator, stagingBuffer.resource, stagingBuffer.alloc);
