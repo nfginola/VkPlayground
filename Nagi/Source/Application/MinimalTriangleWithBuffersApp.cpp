@@ -31,33 +31,33 @@ MinimalTriangleWithBuffersApp::MinimalTriangleWithBuffersApp(Window& window, Gra
 			vk::RenderPassBeginInfo rpInfo(m_rendPass.get(), m_framebuffers[frameRes.imageIdx].get(), vk::Rect2D({ 0, 0 }, m_scExtent), clearValues);
 
 			// Record command buffer
-			cmd->begin(vk::CommandBufferBeginInfo());		// implicitly calls resetCommandBuffer
+			cmd.begin(vk::CommandBufferBeginInfo());		// implicitly calls resetCommandBuffer
 
-			cmd->beginRenderPass(rpInfo, {});
-			cmd->bindPipeline(vk::PipelineBindPoint::eGraphics, m_gfxPipeline.get());
+			cmd.beginRenderPass(rpInfo, {});
+			cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_gfxPipeline.get());
 
 			// Bind vertex buffer
 			std::array<vk::Buffer, 1> vbs{ m_vb.resource };
 			std::array<vk::DeviceSize, 1> offsets{ 0 };
-			cmd->bindVertexBuffers(0, vbs, offsets);
+			cmd.bindVertexBuffers(0, vbs, offsets);
 
-			cmd->bindIndexBuffer(m_ib.resource, 0, vk::IndexType::eUint32);
+			cmd.bindIndexBuffer(m_ib.resource, 0, vk::IndexType::eUint32);
 			
-			//cmd->draw(3, 1, 0, 0);
-			cmd->drawIndexed(3, 1, 0, 0, 0);
-			cmd->endRenderPass();
+			//cmd.draw(3, 1, 0, 0);
+			cmd.drawIndexed(3, 1, 0, 0, 0);
+			cmd.endRenderPass();
 
-			cmd->end();
+			cmd.end();
 
 			// Setup submit info
 			std::array<vk::PipelineStageFlags, 1> waitStages{ vk::PipelineStageFlagBits::eColorAttachmentOutput };
 			// Queue waits at just before this stage executes for the sem signal with a full mem barrier
 
 			vk::SubmitInfo submitInfo(
-				frameRes.sync->imageAvailableSemaphore,
+				frameRes.sync.imageAvailableSemaphore,
 				waitStages,
-				*cmd,
-				frameRes.sync->renderFinishedSemaphore
+				cmd,
+				frameRes.sync.renderFinishedSemaphore
 			);
 
 			gfxCon.submitQueue(submitInfo);

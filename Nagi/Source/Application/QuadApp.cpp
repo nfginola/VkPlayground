@@ -1,6 +1,9 @@
 #include "pch.h"
 #include "Application/QuadApp.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 
 
 namespace Nagi
@@ -45,7 +48,12 @@ QuadApp::QuadApp(Window& window, GraphicsContext& gfxCon) :
 
 	try
 	{
+		// Set up UBO
 		createUBO();
+
+		// Set up Texture
+		loadImage();
+
 		setupDescriptorSetLayout();
 		createDescriptorPool();
 		allocateDescriptorSets();
@@ -55,7 +63,7 @@ QuadApp::QuadApp(Window& window, GraphicsContext& gfxCon) :
 		createFramebuffers();
 
 		createVertexIndexBuffer(gfxCon.getResourceAllocator());
-
+		
 
 		while (m_window.isRunning())
 		{
@@ -92,9 +100,9 @@ QuadApp::QuadApp(Window& window, GraphicsContext& gfxCon) :
 
 			// ================================================ Update UBO
 			void* data;
-			vmaMapMemory(m_gfxCon.getResourceAllocator(), m_ubos[frameRes.imageIdx].alloc, &data);
+			vmaMapMemory(m_gfxCon.getResourceAllocator(), m_frameData[frameRes.imageIdx].ubo.alloc, &data);
 			memcpy(data, &frameConstants, sizeof(UBO));
-			vmaUnmapMemory(m_gfxCon.getResourceAllocator(), m_ubos[frameRes.imageIdx].alloc);
+			vmaUnmapMemory(m_gfxCon.getResourceAllocator(), m_frameData[frameRes.imageIdx].ubo.alloc);
 			
 			// reset push constant (to verify that we are using the UBO!)
 			memset(&frameConstants, 0, sizeof(PushConstant));
@@ -109,46 +117,47 @@ QuadApp::QuadApp(Window& window, GraphicsContext& gfxCon) :
 
 			vk::RenderPassBeginInfo rpInfo(m_rendPass.get(), m_framebuffers[frameRes.imageIdx].get(), vk::Rect2D({ 0, 0 }, m_scExtent), clearValues);
 
+	
 			// Record command buffer
-			cmd->begin(vk::CommandBufferBeginInfo());		// implicitly calls resetCommandBuffer
+			cmd.begin(vk::CommandBufferBeginInfo());		// implicitly calls resetCommandBuffer
 
-			cmd->beginRenderPass(rpInfo, {});
-			cmd->bindPipeline(vk::PipelineBindPoint::eGraphics, m_gfxPipeline.get());
+			cmd.beginRenderPass(rpInfo, {});
+			cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_gfxPipeline.get());
 
 			// Bind UBO after Pipeline
 			//vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, object.material->pipelineLayout, 0, 1, &get_current_frame().globalDescriptor, 0, nullptr);
-			cmd->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelineLayout.get(), 0, m_descriptorSets[frameRes.frameIdx], {});
+			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelineLayout.get(), 0, m_frameData[frameRes.frameIdx].descriptorSet, {});
 
 
 			// Flip viewport height https://www.saschawillems.de/blog/2019/03/29/flipping-the-vulkan-viewport/
 			// We set this on Graphics Pipeline instead of changing it dynamically
-			//cmd->setViewport(0, vk::Viewport(0.f, (float)m_scExtent.height, m_scExtent.width, -(float)m_scExtent.height, 0.0, 1.0));
+			//cmd.setViewport(0, vk::Viewport(0.f, (float)m_scExtent.height, m_scExtent.width, -(float)m_scExtent.height, 0.0, 1.0));
 
 			// Bind vertex buffer
 			std::array<vk::Buffer, 1> vbs{ m_vb.resource };
 			std::array<vk::DeviceSize, 1> offsets{ 0 };
-			cmd->bindVertexBuffers(0, vbs, offsets);
+			cmd.bindVertexBuffers(0, vbs, offsets);
 
-			cmd->bindIndexBuffer(m_ib.resource, 0, vk::IndexType::eUint32);
+			cmd.bindIndexBuffer(m_ib.resource, 0, vk::IndexType::eUint32);
 
 			// ===================================================== Push constants (command constants)
-			cmd->pushConstants<PushConstant>(m_pipelineLayout.get(), vk::ShaderStageFlagBits::eVertex, 0, { frameConstants });
+			cmd.pushConstants<PushConstant>(m_pipelineLayout.get(), vk::ShaderStageFlagBits::eVertex, 0, { frameConstants });
 			
-			cmd->drawIndexed(6, 1, 0, 0, 0);
-			//cmd->draw(6, 1, 0, 0);
-			cmd->endRenderPass();
+			cmd.drawIndexed(6, 1, 0, 0, 0);
+			//cmd.draw(6, 1, 0, 0);
+			cmd.endRenderPass();
 
-			cmd->end();
+			cmd.end();
 
 			// Setup submit info
 			std::array<vk::PipelineStageFlags, 1> waitStages{ vk::PipelineStageFlagBits::eColorAttachmentOutput };
 			// Queue waits at just before this stage executes for the sem signal with a full mem barrier
 
 			vk::SubmitInfo submitInfo(
-				frameRes.sync->imageAvailableSemaphore,
+				frameRes.sync.imageAvailableSemaphore,
 				waitStages,
-				*cmd,
-				frameRes.sync->renderFinishedSemaphore
+				cmd,
+				frameRes.sync.renderFinishedSemaphore
 			);
 
 			gfxCon.submitQueue(submitInfo);
@@ -180,14 +189,18 @@ QuadApp::QuadApp(Window& window, GraphicsContext& gfxCon) :
 
 QuadApp::~QuadApp()
 {
-	vmaDestroyBuffer(m_gfxCon.getResourceAllocator(), m_vb.resource, m_vb.alloc);
-	vmaDestroyBuffer(m_gfxCon.getResourceAllocator(), m_ib.resource, m_ib.alloc);
+	auto allocator = m_gfxCon.getResourceAllocator();
+
+	vmaDestroyBuffer(allocator, m_vb.resource, m_vb.alloc);
+	vmaDestroyBuffer(allocator, m_ib.resource, m_ib.alloc);
 
 	for (int i = 0; i < GraphicsContext::s_maxFramesInFlight; ++i)
-		vmaDestroyBuffer(m_gfxCon.getResourceAllocator(), m_ubos[i].resource, m_ubos[i].alloc);
+		vmaDestroyBuffer(allocator, m_frameData[i].ubo.resource, m_frameData[i].ubo.alloc);
 
+	vmaDestroyImage(allocator, m_image.resource, m_image.alloc);
 
 }
+
 
 void QuadApp::createRenderPass()
 {
@@ -278,7 +291,7 @@ void QuadApp::createGraphicsPipeline(vk::RenderPass& compatibleRendPass)
 	// viewports origin is at top left (0, 0)
 	// https://www.saschawillems.de/blog/2019/03/29/flipping-the-vulkan-viewport/
 	// Flip viewport height https://www.saschawillems.de/blog/2019/03/29/flipping-the-vulkan-viewport/
-	vk::Viewport vp = vk::Viewport(0.f, static_cast<float>(m_scExtent.height), m_scExtent.width, -static_cast<float>(m_scExtent.height), 0.0, 1.0);
+	vk::Viewport vp = vk::Viewport(0.f, static_cast<float>(m_scExtent.height), static_cast<float>(m_scExtent.width), -static_cast<float>(m_scExtent.height), 0.0, 1.0);
 
 	//vk::Viewport vp = vk::Viewport(0.f, 0.f, static_cast<float>(m_scExtent.width), static_cast<float>(m_scExtent.height), 0.0, 1.0);
 
@@ -431,16 +444,31 @@ void QuadApp::createUBO()
 	VmaAllocationCreateInfo uboAllocCI{};
 	uboAllocCI.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;		// We have to map and unmap to fill the data
 
-	m_ubos.reserve(GraphicsContext::s_maxFramesInFlight);
+	m_frameData.reserve(GraphicsContext::s_maxFramesInFlight);
+
+
 	for (int i = 0; i < GraphicsContext::s_maxFramesInFlight; ++i)
 	{
+		m_frameData.push_back(FrameData{});
 		Buffer buf;
 
 		auto res = vmaCreateBuffer(m_gfxCon.getResourceAllocator(), (VkBufferCreateInfo*)&uboCI, &uboAllocCI, (VkBuffer*)&buf.resource, &buf.alloc, nullptr);
 		if (res != VK_SUCCESS) throw std::runtime_error("Couldnt create vertex buffer");
 
-		m_ubos.push_back(buf);
+		m_frameData[i].ubo = buf;;
 	}
+
+
+	//m_ubos.reserve(GraphicsContext::s_maxFramesInFlight);
+	//for (int i = 0; i < GraphicsContext::s_maxFramesInFlight; ++i)
+	//{
+	//	Buffer buf;
+
+	//	auto res = vmaCreateBuffer(m_gfxCon.getResourceAllocator(), (VkBufferCreateInfo*)&uboCI, &uboAllocCI, (VkBuffer*)&buf.resource, &buf.alloc, nullptr);
+	//	if (res != VK_SUCCESS) throw std::runtime_error("Couldnt create vertex buffer");
+
+	//	m_ubos.push_back(buf);
+	//}
 
 
 }
@@ -464,7 +492,7 @@ void QuadApp::setupDescriptorSetLayout()
 	std::array<vk::DescriptorSetLayoutBinding, 1> setLayoutBindings;
 	setLayoutBindings[0].binding = 0;		// location within a set
 	setLayoutBindings[0].descriptorType = vk::DescriptorType::eUniformBuffer;		
-	setLayoutBindings[0].descriptorCount = 1;	// can be an array, but we have one UBO now :)
+	setLayoutBindings[0].descriptorCount = 1;	// can be an array, but we have single UBO here :)
 	setLayoutBindings[0].stageFlags = vk::ShaderStageFlagBits::eVertex;
 	setLayoutBindings[0].pImmutableSamplers = {};		// no immutable samplers (what are those?)
 
@@ -476,7 +504,7 @@ void QuadApp::setupDescriptorSetLayout()
 
 void QuadApp::createDescriptorPool()
 {
-	// Not coupled to anything
+	// Kinda coupled to Set Layout Binding (we have to make sure that we create a pool big enough to accomodate our needs)
 
 	std::array<vk::DescriptorPoolSize, 1> descriptorPoolSizes;
 
@@ -501,16 +529,149 @@ void QuadApp::allocateDescriptorSets()
 	
 	for (int i = 0; i < GraphicsContext::s_maxFramesInFlight; ++i)
 	{
-		m_descriptorSets.push_back(m_gfxCon.getDevice().allocateDescriptorSets(allocInfo)[0]);
+		//m_descriptorSets.push_back(m_gfxCon.getDevice().allocateDescriptorSets(allocInfo)[0]);
+		m_frameData[i].descriptorSet = m_gfxCon.getDevice().allocateDescriptorSets(allocInfo)[0];
 
 		// We have a set, and now we need to point it to the UBOs
 
-		vk::DescriptorBufferInfo binfo(m_ubos[i].resource, 0, sizeof(UBO));
-		vk::WriteDescriptorSet setWrite(m_descriptorSets[i], 0 /* we will write to binding 0 in this Set */, 0, vk::DescriptorType::eUniformBuffer, {}, binfo);
+		vk::DescriptorBufferInfo binfo(m_frameData[i].ubo.resource, 0, sizeof(UBO));
+		vk::WriteDescriptorSet setWrite(m_frameData[i].descriptorSet, 0 /* we will write to binding 0 in this Set */, 0, vk::DescriptorType::eUniformBuffer, {}, binfo);
 
 		m_gfxCon.getDevice().updateDescriptorSets(setWrite, {});
 	}
 
+}
+
+void QuadApp::loadImage()
+{
+	// Load image data
+	int texWidth, texHeight, texChannels;
+
+	stbi_uc* pixels = stbi_load("Resources/Textures/images.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+
+	if (!pixels)
+		assert(false);
+
+	size_t imageSize = texWidth * texHeight * sizeof(uint32_t);
+
+	auto allocator = m_gfxCon.getResourceAllocator();
+
+
+	// Create staging buffer 
+	vk::BufferCreateInfo stagingCI({}, imageSize, vk::BufferUsageFlagBits::eTransferSrc);
+	VmaAllocationCreateInfo stagingBufAlloc{};
+	stagingBufAlloc.usage = VMA_MEMORY_USAGE_CPU_ONLY;
+
+	Buffer stagingBuffer;
+	auto res = vmaCreateBuffer(allocator, (VkBufferCreateInfo*)&stagingCI, &stagingBufAlloc, (VkBuffer*)&stagingBuffer.resource, &stagingBuffer.alloc, nullptr);
+	if (res != VK_SUCCESS) throw std::runtime_error("Couldnt create vertex buffer");
+
+	// Copy CPU data to staging buffer
+	void* data = nullptr;
+	vmaMapMemory(allocator, stagingBuffer.alloc, &data);
+	memcpy(data, pixels, imageSize);
+	vmaUnmapMemory(allocator, stagingBuffer.alloc);
+
+
+	// Create texture
+	auto texExtent = vk::Extent3D(texWidth, texHeight, 1);
+	vk::Format imageFormat = vk::Format::eR8G8B8A8Srgb;
+
+	vk::ImageCreateInfo imCI({},
+		vk::ImageType::e2D, imageFormat,
+		texExtent,
+		1, 1,
+		vk::SampleCountFlagBits::e1,
+		vk::ImageTiling::eOptimal,
+		vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled
+	);
+
+	VmaAllocationCreateInfo texAlloc{};
+	texAlloc.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+	assert(vmaCreateImage(allocator, (VkImageCreateInfo*)&imCI, &texAlloc, (VkImage*)&m_image.resource, &m_image.alloc, nullptr) == VK_SUCCESS);
+
+	// Initial Layout of image is Undefined, we need to transition its layout!
+	auto& uploadContext = m_gfxCon.getUploadContext();
+
+	uploadContext.submitWork(
+		[&](const vk::CommandBuffer& cmd)
+		{
+			vk::ImageSubresourceRange range(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+
+			vk::ImageMemoryBarrier barrierForTransfer(
+				{},
+				vk::AccessFlagBits::eTransferWrite,		// any transfer ops should wait until the image layout transition has occurred!
+				vk::ImageLayout::eUndefined,
+				vk::ImageLayout::eTransferDstOptimal,	// -> puts into linear layout, best for copying data from buffer to texture
+				{},
+				{},
+				m_image.resource,
+				range
+			);
+			
+			// Transition layout through barrier (after availability ops and before visibility ops)
+			cmd.pipelineBarrier(
+				vk::PipelineStageFlagBits::eTopOfPipe,
+				vk::PipelineStageFlagBits::eTransfer,
+				{},
+				{},
+				{},
+				barrierForTransfer
+			);
+
+			// Now we can do our transfer cmd
+			vk::BufferImageCopy copyRegion({}, {}, {},
+				vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1),
+				{},
+				texExtent
+			);
+
+			cmd.copyBufferToImage(stagingBuffer.resource, m_image.resource, vk::ImageLayout::eTransferDstOptimal, copyRegion);
+
+				
+			// Now we can transfer the image layout to optimal for shader usage
+			vk::ImageMemoryBarrier barrierForReading(
+				vk::AccessFlagBits::eTransferWrite,
+				vk::AccessFlagBits::eShaderRead,
+				vk::ImageLayout::eTransferDstOptimal,
+				vk::ImageLayout::eShaderReadOnlyOptimal,
+				{},
+				{},
+				m_image.resource,
+				range
+			);
+
+			// Transition layout through barrier (after availability ops and before visibility ops)
+			cmd.pipelineBarrier(
+				vk::PipelineStageFlagBits::eTransfer,
+				vk::PipelineStageFlagBits::eFragmentShader,		// guarantee for any future commands that happens after this
+				{},
+				{},
+				{},
+				barrierForReading
+			);
+
+		});
+
+
+	// Create image view
+	vk::ComponentMapping componentMapping(vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG, vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA);
+	vk::ImageSubresourceRange subresRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+
+	vk::ImageViewCreateInfo viewCreateInfo({},
+		m_image.resource,
+		vk::ImageViewType::e2D,
+		imageFormat,
+		componentMapping,
+		subresRange
+	);
+
+	m_image.view = m_gfxCon.getDevice().createImageViewUnique(viewCreateInfo);
+
+
+	// No need for staging buffer anymore
+	vmaDestroyBuffer(allocator, stagingBuffer.resource, stagingBuffer.alloc);
 }
 	
 	

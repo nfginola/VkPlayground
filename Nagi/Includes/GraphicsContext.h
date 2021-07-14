@@ -18,10 +18,35 @@ struct PerFrameSyncResource
 
 struct FrameResource
 {
-	vk::CommandBuffer* gfxCmdBuffer;
+	vk::CommandPool& cmdPool;
+	vk::CommandBuffer& gfxCmdBuffer;
+
 	uint32_t imageIdx;
-	PerFrameSyncResource* sync;
+	PerFrameSyncResource& sync;
 	uint32_t frameIdx;
+};
+
+class UploadContext : Utils::SingleInstance<UploadContext>
+{
+public:
+	UploadContext() = delete;
+	UploadContext(vk::Device& dev, vk::Queue& queue, uint32_t queueFamily);
+	~UploadContext() = default;
+
+	UploadContext(const UploadContext&) = delete;
+	UploadContext& operator=(const UploadContext&) = delete;
+	UploadContext(UploadContext&&) = delete;
+	UploadContext operator=(UploadContext&&) = delete;
+
+	void submitWork(const std::function<void(const vk::CommandBuffer& cmd)>& work);
+
+private:
+	vk::Device& m_dev;
+	vk::Queue& m_queue;
+	uint32_t m_queueFamily;
+	vk::UniqueFence m_fence;
+	vk::UniqueCommandPool m_pool;
+
 };
 
 
@@ -37,25 +62,17 @@ public:
 	GraphicsContext(GraphicsContext&&) = delete;
 	GraphicsContext operator=(GraphicsContext&&) = delete;
 
-	// Should be called as late as possible (Fence wait can be CPU blocking!)
-	// MAYBE REPLACE??
-	// Separate getFrameResource from vkWaitFence? Maybe not? Since what we have now is essentially that any GPU res usage between beginFrame and endFrame
-	// is guaranteed to be O.K (since we waited for the fence)
 	FrameResource beginFrame();
+	void endFrame();								// Last external subpass must transition the swapchain image to proper presentation layout! 
+	void submitQueue(const vk::SubmitInfo& info); 	// One queue submit per frame is assumed right now until further exploration
 
-	// One queue submit per frame is assumed right now until further exploration
-	void submitQueue(const vk::SubmitInfo& info);
 
-	// Last external subpass must transition the swapchain image to proper presentation layout!
-	void endFrame();
-
-	// Return device for now (until we can find better abstraction)
+	// ========================== Below are dependencies needed outside
 	const vk::Device& getDevice() const;
-
 	VmaAllocator getResourceAllocator() const;
-
-	// Temporary dependencies needed by the outside, maybe we can refactor to
-	// SwapchainInfo and DepthInfo
+	UploadContext& getUploadContext() const;
+	
+	// Maybe we can refactor to SwapchainInfo and DepthInfo
 	uint32_t getSwapchainImageCount() const;
 	const std::vector<vk::ImageView>& getSwapchainViews() const;
 	const vk::Extent2D& getSwapchainExtent() const;
@@ -64,11 +81,10 @@ public:
 	const vk::ImageView& getDepthView() const;
 	vk::Format getDepthFormat() const;
 
+	// Public
 	static constexpr uint32_t s_maxFramesInFlight = 2;
-private:
 
-	// Arguments for these functions are verbose on purpose (instead of using member variables inside)
-	// It is to make the dependency clear (e.g what does a swapchain need?)
+private:
 	void createInstance(std::vector<const char*> requiredExtensions, bool debugLayer);
 	void createDebugMessenger(const vk::Instance& instance);
 
@@ -81,7 +97,7 @@ private:
 	void createDepthResources(const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice, std::pair<uint32_t, uint32_t> clientDimensions);
 	void createCommandPools(const vk::Device& logicalDevice, const QueueFamilies& qfs);
 	void createSyncObjects(const vk::Device& logicalDevice, uint32_t maxFramesInFlight);
-	void createCommandBuffers(const vk::Device& logicalDevice, const vk::CommandPool& cmdPool, uint32_t maxFramesInFlight);
+	void createCommandBuffers(const vk::Device& logicalDevice, const vk::CommandPool& cmdPool);
 		
 	// Helpers
 	QueueFamilies findQueueFamilies(const vk::PhysicalDevice& physDevice, vk::SurfaceKHR surface) const;
@@ -102,15 +118,18 @@ private:
 	vk::Queue m_gfxQueue;
 	vk::Queue m_presentQueue;
 
-	vk::DispatchLoaderDynamic m_didl;
+	vk::DispatchLoaderDynamic m_dld;
 	vk::DebugUtilsMessengerEXT m_debugMessenger;
 
-	vk::CommandPool m_gfxCmdPool;
+	// Per frame
+	std::vector<vk::CommandPool> m_gfxCmdPools;
 	std::vector<vk::CommandBuffer> m_gfxCmdBuffers;
 
 	uint32_t m_currFrame;
 	uint32_t m_currImageIdx;
 	std::vector<PerFrameSyncResource> m_frameSyncResources;
+
+	std::unique_ptr<UploadContext> m_uploadContext;
 
 	// VMA
 	VmaAllocator m_allocator;

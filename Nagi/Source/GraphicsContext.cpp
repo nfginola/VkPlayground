@@ -62,7 +62,14 @@ GraphicsContext::GraphicsContext(const Window& win, bool debugLayer) :
 		createSyncObjects(m_device, s_maxFramesInFlight);
 
 		// Command buffers for rendering commands
-		createCommandBuffers(m_device, m_gfxCmdPool, s_maxFramesInFlight);
+		for (uint32_t i = 0; i < s_maxFramesInFlight; ++i)
+		{
+			createCommandBuffers(m_device, m_gfxCmdPools[i]);
+		}
+
+		// Create an upload context to send data to GPU (We are using the graphics queue)
+		m_uploadContext = std::make_unique<UploadContext>(m_device, m_gfxQueue, qfs.gphIdx.value());
+
 	}
 	catch (vk::SystemError& err)
 	{
@@ -87,6 +94,9 @@ GraphicsContext::~GraphicsContext()
 {
 	m_device.waitIdle();
 
+	// Release resources used in upload context before destroying device
+	m_uploadContext.reset();
+
 	// ==================================== VMA related destructions
 
 	// Cleanup depth resource (VMA)
@@ -95,7 +105,11 @@ GraphicsContext::~GraphicsContext()
 	vmaDestroyAllocator(m_allocator);
 
 	// ==================================== Logical device related destructions
-	m_device.destroyCommandPool(m_gfxCmdPool);	// All cmd buffers associated with this pool is cleaned up automatically
+	for (uint32_t i = 0; i < s_maxFramesInFlight; ++i)
+	{
+		m_device.destroyCommandPool(m_gfxCmdPools[i]);	// All cmd buffers associated with this pool is cleaned up automatically
+	}
+
 
 	for (auto view : m_swapchainImageViews)
 		m_device.destroyImageView(view);
@@ -120,7 +134,7 @@ GraphicsContext::~GraphicsContext()
 
 	// ==================================== Instance related destructions
 	m_instance.destroySurfaceKHR(m_surface);
-	m_instance.destroyDebugUtilsMessengerEXT(m_debugMessenger, {}, m_didl);		// We used the dynamic dispatch to create our debug utils
+	m_instance.destroyDebugUtilsMessengerEXT(m_debugMessenger, {}, m_dld);		// We used the dynamic dispatch to create our debug utils
 
 	m_instance.destroy();
 }
@@ -145,12 +159,17 @@ FrameResource GraphicsContext::beginFrame()
 
 		// Resize or handle failed acquisition
 		//if (imageAcquireResults.result...
+		
+		// Reset pool
+		m_device.resetCommandPool(m_gfxCmdPools[m_currFrame]);
+
 
 		return
 		{
-			&m_gfxCmdBuffers[m_currFrame],
+			m_gfxCmdPools[m_currFrame],
+			m_gfxCmdBuffers[m_currFrame],
 			m_currImageIdx,
-			&m_frameSyncResources[m_currFrame],
+			m_frameSyncResources[m_currFrame],
 			m_currFrame
 		};
 		
@@ -169,7 +188,15 @@ FrameResource GraphicsContext::beginFrame()
 		assert(false);
 	}
 
-	return {};
+	// Should never reach here
+	return
+	{
+		m_gfxCmdPools[m_currFrame],
+		m_gfxCmdBuffers[m_currFrame],
+		m_currImageIdx,
+		m_frameSyncResources[m_currFrame],
+		m_currFrame
+	};
 }
 
 // CharlesG: MaxFramesInFlight Command Buffers. One for recording this 'frame' and X for frame (N-1, N-2, ..) (which may be in execution) 
@@ -213,6 +240,11 @@ const vk::Device& GraphicsContext::getDevice() const
 VmaAllocator GraphicsContext::getResourceAllocator() const
 {
 	return m_allocator;
+}
+
+UploadContext& GraphicsContext::getUploadContext() const
+{
+	return *m_uploadContext.get();
 }
 
 uint32_t GraphicsContext::getSwapchainImageCount() const
@@ -295,7 +327,7 @@ void GraphicsContext::createInstance(std::vector<const char*> requiredExtensions
 
 void GraphicsContext::createDebugMessenger(const vk::Instance& instance)
 {
-	m_didl = vk::DispatchLoaderDynamic(instance, vkGetInstanceProcAddr);
+	m_dld = vk::DispatchLoaderDynamic(instance, vkGetInstanceProcAddr);
 	// Note to self:  (Compare with old C-style project)
 	// Instead of loading the Extension function at compile time, we can do it in runtime (hence using dispatch loader dynamic)
 
@@ -317,7 +349,7 @@ void GraphicsContext::createDebugMessenger(const vk::Instance& instance)
 			debugCallback
 		},
 		nullptr,	// User data
-		m_didl);
+		m_dld);
 }
 
 void GraphicsContext::createVulkanMemoryAllocator(const vk::Instance& instance, const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice)
@@ -684,7 +716,12 @@ void GraphicsContext::createCommandPools(const vk::Device& logicalDevice, const 
 	// 	   for when resetting a Command Pool (which resets all the command buffers created from it)
 	// 	   when would we have to reset ALL the command buffers??? Follow up sometime later
 	// Resettable for re-recording..
-	m_gfxCmdPool = logicalDevice.createCommandPool(vk::CommandPoolCreateInfo(vk::CommandPoolCreateFlagBits::eResetCommandBuffer, qfs.gphIdx.value()));
+
+	for (uint32_t i = 0; i < s_maxFramesInFlight; ++i)
+	{
+		m_gfxCmdPools.push_back(logicalDevice.createCommandPool(vk::CommandPoolCreateInfo({}, qfs.gphIdx.value())));
+	}
+
 
 	// Other pools can be created here..
 }
@@ -706,17 +743,70 @@ void GraphicsContext::createSyncObjects(const vk::Device& logicalDevice, uint32_
 	}
 }
 
-void GraphicsContext::createCommandBuffers(const vk::Device& logicalDevice, const vk::CommandPool& cmdPool, uint32_t maxFramesInFlight)
+void GraphicsContext::createCommandBuffers(const vk::Device& logicalDevice, const vk::CommandPool& cmdPool)
 {
-	vk::CommandBufferAllocateInfo allocateInfo(cmdPool, vk::CommandBufferLevel::ePrimary, maxFramesInFlight);
+	vk::CommandBufferAllocateInfo allocateInfo(cmdPool, vk::CommandBufferLevel::ePrimary, 1);
 
 	// We have 'maxFramesInFlight' amount of cmd buffers so that we can re-record a cmd buffer that isn't being executed!
 	// (We will sync with the in-flight fence
-	m_gfxCmdBuffers = logicalDevice.allocateCommandBuffers(allocateInfo);
+	m_gfxCmdBuffers.push_back(logicalDevice.allocateCommandBuffers(allocateInfo)[0]);
 	
 	// We can create more command buffers here..
 }
 
+
+UploadContext::UploadContext(vk::Device& dev, vk::Queue& queue, uint32_t queueFamily) :
+	m_dev(dev),
+	m_queue(queue)
+{
+	try
+	{
+		// Create Fence
+		vk::FenceCreateInfo fCI;
+		m_fence = dev.createFenceUnique(fCI);
+
+		// Create command pool - We will use this pool to allocate a command buffer when we need to do some work
+		vk::CommandPoolCreateInfo cmdPCI({}, queueFamily);
+		m_pool = dev.createCommandPoolUnique(cmdPCI);
+	}
+	catch (vk::SystemError& err)
+	{
+		std::cout << "vk::SystemError: " << err.what() << std::endl;
+		assert(false);
+	}
+}
+
+void UploadContext::submitWork(const std::function<void(const vk::CommandBuffer& cmd)>& work)
+{
+	try
+	{
+		vk::CommandBufferAllocateInfo oneTimeAlloc(m_pool.get(), vk::CommandBufferLevel::ePrimary, 1);
+		auto cmd = m_dev.allocateCommandBuffers(oneTimeAlloc).front();
+		vk::CommandBufferBeginInfo begInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+
+		// Record work
+		cmd.begin(begInfo);
+		work(cmd);
+		cmd.end();
+
+		// Submit work and signal fence when done
+		vk::SubmitInfo submitInfo({}, {}, cmd);
+		m_queue.submit(submitInfo, m_fence.get());
+
+		// Wait for submitted work to finish
+		auto res = m_dev.waitForFences(m_fence.get(), true, std::numeric_limits<uint64_t>::max());
+		
+		// Done with work, reset resources
+		m_dev.resetFences(m_fence.get());
+		m_dev.resetCommandPool(m_pool.get());
+	}
+	catch (vk::SystemError& err)
+	{
+		std::cout << "vk::SystemError: " << err.what() << std::endl;
+		assert(false);
+	}
+
+}
 
 }
 

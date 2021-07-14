@@ -12,6 +12,21 @@ Purpose
 - Get familiar with Push Constants
 - Get familiar with UBO binding through Descriptor sets
 
+
+Process:
+
+1. Create UBO per frame
+2. Create Descriptor Set Layout --> Describe the resources in the sets we want to use (e.g uniform buffer, uniform buffer arrays, uniform sampler2D, etc.)
+
+3. Create Descriptor Pool --> Supply information on "max amount of sets to allocate" and "how many descriptors of a certain type" is to be allocated in the pool
+
+		createUBO();
+		setupDescriptorSetLayout();
+		createDescriptorPool();
+		allocateDescriptorSets();
+
+4. Load/create an image, bind it and sample from it.
+
 */
 
 class QuadApp : public Application
@@ -55,6 +70,13 @@ private:
 	{
 		VmaAllocation alloc;
 		vk::Buffer resource;
+	};
+
+	struct Texture
+	{
+		VmaAllocation alloc;
+		vk::Image resource;
+		vk::UniqueImageView view;
 	};
 
 	struct PushConstant
@@ -108,6 +130,12 @@ private:
 		bool m_isDown = false;
 	};
 
+	struct FrameData
+	{
+		Buffer ubo;
+		vk::DescriptorSet descriptorSet;
+	};
+
 private:
 	void createRenderPass();
 	void createGraphicsPipeline(vk::RenderPass& compatibleRendPass);
@@ -120,18 +148,24 @@ private:
 	void createDescriptorPool();
 	void allocateDescriptorSets();
 
+	void loadImage();
+
 private:
 	vk::UniqueRenderPass m_rendPass;
 	vk::UniquePipeline m_gfxPipeline;
 	std::vector<vk::UniqueFramebuffer> m_framebuffers;
 	vk::Extent2D m_scExtent;
 
+	Texture m_image;
+
 	Buffer m_vb;
 	Buffer m_ib;
 
 	// We need one for each frame
-	std::vector<Buffer> m_ubos;
-	std::vector<vk::DescriptorSet> m_descriptorSets;
+	//std::vector<Buffer> m_ubos;
+	//std::vector<vk::DescriptorSet> m_descriptorSets;
+
+	std::vector<FrameData> m_frameData;
 
 	vk::UniquePipelineLayout m_pipelineLayout;		// Needed for Push Constant
 
