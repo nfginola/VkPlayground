@@ -12,6 +12,8 @@ Purpose
 - Get familiar with Push Constants
 - Get familiar with UBO binding through Descriptor sets
 
+- Playground for abstractions
+
 
 Process:
 
@@ -32,7 +34,7 @@ Process:
 class QuadApp : public Application
 {
 public:
-	QuadApp(Window& window, GraphicsContext& gfxCon);
+	QuadApp(Window& window, VulkanContext& gfxCon);
 	~QuadApp();
 
 	QuadApp() = delete;
@@ -66,18 +68,6 @@ private:
 
 	};
 
-	struct Buffer
-	{
-		VmaAllocation alloc;
-		vk::Buffer resource;
-	};
-
-	struct Texture
-	{
-		VmaAllocation alloc;
-		vk::Image resource;
-		vk::UniqueImageView view;
-	};
 
 	struct PushConstant
 	{
@@ -162,10 +152,6 @@ private:
 
 	Buffer m_vb;
 	Buffer m_ib;
-
-	// We need one for each frame
-	//std::vector<Buffer> m_ubos;
-	//std::vector<vk::DescriptorSet> m_descriptorSets;
 
 	std::vector<FrameData> m_frameData;
 

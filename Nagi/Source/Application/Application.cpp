@@ -4,7 +4,7 @@
 namespace Nagi
 {
 
-Application::Application(Window& window, GraphicsContext& gfxCon) :
+Application::Application(Window& window, VulkanContext& gfxCon) :
 	m_window(window),
 	m_gfxCon(gfxCon)
 {

@@ -12,7 +12,7 @@ namespace vk
 namespace Nagi
 {
 
-class Window : Utils::SingleInstance<Window>
+class Window : SingleInstance<Window>
 {
 public:
 	Window(int width, int height, const char* title = "Nagi Engine");

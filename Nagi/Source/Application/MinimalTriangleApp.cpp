@@ -6,7 +6,7 @@
 namespace Nagi
 {
 
-MinimalTriangleApp::MinimalTriangleApp(Window& window, GraphicsContext& gfxCon) :
+MinimalTriangleApp::MinimalTriangleApp(Window& window, VulkanContext& gfxCon) :
 	Application(window, gfxCon)
 {
 	try
@@ -181,8 +181,8 @@ void MinimalTriangleApp::createGraphicsPipeline(vk::RenderPass& compatibleRendPa
 	auto dev = m_gfxCon.getDevice();
 	m_scExtent = m_gfxCon.getSwapchainExtent();
 
-	auto vertBin = Nagi::Utils::readFile("compiled_shaders/vsMinTri.spv");
-	auto fragBin = Nagi::Utils::readFile("compiled_shaders/psMinTri.spv");
+	auto vertBin = Nagi::readFile("compiled_shaders/vsMinTri.spv");
+	auto fragBin = Nagi::readFile("compiled_shaders/psMinTri.spv");
 	auto vertMod = dev.createShaderModuleUnique(vk::ShaderModuleCreateInfo({}, vertBin.size(), reinterpret_cast<uint32_t*>(vertBin.data())));
 	auto fragMod = dev.createShaderModuleUnique(vk::ShaderModuleCreateInfo({}, fragBin.size(), reinterpret_cast<uint32_t*>(fragBin.data())));
 	std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStageC = {

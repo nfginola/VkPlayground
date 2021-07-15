@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "GraphicsContext.h"
+#include "VulkanContext.h"
 #include "Window.h"
 
 // VMA
@@ -10,20 +10,19 @@ namespace Nagi
 {
 
 
-
 struct QueueFamilies
-{	
+{
 	std::optional<uint32_t> gphIdx;
 	std::optional<uint32_t> presentIdx;
 
-	bool IsComplete()
+	bool isComplete()
 	{
 		return gphIdx.has_value() &&
 			presentIdx.has_value();
 	}
 };
 
-GraphicsContext::GraphicsContext(const Window& win, bool debugLayer) :
+VulkanContext::VulkanContext(const Window& win, bool debugLayer) :
 	m_currFrame(0)
 {
 	// We limit the use of member variables in these creation helpers for learning purposes
@@ -41,7 +40,7 @@ GraphicsContext::GraphicsContext(const Window& win, bool debugLayer) :
 		getPhysicalDevice(m_instance);
 
 		QueueFamilies qfs =
-		findQueueFamilies(m_physicalDevice, m_surface);
+			findQueueFamilies(m_physicalDevice, m_surface);
 		createLogicalDevice(m_physicalDevice, qfs, m_surface, debugLayer);
 
 		createCommandPools(m_device, qfs);
@@ -54,7 +53,7 @@ GraphicsContext::GraphicsContext(const Window& win, bool debugLayer) :
 		std::pair<uint32_t, uint32_t> clientDim{ win.getClientWidth(), win.getClientHeight() };
 
 		vk::SurfaceFormatKHR surfaceFormatUsed =
-		createSwapchain(m_physicalDevice, m_device, m_surface, clientDim);
+			createSwapchain(m_physicalDevice, m_device, m_surface, clientDim);
 		createSwapchainImageViews(m_swapchain, m_device, surfaceFormatUsed);
 		createDepthResources(m_physicalDevice, m_device, clientDim);
 
@@ -90,7 +89,7 @@ GraphicsContext::GraphicsContext(const Window& win, bool debugLayer) :
 
 }
 
-GraphicsContext::~GraphicsContext()
+VulkanContext::~VulkanContext()
 {
 	m_device.waitIdle();
 
@@ -113,7 +112,7 @@ GraphicsContext::~GraphicsContext()
 
 	for (auto view : m_swapchainImageViews)
 		m_device.destroyImageView(view);
-	
+
 	// This destroys the swapchain images too
 	m_device.destroySwapchainKHR(m_swapchain);
 
@@ -140,7 +139,7 @@ GraphicsContext::~GraphicsContext()
 }
 
 
-FrameResource GraphicsContext::beginFrame()
+FrameResource VulkanContext::beginFrame()
 {
 	try
 	{
@@ -159,7 +158,7 @@ FrameResource GraphicsContext::beginFrame()
 
 		// Resize or handle failed acquisition
 		//if (imageAcquireResults.result...
-		
+
 		// Reset pool
 		m_device.resetCommandPool(m_gfxCmdPools[m_currFrame]);
 
@@ -172,7 +171,7 @@ FrameResource GraphicsContext::beginFrame()
 			m_frameSyncResources[m_currFrame],
 			m_currFrame
 		};
-		
+
 		//return 
 		//{ 
 		//	// Arguments needed in VkSubmitInfo
@@ -200,7 +199,7 @@ FrameResource GraphicsContext::beginFrame()
 }
 
 // CharlesG: MaxFramesInFlight Command Buffers. One for recording this 'frame' and X for frame (N-1, N-2, ..) (which may be in execution) 
-void GraphicsContext::submitQueue(const vk::SubmitInfo& info)
+void VulkanContext::submitQueue(const vk::SubmitInfo& info)
 {
 	try
 	{
@@ -213,11 +212,11 @@ void GraphicsContext::submitQueue(const vk::SubmitInfo& info)
 	}
 }
 
-void GraphicsContext::endFrame()
+void VulkanContext::endFrame()
 {
 	try
 	{
-		vk::PresentInfoKHR presentInfo(m_frameSyncResources[m_currFrame].renderFinishedSemaphore, m_swapchain, m_currImageIdx);	
+		vk::PresentInfoKHR presentInfo(m_frameSyncResources[m_currFrame].renderFinishedSemaphore, m_swapchain, m_currImageIdx);
 		auto presentResults = m_presentQueue.presentKHR(presentInfo);
 
 		// Resize or handle failed presentation
@@ -232,60 +231,60 @@ void GraphicsContext::endFrame()
 	m_currFrame = (m_currFrame + 1) % s_maxFramesInFlight;
 }
 
-const vk::Device& GraphicsContext::getDevice() const
+const vk::Device& VulkanContext::getDevice() const
 {
 	return m_device;
 }
 
-VmaAllocator GraphicsContext::getResourceAllocator() const
+VmaAllocator VulkanContext::getResourceAllocator() const
 {
 	return m_allocator;
 }
 
-UploadContext& GraphicsContext::getUploadContext() const
+UploadContext& VulkanContext::getUploadContext() const
 {
 	return *m_uploadContext.get();
 }
 
-uint32_t GraphicsContext::getSwapchainImageCount() const
+uint32_t VulkanContext::getSwapchainImageCount() const
 {
 	return m_swapchainImageCount;
 }
 
-const std::vector<vk::ImageView>& GraphicsContext::getSwapchainViews() const
+const std::vector<vk::ImageView>& VulkanContext::getSwapchainViews() const
 {
 	return m_swapchainImageViews;
 }
 
-const vk::ImageView& GraphicsContext::getDepthView() const
+const vk::ImageView& VulkanContext::getDepthView() const
 {
 	return m_depthView;
 }
 
-vk::Format GraphicsContext::getDepthFormat() const
+vk::Format VulkanContext::getDepthFormat() const
 {
 	return m_depthFormat;
 }
 
-const vk::Extent2D& GraphicsContext::getSwapchainExtent() const
+const vk::Extent2D& VulkanContext::getSwapchainExtent() const
 {
 	return m_swapchainExtent;
 }
 
-const vk::Format& GraphicsContext::getSwapchainImageFormat() const
+const vk::Format& VulkanContext::getSwapchainImageFormat() const
 {
 	return m_swapchainFormat;
 }
 
 
 
-VKAPI_ATTR VkBool32 VKAPI_CALL GraphicsContext::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
+VKAPI_ATTR VkBool32 VKAPI_CALL VulkanContext::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
 	std::cerr << "Validation Layer: " << pCallbackData->pMessage << std::endl;
 	return VK_FALSE;
 }
 
-void GraphicsContext::createInstance(std::vector<const char*> requiredExtensions, bool debugLayer)
+void VulkanContext::createInstance(std::vector<const char*> requiredExtensions, bool debugLayer)
 {
 
 
@@ -303,9 +302,10 @@ void GraphicsContext::createInstance(std::vector<const char*> requiredExtensions
 			{
 				return strcmp(layerProp.layerName, "VK_LAYER_KHRONOS_validation") == 0;
 			});
-		assert(validationLayerPropIt != instLayerProps.cend());
+		if (validationLayerPropIt == instLayerProps.cend())
+			throw std::runtime_error("Couldn't find validation layer properties!");
 
-		requiredExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);	
+		requiredExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 		validationLayers.push_back("VK_LAYER_KHRONOS_validation");
 	}
 
@@ -325,7 +325,7 @@ void GraphicsContext::createInstance(std::vector<const char*> requiredExtensions
 
 }
 
-void GraphicsContext::createDebugMessenger(const vk::Instance& instance)
+void VulkanContext::createDebugMessenger(const vk::Instance& instance)
 {
 	m_dld = vk::DispatchLoaderDynamic(instance, vkGetInstanceProcAddr);
 	// Note to self:  (Compare with old C-style project)
@@ -334,48 +334,48 @@ void GraphicsContext::createDebugMessenger(const vk::Instance& instance)
 	// Hook the messenger to the instance
 	m_debugMessenger = instance.createDebugUtilsMessengerEXT(
 		vk::DebugUtilsMessengerCreateInfoEXT
-		{ 
+		{
 			{},
 			// Severities
 			vk::DebugUtilsMessageSeverityFlagBitsEXT::eError |
 			vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
-			vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | 
+			vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
 			vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo,
-			// Types
-			//vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | 
-			vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
-			vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
+		// Types
+		//vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | 
+		vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
+		vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
 
-			debugCallback
+		debugCallback
 		},
 		nullptr,	// User data
 		m_dld);
 }
 
-void GraphicsContext::createVulkanMemoryAllocator(const vk::Instance& instance, const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice)
+void VulkanContext::createVulkanMemoryAllocator(const vk::Instance& instance, const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice)
 {
 	VmaAllocatorCreateInfo allocatorInfo = {};
 	allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_2;
 	allocatorInfo.physicalDevice = physicalDevice;
 	allocatorInfo.device = logicalDevice;
 	allocatorInfo.instance = instance;
-	
+
 	if (vmaCreateAllocator(&allocatorInfo, &m_allocator) != VK_SUCCESS)
 		throw std::runtime_error("VMA couldnt be created!");
 }
 
-void GraphicsContext::getPhysicalDevice(const vk::Instance& instance) 
+void VulkanContext::getPhysicalDevice(const vk::Instance& instance)
 {
 	// Simply get the one in front. We will assume that this is our primary graphics card
 	// We can extend this by having some score value checking for each physical device in the future
 	m_physicalDevice = instance.enumeratePhysicalDevices().front();
 }
 
-QueueFamilies GraphicsContext::findQueueFamilies(const vk::PhysicalDevice& physicalDevice, vk::SurfaceKHR surface) const
+QueueFamilies VulkanContext::findQueueFamilies(const vk::PhysicalDevice& physicalDevice, vk::SurfaceKHR surface) const
 {
 	QueueFamilies qfms{};
 	std::vector<vk::QueueFamilyProperties> qfps = physicalDevice.getQueueFamilyProperties();
-	
+
 	// Get graphics family
 	auto gphFamIt = std::find_if(qfps.begin(), qfps.end(),
 		[](vk::QueueFamilyProperties const& qfp)
@@ -384,7 +384,7 @@ QueueFamilies GraphicsContext::findQueueFamilies(const vk::PhysicalDevice& physi
 		}
 	);
 	qfms.gphIdx = static_cast<uint32_t>(std::distance(qfps.begin(), gphFamIt));
-	
+
 	// Get present family
 	if (!physicalDevice.getSurfaceSupportKHR(static_cast<uint32_t>(std::distance(qfps.begin(), gphFamIt)), surface))
 		qfms.presentIdx = static_cast<uint32_t>(std::distance(qfps.begin(), gphFamIt));
@@ -400,11 +400,13 @@ QueueFamilies GraphicsContext::findQueueFamilies(const vk::PhysicalDevice& physi
 			}
 	}
 
-	assert(qfms.IsComplete());
+	if (!qfms.isComplete())
+		throw std::runtime_error("Couldn't find all queue families!");
+
 	return qfms;
 }
 
-vk::SurfaceFormatKHR GraphicsContext::selectSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& surfaceFormats) const
+vk::SurfaceFormatKHR VulkanContext::selectSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& surfaceFormats) const
 {
 	auto selectedFormatIt = std::find_if(surfaceFormats.cbegin(), surfaceFormats.cend(),
 		[](const vk::SurfaceFormatKHR& surfaceFormat)
@@ -412,27 +414,35 @@ vk::SurfaceFormatKHR GraphicsContext::selectSurfaceFormat(const std::vector<vk::
 			return surfaceFormat.format == vk::Format::eB8G8R8A8Srgb &&
 				surfaceFormat.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
 		});
-	assert(selectedFormatIt != surfaceFormats.cend());
+	if (selectedFormatIt == surfaceFormats.cend())
+		throw std::runtime_error("Couldn't find selected surface format!");
 
 	return *selectedFormatIt;
 }
 
-vk::PresentModeKHR GraphicsContext::selectPresentMode(const std::vector<vk::PresentModeKHR>& presentModes) const
+vk::PresentModeKHR VulkanContext::selectPresentMode(const std::vector<vk::PresentModeKHR>& presentModes) const
 {
+
+
 	auto selectedPresentModeIt = std::find_if(presentModes.cbegin(), presentModes.cend(),
 		[](const vk::PresentModeKHR& presentMode)
 		{
 			return presentMode == vk::PresentModeKHR::eMailbox;
 		});
 
+	// https://software.intel.com/content/www/us/en/develop/articles/api-without-secrets-introduction-to-vulkan-part-2.html?language=en#_Toc445674479
 	// Fallback to FIFO if Mailbox not available --> Guaranteed to be implemented
+	// FIFO: Show on next vertical blank (vsync)
+	// Immediate: May cause tearing (No vsync)
+	vk::PresentModeKHR fallbackPresntMode = vk::PresentModeKHR::eFifo;
+
 	if (selectedPresentModeIt == presentModes.cend())
-		return vk::PresentModeKHR::eFifo;
+		return fallbackPresntMode;
 
 	return *selectedPresentModeIt;
 }
 
-vk::Extent2D GraphicsContext::selectSwapchainExtent(const vk::SurfaceCapabilitiesKHR& capabilities, std::pair<uint32_t, uint32_t> clientDimensions)
+vk::Extent2D VulkanContext::selectSwapchainExtent(const vk::SurfaceCapabilitiesKHR& capabilities, std::pair<uint32_t, uint32_t> clientDimensions)
 {
 	if (capabilities.currentExtent.width == std::numeric_limits<uint32_t>::max())
 	{
@@ -449,7 +459,7 @@ vk::Extent2D GraphicsContext::selectSwapchainExtent(const vk::SurfaceCapabilitie
 		return capabilities.currentExtent;
 }
 
-void GraphicsContext::createLogicalDevice(const vk::PhysicalDevice& physicalDevice, const QueueFamilies& qfs, vk::SurfaceKHR surface, bool debugLayer)
+void VulkanContext::createLogicalDevice(const vk::PhysicalDevice& physicalDevice, const QueueFamilies& qfs, vk::SurfaceKHR surface, bool debugLayer)
 {
 	// The Vulkan spec states: The queueFamilyIndex member of each element of pQueueCreateInfos must be unique within pQueueCreateInfos (hence we use set)
 	// (https://vulkan.lunarg.com/doc/view/1.2.176.1/windows/1.2-extensions/vkspec.html#VUID-VkDeviceCreateInfo-queueFamilyIndex-00372)
@@ -472,23 +482,25 @@ void GraphicsContext::createLogicalDevice(const vk::PhysicalDevice& physicalDevi
 
 	m_device = physicalDevice.createDevice(vk::DeviceCreateInfo(vk::DeviceCreateFlags(), queueCreateInfos, enabledLayers, enabledExtensions));
 
-	
+
 	// Retrieve the queues
 	m_gfxQueue = m_device.getQueue(qfs.gphIdx.value(), 0);
 	m_presentQueue = m_device.getQueue(qfs.presentIdx.value(), 0);
 
 }
 
-vk::SurfaceFormatKHR GraphicsContext::createSwapchain(const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice, vk::SurfaceKHR surface, std::pair<uint32_t, uint32_t> clientDimensions)
+vk::SurfaceFormatKHR VulkanContext::createSwapchain(const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice, vk::SurfaceKHR surface, std::pair<uint32_t, uint32_t> clientDimensions)
 {
 	// ================= Gather surface details
 	// Get VkFormats supported by the surface
 	std::vector<vk::SurfaceFormatKHR> supportedFormats = physicalDevice.getSurfaceFormatsKHR(surface);
-	assert(!supportedFormats.empty());
+	if (supportedFormats.empty())
+		throw std::runtime_error("No supported surface formats available");
 
 	// Get PresentModes supported by the surface
 	std::vector<vk::PresentModeKHR> supportedPresentModes = physicalDevice.getSurfacePresentModesKHR(surface);
-	assert(!supportedPresentModes.empty());
+	if (supportedPresentModes.empty())
+		throw std::runtime_error("No supported surface present modes available");
 
 	// Get the capabilities of the surface
 	vk::SurfaceCapabilitiesKHR surfaceCapabilities = physicalDevice.getSurfaceCapabilitiesKHR(surface);
@@ -551,7 +563,7 @@ vk::SurfaceFormatKHR GraphicsContext::createSwapchain(const vk::PhysicalDevice& 
 	else
 		// If family is same, then we make sure that an image is owned by one queue family AT A TIME (EXCLUSIVE) --> Best performance
 		// Ownership must be explicitly transferred before use by another family ( We only have one here :) )
-		scCreateInfo.setImageSharingMode(vk::SharingMode::eExclusive);		
+		scCreateInfo.setImageSharingMode(vk::SharingMode::eExclusive);
 
 	m_swapchain = logicalDevice.createSwapchainKHR(scCreateInfo);
 
@@ -559,7 +571,7 @@ vk::SurfaceFormatKHR GraphicsContext::createSwapchain(const vk::PhysicalDevice& 
 	return surfaceFormat;
 }
 
-void GraphicsContext::createSwapchainImageViews(const vk::SwapchainKHR& swapchain, const vk::Device& logicalDevice, const vk::SurfaceFormatKHR& surfaceFormat)
+void VulkanContext::createSwapchainImageViews(const vk::SwapchainKHR& swapchain, const vk::Device& logicalDevice, const vk::SurfaceFormatKHR& surfaceFormat)
 {
 	// Get the swapchain images
 	m_swapchainImages = logicalDevice.getSwapchainImagesKHR(swapchain);
@@ -591,15 +603,15 @@ void GraphicsContext::createSwapchainImageViews(const vk::SwapchainKHR& swapchai
 			image,
 			vk::ImageViewType::e2D,
 			surfaceFormat.format,
-			componentMapping,	
+			componentMapping,
 			subresRange
 		);
 
 		m_swapchainImageViews.push_back(logicalDevice.createImageView(viewCreateInfo));
-	}	
+	}
 }
 
-void GraphicsContext::createDepthResources(const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice, std::pair<uint32_t, uint32_t> clientDimensions)
+void VulkanContext::createDepthResources(const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice, std::pair<uint32_t, uint32_t> clientDimensions)
 {
 	// ========================= Create Image
 	// Declare that we want a 32 bit signed floating point component
@@ -617,7 +629,7 @@ void GraphicsContext::createDepthResources(const vk::PhysicalDevice& physicalDev
 	else if (formatProperties.linearTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment)
 		imageTiling = vk::ImageTiling::eLinear;		// Texels laid out in row major order in data	
 	else
-		assert(false);		// D32 is not a supported format a for the depth stencil attachment
+		throw std::runtime_error("D32 is not a supported format for the depth stencil attachment!");
 
 	vk::ImageCreateInfo imageCreateInfo
 	(
@@ -658,10 +670,11 @@ void GraphicsContext::createDepthResources(const vk::PhysicalDevice& physicalDev
 			break;
 		}
 	}
-	assert(typeIndex != std::numeric_limits<uint32_t>::max());
+	if (typeIndex == std::numeric_limits<uint32_t>::max())
+		throw std::runtime_error("Couldn't find appropriate memory type!");
 
 	m_depthMemory = logicalDevice.allocateMemory(vk::MemoryAllocateInfo(memReq.size, typeIndex));
-	
+
 
 	// ======================= Bind memory to image!
 	logicalDevice.bindImageMemory(m_depthImage, m_depthMemory, 0);
@@ -687,7 +700,7 @@ void GraphicsContext::createDepthResources(const vk::PhysicalDevice& physicalDev
 
 
 	// ======================= Create view for image
-	
+
 	// Question: Does component mapping change anything when it comes to Depth texture? (We are using D32..)
 	vk::ComponentMapping componentMapping(vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG, vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA);
 	vk::ImageSubresourceRange subresRange(vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1);
@@ -701,16 +714,16 @@ void GraphicsContext::createDepthResources(const vk::PhysicalDevice& physicalDev
 	);
 
 	m_depthView = logicalDevice.createImageView(viewCreateInfo);
-		
+
 	//// VMA Alternative
 	//viewCreateInfo.setImage(m_vmaDepthImage);
 	//m_depthView = logicalDevice.createImageView(viewCreateInfo);
 
 
-	
+
 }
 
-void GraphicsContext::createCommandPools(const vk::Device& logicalDevice, const QueueFamilies& qfs)
+void VulkanContext::createCommandPools(const vk::Device& logicalDevice, const QueueFamilies& qfs)
 {
 	// vkguide recommends creating a Command Pool per FRAME (so, a frame resource)
 	// 	   https://vkguide.dev/docs/chapter-4/double_buffering/
@@ -727,7 +740,7 @@ void GraphicsContext::createCommandPools(const vk::Device& logicalDevice, const 
 	// Other pools can be created here..
 }
 
-void GraphicsContext::createSyncObjects(const vk::Device& logicalDevice, uint32_t maxFramesInFlight)
+void VulkanContext::createSyncObjects(const vk::Device& logicalDevice, uint32_t maxFramesInFlight)
 {
 	vk::FenceCreateInfo fenceCreateInfo(vk::FenceCreateFlagBits::eSignaled);
 	vk::SemaphoreCreateInfo semCreateInfo;
@@ -736,22 +749,22 @@ void GraphicsContext::createSyncObjects(const vk::Device& logicalDevice, uint32_
 	for (uint32_t i = 0; i < s_maxFramesInFlight; ++i)
 	{
 		m_frameSyncResources.push_back(
-		{
-			logicalDevice.createSemaphore(semCreateInfo),		// imageAvailable
-			logicalDevice.createSemaphore(semCreateInfo),		// renderFinished
-			logicalDevice.createFence(fenceCreateInfo)			// inFlight
-		});
+			{
+				logicalDevice.createSemaphore(semCreateInfo),		// imageAvailable
+				logicalDevice.createSemaphore(semCreateInfo),		// renderFinished
+				logicalDevice.createFence(fenceCreateInfo)			// inFlight
+			});
 	}
 }
 
-void GraphicsContext::createCommandBuffers(const vk::Device& logicalDevice, const vk::CommandPool& cmdPool)
+void VulkanContext::createCommandBuffers(const vk::Device& logicalDevice, const vk::CommandPool& cmdPool)
 {
 	vk::CommandBufferAllocateInfo allocateInfo(cmdPool, vk::CommandBufferLevel::ePrimary, 1);
 
 	// We have 'maxFramesInFlight' amount of cmd buffers so that we can re-record a cmd buffer that isn't being executed!
 	// (We will sync with the in-flight fence
 	m_gfxCmdBuffers.push_back(logicalDevice.allocateCommandBuffers(allocateInfo)[0]);
-	
+
 	// We can create more command buffers here..
 }
 
@@ -777,7 +790,7 @@ UploadContext::UploadContext(vk::Device& dev, vk::Queue& queue, uint32_t queueFa
 	}
 }
 
-void UploadContext::submitWork(const std::function<void(const vk::CommandBuffer& cmd)>& work)
+void UploadContext::submitWork(const std::function<void(const vk::CommandBuffer&)>& work)
 {
 	try
 	{
@@ -796,7 +809,7 @@ void UploadContext::submitWork(const std::function<void(const vk::CommandBuffer&
 
 		// Wait for submitted work to finish
 		auto res = m_dev.waitForFences(m_fence.get(), true, std::numeric_limits<uint64_t>::max());
-		
+
 		// Done with work, reset resources
 		m_dev.resetFences(m_fence.get());
 		m_dev.resetCommandPool(m_pool.get());
@@ -808,6 +821,7 @@ void UploadContext::submitWork(const std::function<void(const vk::CommandBuffer&
 	}
 
 }
+
 
 }
 

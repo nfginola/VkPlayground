@@ -23,7 +23,7 @@ Purpose:
 class MinimalTriangleWithBuffersApp : public Application
 {
 public:
-	MinimalTriangleWithBuffersApp(Window& window, GraphicsContext& gfxCon);
+	MinimalTriangleWithBuffersApp(Window& window, VulkanContext& gfxCon);
 	~MinimalTriangleWithBuffersApp();
 
 	MinimalTriangleWithBuffersApp() = delete;

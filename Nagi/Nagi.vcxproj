@@ -171,7 +171,7 @@
     <ClCompile Include="Source\Application\Application.cpp" />
     <ClCompile Include="Source\Application\MinimalTriangleApp.cpp" />
     <ClCompile Include="Source\Application\MinimalTriangleWithBuffersApp.cpp" />
-    <ClCompile Include="Source\GraphicsContext.cpp" />
+    <ClCompile Include="Source\VulkanContext.cpp" />
     <ClCompile Include="Source\main.cpp" />
     <ClCompile Include="Source\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -181,18 +181,20 @@
     </ClCompile>
     <ClCompile Include="Source\Utilities.cpp" />
     <ClCompile Include="Source\Window.cpp" />
+    <ClCompile Include="Source\VulkanUtilities.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Includes\Application\AppDefines.h" />
     <ClInclude Include="Includes\Application\Application.h" />
     <ClInclude Include="Includes\Application\MinimalTriangleApp.h" />
     <ClInclude Include="Includes\Application\MinimalTriangleWithBuffersApp.h" />
-    <ClInclude Include="Includes\GraphicsContext.h" />
+    <ClInclude Include="Includes\VulkanContext.h" />
     <ClInclude Include="Includes\pch.h" />
     <ClInclude Include="Includes\SingleInstance.h" />
     <ClInclude Include="Includes\Utilities.h" />
     <ClInclude Include="Includes\Window.h" />
     <ClInclude Include="Includes\Application\QuadApp.h" />
+    <ClInclude Include="Includes\VulkanUtilities.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

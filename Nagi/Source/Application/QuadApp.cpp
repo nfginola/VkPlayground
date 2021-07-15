@@ -1,15 +1,15 @@
 #include "pch.h"
 #include "Application/QuadApp.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+//#define STB_IMAGE_IMPLEMENTATION
+//#include <stb_image.h>
 
 
 
 namespace Nagi
 {
 
-QuadApp::QuadApp(Window& window, GraphicsContext& gfxCon) :
+QuadApp::QuadApp(Window& window, VulkanContext& gfxCon) :
 	Application(window, gfxCon)
 {
 	glm::vec3 pos{ 0.f, 1.f, 1.f };
@@ -34,13 +34,13 @@ QuadApp::QuadApp(Window& window, GraphicsContext& gfxCon) :
 
 			if (key == GLFW_KEY_A)
 				handleFunc(0);
-			else if (key == GLFW_KEY_D)
+			if (key == GLFW_KEY_D)
 				handleFunc(1);
-			else if (key == GLFW_KEY_W)
+			if (key == GLFW_KEY_W)
 				handleFunc(2);
-			else if (key == GLFW_KEY_S)
+			if (key == GLFW_KEY_S)
 				handleFunc(3);
-			else if (key == GLFW_KEY_E)
+			if (key == GLFW_KEY_E)
 				handleFunc(4);
 		});
 
@@ -59,8 +59,8 @@ QuadApp::QuadApp(Window& window, GraphicsContext& gfxCon) :
 		allocateDescriptorSets();
 
 		createRenderPass();
-		createGraphicsPipeline(m_rendPass.get());
 		createFramebuffers();
+		createGraphicsPipeline(m_rendPass.get());
 
 		createVertexIndexBuffer(gfxCon.getResourceAllocator());
 		
@@ -74,7 +74,7 @@ QuadApp::QuadApp(Window& window, GraphicsContext& gfxCon) :
 				pos[0] += -0.1f;
 			else if (dKey.isDown())
 				pos[0] += 0.1f;
-			else if (wKey.isDown())
+			if (wKey.isDown())
 				pos[2] += -0.1f;
 			else if (sKey.isDown())
 				pos[2] += 0.1f;
@@ -100,10 +100,7 @@ QuadApp::QuadApp(Window& window, GraphicsContext& gfxCon) :
 
 
 			// ================================================ Update UBO
-			void* data;
-			vmaMapMemory(m_gfxCon.getResourceAllocator(), m_frameData[frameRes.imageIdx].ubo.alloc, &data);
-			memcpy(data, &frameConstants, sizeof(UBO));
-			vmaUnmapMemory(m_gfxCon.getResourceAllocator(), m_frameData[frameRes.imageIdx].ubo.alloc);
+			m_frameData[frameRes.imageIdx].ubo.putData(&frameConstants, sizeof(UBO));
 			
 			// reset push constant (to verify that we are using the UBO!)
 			memset(&frameConstants, 0, sizeof(PushConstant));
@@ -137,17 +134,16 @@ QuadApp::QuadApp(Window& window, GraphicsContext& gfxCon) :
 			//cmd.setViewport(0, vk::Viewport(0.f, (float)m_scExtent.height, m_scExtent.width, -(float)m_scExtent.height, 0.0, 1.0));
 
 			// Bind vertex buffer
-			std::array<vk::Buffer, 1> vbs{ m_vb.resource };
+			std::array<vk::Buffer, 1> vbs{ m_vb.getBuffer() };
 			std::array<vk::DeviceSize, 1> offsets{ 0 };
 			cmd.bindVertexBuffers(0, vbs, offsets);
 
-			cmd.bindIndexBuffer(m_ib.resource, 0, vk::IndexType::eUint32);
+			cmd.bindIndexBuffer(m_ib.getBuffer(), 0, vk::IndexType::eUint32);
 
 			// ===================================================== Push constants (command constants)
 			cmd.pushConstants<PushConstant>(m_pipelineLayout.get(), vk::ShaderStageFlagBits::eVertex, 0, { frameConstants });
 			
 			cmd.drawIndexed(6, 1, 0, 0, 0);
-			//cmd.draw(6, 1, 0, 0);
 			cmd.endRenderPass();
 
 			cmd.end();
@@ -194,11 +190,11 @@ QuadApp::~QuadApp()
 {
 	auto allocator = m_gfxCon.getResourceAllocator();
 
-	vmaDestroyBuffer(allocator, m_vb.resource, m_vb.alloc);
-	vmaDestroyBuffer(allocator, m_ib.resource, m_ib.alloc);
+	m_vb.destroy();
+	m_ib.destroy();
 
-	for (int i = 0; i < GraphicsContext::s_maxFramesInFlight; ++i)
-		vmaDestroyBuffer(allocator, m_frameData[i].ubo.resource, m_frameData[i].ubo.alloc);
+	for (int i = 0; i < VulkanContext::s_maxFramesInFlight; ++i)
+		m_frameData[i].ubo.destroy();
 
 	vmaDestroyImage(allocator, m_image.resource, m_image.alloc);
 
@@ -207,68 +203,7 @@ QuadApp::~QuadApp()
 
 void QuadApp::createRenderPass()
 {
-	/*
-	Deps:
-		gfxCon: getSwapchainImageFormat(), getDepthFormat(),
-				getDevice (for resource creation)
-
-	*/
-
-	auto dev = m_gfxCon.getDevice();
-
-	std::array<vk::AttachmentDescription, 2> attachmentDescs;
-
-	// Color
-	attachmentDescs[0] = vk::AttachmentDescription({},
-		m_gfxCon.getSwapchainImageFormat(),		// format
-		vk::SampleCountFlagBits::e1,			// sample
-		vk::AttachmentLoadOp::eClear,			// attachment load/store op
-		vk::AttachmentStoreOp::eStore,
-		vk::AttachmentLoadOp::eDontCare,		// stencil load/store op
-		vk::AttachmentStoreOp::eDontCare,
-		vk::ImageLayout::eUndefined,			// enter renderpass in this layout
-		vk::ImageLayout::ePresentSrcKHR			// exit renderpass in this layout
-	);
-
-	// Depth
-	attachmentDescs[1] = vk::AttachmentDescription({},
-		m_gfxCon.getDepthFormat(),
-		vk::SampleCountFlagBits::e1,
-		vk::AttachmentLoadOp::eClear,
-		vk::AttachmentStoreOp::eDontCare,
-		vk::AttachmentLoadOp::eDontCare,
-		vk::AttachmentStoreOp::eDontCare,
-		vk::ImageLayout::eUndefined,
-		vk::ImageLayout::eDepthStencilAttachmentOptimal
-	);
-
-	// Reference to the attachment descriptions
-	vk::AttachmentReference colorRef(0, vk::ImageLayout::eAttachmentOptimalKHR);				// 2nd arg -> layout to use during in subpass using this ref
-	vk::AttachmentReference depthRef(1, vk::ImageLayout::eDepthStencilAttachmentOptimal);
-
-	vk::SubpassDescription subpassDesc({}, vk::PipelineBindPoint::eGraphics, {}, colorRef, {}, &depthRef);
-
-
-	// Corrected (sync validation WAW hazard)
-	vk::SubpassDependency extInDep(
-		VK_SUBPASS_EXTERNAL,
-		0,
-	
-		vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests |
-		vk::PipelineStageFlagBits::eColorAttachmentOutput,												
-
-		vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests |
-		vk::PipelineStageFlagBits::eColorAttachmentOutput,												
-
-		{},	
-		vk::AccessFlagBits::eDepthStencilAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentRead | 
-		vk::AccessFlagBits::eColorAttachmentWrite						
-	);
-
-	// Using implicit external subpass
-
-	m_rendPass = dev.createRenderPassUnique(vk::RenderPassCreateInfo({}, attachmentDescs, subpassDesc, extInDep));
-
+	m_rendPass = ezTmp::createDefaultRenderPass(m_gfxCon);
 }
 
 void QuadApp::createGraphicsPipeline(vk::RenderPass& compatibleRendPass)
@@ -276,8 +211,8 @@ void QuadApp::createGraphicsPipeline(vk::RenderPass& compatibleRendPass)
 	auto dev = m_gfxCon.getDevice();
 	m_scExtent = m_gfxCon.getSwapchainExtent();
 
-	auto vertBin = Nagi::Utils::readFile("compiled_shaders/vertQuad.spv");
-	auto fragBin = Nagi::Utils::readFile("compiled_shaders/fragQuad.spv");
+	auto vertBin = readFile("compiled_shaders/vertQuad.spv");
+	auto fragBin = readFile("compiled_shaders/fragQuad.spv");
 	auto vertMod = dev.createShaderModuleUnique(vk::ShaderModuleCreateInfo({}, vertBin.size(), reinterpret_cast<uint32_t*>(vertBin.data())));
 	auto fragMod = dev.createShaderModuleUnique(vk::ShaderModuleCreateInfo({}, fragBin.size(), reinterpret_cast<uint32_t*>(fragBin.data())));
 	std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStageC = {
@@ -381,22 +316,7 @@ void QuadApp::createGraphicsPipeline(vk::RenderPass& compatibleRendPass)
 
 void QuadApp::createFramebuffers()
 {
-	// Create framebuffers
-	// resource deps: (1) sc view, (2) depth view (3) swapchain image count
-	// Note: Can we remove these deps? sc image count dep may propagate to other per-frame resources.. (buffers to update, etc.)
-	auto dev = m_gfxCon.getDevice();
-	auto scExtent = m_gfxCon.getSwapchainExtent();
-	uint32_t scImageCount = m_gfxCon.getSwapchainImageCount();
-	auto scViews = m_gfxCon.getSwapchainViews();
-	auto depthV = m_gfxCon.getDepthView();
-
-	m_framebuffers.reserve(scImageCount);
-	for (uint32_t i = 0; i < scImageCount; ++i)
-	{
-		std::array<vk::ImageView, 2> attachments{ scViews[i], depthV };
-		vk::FramebufferCreateInfo fbc({}, m_rendPass.get(), attachments, scExtent.width, scExtent.height, 1);
-		m_framebuffers.push_back(dev.createFramebufferUnique(fbc));
-	}
+	m_framebuffers = ezTmp::createDefaultFramebuffers(m_gfxCon, m_rendPass.get());
 }
 
 void QuadApp::createVertexIndexBuffer(VmaAllocator allocator)
@@ -415,33 +335,9 @@ void QuadApp::createVertexIndexBuffer(VmaAllocator allocator)
 		0, 3, 2
 	};
 
-	vk::BufferCreateInfo vertBufCI({}, vertices.size() * sizeof(Vertex), vk::BufferUsageFlagBits::eVertexBuffer);
-	VmaAllocationCreateInfo vertBufAllocCI{};
-	vertBufAllocCI.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;		// We have to map and unmap to fill the data
 
-	// Similar for index buffer
-	vk::BufferCreateInfo indexBufCI({}, indices.size() * sizeof(uint32_t), vk::BufferUsageFlagBits::eIndexBuffer);
-	VmaAllocationCreateInfo indexBufAllocCI{};
-	indexBufAllocCI.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-
-	auto res = vmaCreateBuffer(allocator, (VkBufferCreateInfo*)&vertBufCI, &vertBufAllocCI, (VkBuffer*)&m_vb.resource, &m_vb.alloc, nullptr);
-	if (res != VK_SUCCESS) throw std::runtime_error("Couldnt create vertex buffer");
-	res = vmaCreateBuffer(allocator, (VkBufferCreateInfo*)&indexBufCI, &indexBufAllocCI, (VkBuffer*)&m_ib.resource, &m_ib.alloc, nullptr);
-	if (res != VK_SUCCESS) throw std::runtime_error("Couldnt create index buffer");
-
-	// Copy data
-	void* data = nullptr;
-	vmaMapMemory(allocator, m_vb.alloc, &data);
-	memcpy(data, vertices.data(), vertices.size() * sizeof(Vertex));
-	vmaUnmapMemory(allocator, m_vb.alloc);
-
-	vmaMapMemory(allocator, m_ib.alloc, &data);
-	memcpy(data, indices.data(), indices.size() * sizeof(uint32_t));
-	vmaUnmapMemory(allocator, m_ib.alloc);
-
-	// Traditionally, without VMA, this is done with a staging buffer which is host visible and the vertex buffer which is device local.
-	// We would have to Map/Unmap (copy) the data onto the staging buffer where we then call a copy command on the GPU to copy it from the staging buffer to the vertex buffer.
-	// Here we rely on VMA figuring that out. Responsbility of whether VMA does the staging copy or not is not our responsibility :)
+	m_vb = loadVkImmutableBuffer(m_gfxCon, vertices, vk::BufferUsageFlagBits::eVertexBuffer);
+	m_ib = loadVkImmutableBuffer(m_gfxCon, indices, vk::BufferUsageFlagBits::eIndexBuffer);
 }
 
 void QuadApp::createUBO()
@@ -450,33 +346,11 @@ void QuadApp::createUBO()
 	VmaAllocationCreateInfo uboAllocCI{};
 	uboAllocCI.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;		// We have to map and unmap to fill the data
 
-	m_frameData.reserve(GraphicsContext::s_maxFramesInFlight);
-
-
-	for (int i = 0; i < GraphicsContext::s_maxFramesInFlight; ++i)
+	for (int i = 0; i < VulkanContext::s_maxFramesInFlight; ++i)
 	{
 		m_frameData.push_back(FrameData{});
-		Buffer buf;
-
-		auto res = vmaCreateBuffer(m_gfxCon.getResourceAllocator(), (VkBufferCreateInfo*)&uboCI, &uboAllocCI, (VkBuffer*)&buf.resource, &buf.alloc, nullptr);
-		if (res != VK_SUCCESS) throw std::runtime_error("Couldnt create vertex buffer");
-
-		m_frameData[i].ubo = buf;;
+		m_frameData[i].ubo = Buffer(m_gfxCon.getResourceAllocator(), uboCI, uboAllocCI);
 	}
-
-
-	//m_ubos.reserve(GraphicsContext::s_maxFramesInFlight);
-	//for (int i = 0; i < GraphicsContext::s_maxFramesInFlight; ++i)
-	//{
-	//	Buffer buf;
-
-	//	auto res = vmaCreateBuffer(m_gfxCon.getResourceAllocator(), (VkBufferCreateInfo*)&uboCI, &uboAllocCI, (VkBuffer*)&buf.resource, &buf.alloc, nullptr);
-	//	if (res != VK_SUCCESS) throw std::runtime_error("Couldnt create vertex buffer");
-
-	//	m_ubos.push_back(buf);
-	//}
-
-
 }
 
 void QuadApp::setupDescriptorSetLayout()
@@ -543,7 +417,7 @@ void QuadApp::createDescriptorPool()
 
 
 	vk::DescriptorPoolCreateInfo poolCI({}, 
-		10,										// max sets, just set a value, this means we have room to allocate 10 DescriptorSet with the specified DescriptorPoolSize content in each set
+		5,										// max sets, just set a value, this means we have room to allocate 10 DescriptorSet with the specified DescriptorPoolSize content in each set
 		descriptorPoolSizes
 	);
 	
@@ -557,21 +431,21 @@ void QuadApp::allocateDescriptorSets()
 
 	vk::DescriptorSetAllocateInfo allocInfo(m_descriptorPool.get(), m_descriptorSetLayout.get());
 	
-	for (int i = 0; i < GraphicsContext::s_maxFramesInFlight; ++i)
+	for (int i = 0; i < VulkanContext::s_maxFramesInFlight; ++i)
 	{
 		//m_descriptorSets.push_back(m_gfxCon.getDevice().allocateDescriptorSets(allocInfo)[0]);
 		m_frameData[i].descriptorSet = m_gfxCon.getDevice().allocateDescriptorSets(allocInfo).front();
 
 		// We have a set, and now we need to point it to the UBOs
 
-		vk::DescriptorBufferInfo binfo(m_frameData[i].ubo.resource, 0, sizeof(UBO));
+		vk::DescriptorBufferInfo binfo(m_frameData[i].ubo.getBuffer(), 0, sizeof(UBO));
 		vk::WriteDescriptorSet setWrite(m_frameData[i].descriptorSet, 0 /* we will write to binding 0 in this Set */, 0, vk::DescriptorType::eUniformBuffer, {}, binfo);
 
 		m_gfxCon.getDevice().updateDescriptorSets(setWrite, {});
 	}
 
 	// Material set
-	vk::DescriptorSetAllocateInfo texAllocInfo(m_descriptorPool.get(), m_materialSetLayout.get());
+	vk::DescriptorSetAllocateInfo texAllocInfo(m_descriptorPool.get(), m_materialSetLayout.get());	// One setLayout given --> Returning one element in allocateDescriptorSets
 	m_materialDescSet = m_gfxCon.getDevice().allocateDescriptorSets(texAllocInfo).front();
 
 	// Write to it (bind image and sampler)
@@ -579,142 +453,20 @@ void QuadApp::allocateDescriptorSets()
 	vk::WriteDescriptorSet imageSetWrite(m_materialDescSet, 0, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo, {}, {});
 	m_gfxCon.getDevice().updateDescriptorSets(imageSetWrite, {});
 
+
+	//auto huh = m_gfxCon.getDevice().allocateDescriptorSets(texAllocInfo).front();
+	//auto haha = m_gfxCon.getDevice().allocateDescriptorSets(texAllocInfo).front();
+	//auto huhee = m_gfxCon.getDevice().allocateDescriptorSets(texAllocInfo).front();
+
 }
 
 void QuadApp::loadImage()
 {
-	// Load image data
-	int texWidth, texHeight, texChannels;
-
-	stbi_uc* pixels = stbi_load("Resources/Textures/images.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-
-	if (!pixels)
-		throw std::runtime_error("Can't find the image resource!");
-
-	size_t imageSize = texWidth * texHeight * sizeof(uint32_t);
-
-	auto allocator = m_gfxCon.getResourceAllocator();
-
-
-	// Create staging buffer 
-	vk::BufferCreateInfo stagingCI({}, imageSize, vk::BufferUsageFlagBits::eTransferSrc);
-	VmaAllocationCreateInfo stagingBufAlloc{};
-	stagingBufAlloc.usage = VMA_MEMORY_USAGE_CPU_ONLY;
-
-	Buffer stagingBuffer;
-	auto res = vmaCreateBuffer(allocator, (VkBufferCreateInfo*)&stagingCI, &stagingBufAlloc, (VkBuffer*)&stagingBuffer.resource, &stagingBuffer.alloc, nullptr);
-	if (res != VK_SUCCESS) throw std::runtime_error("Couldnt create vertex buffer");
-
-	// Copy CPU data to staging buffer
-	void* data = nullptr;
-	vmaMapMemory(allocator, stagingBuffer.alloc, &data);
-	memcpy(data, pixels, imageSize);
-	vmaUnmapMemory(allocator, stagingBuffer.alloc);
-
-
-	// Create texture
-	auto texExtent = vk::Extent3D(texWidth, texHeight, 1);
-	vk::Format imageFormat = vk::Format::eR8G8B8A8Srgb;
-
-	vk::ImageCreateInfo imCI({},
-		vk::ImageType::e2D, imageFormat,
-		texExtent,
-		1, 1,
-		vk::SampleCountFlagBits::e1,
-		vk::ImageTiling::eOptimal,
-		vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled
-	);
-
-	VmaAllocationCreateInfo texAlloc{};
-	texAlloc.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-
-	if (vmaCreateImage(allocator, (VkImageCreateInfo*)&imCI, &texAlloc, (VkImage*)&m_image.resource, &m_image.alloc, nullptr) != VK_SUCCESS)
-		throw std::runtime_error("Could not create image");
-
-	// Initial Layout of image is Undefined, we need to transition its layout!
-	auto& uploadContext = m_gfxCon.getUploadContext();
-
-	uploadContext.submitWork(
-		[&](const vk::CommandBuffer& cmd)
-		{
-			vk::ImageSubresourceRange range(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
-
-			vk::ImageMemoryBarrier barrierForTransfer(
-				{},
-				vk::AccessFlagBits::eTransferWrite,		// any transfer ops should wait until the image layout transition has occurred!
-				vk::ImageLayout::eUndefined,
-				vk::ImageLayout::eTransferDstOptimal,	// -> puts into linear layout, best for copying data from buffer to texture
-				{},
-				{},
-				m_image.resource,
-				range
-			);
-			
-			// Transition layout through barrier (after availability ops and before visibility ops)
-			cmd.pipelineBarrier(
-				vk::PipelineStageFlagBits::eTopOfPipe,
-				vk::PipelineStageFlagBits::eTransfer,
-				{},
-				{},
-				{},
-				barrierForTransfer
-			);
-
-			// Now we can do our transfer cmd
-			vk::BufferImageCopy copyRegion({}, {}, {},
-				vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1),
-				{},
-				texExtent
-			);
-
-			cmd.copyBufferToImage(stagingBuffer.resource, m_image.resource, vk::ImageLayout::eTransferDstOptimal, copyRegion);
-
-				
-			// Now we can transfer the image layout to optimal for shader usage
-			vk::ImageMemoryBarrier barrierForReading(
-				vk::AccessFlagBits::eTransferWrite,
-				vk::AccessFlagBits::eShaderRead,
-				vk::ImageLayout::eTransferDstOptimal,
-				vk::ImageLayout::eShaderReadOnlyOptimal,
-				{},
-				{},
-				m_image.resource,
-				range
-			);
-
-			// Transition layout through barrier (after availability ops and before visibility ops)
-			cmd.pipelineBarrier(
-				vk::PipelineStageFlagBits::eTransfer,
-				vk::PipelineStageFlagBits::eFragmentShader,		// guarantee for any future commands that happens after this
-				{},
-				{},
-				{},
-				barrierForReading
-			);
-
-		});
-
-
-	// Create image view
-	vk::ComponentMapping componentMapping(vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG, vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA);
-	vk::ImageSubresourceRange subresRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
-
-	vk::ImageViewCreateInfo viewCreateInfo({},
-		m_image.resource,
-		vk::ImageViewType::e2D,
-		imageFormat,
-		componentMapping,
-		subresRange
-	);
-
-	m_image.view = m_gfxCon.getDevice().createImageViewUnique(viewCreateInfo);
+	m_image = loadVkImage(m_gfxCon, "Resources/Textures/images.jpg");
 
 	// Create sampler, allocate material set and bind combined image sampler 
 	vk::SamplerCreateInfo sCI({});	// nearest and repeat
 	m_sampler = m_gfxCon.getDevice().createSamplerUnique(sCI);
-
-	// No need for staging buffer anymore
-	vmaDestroyBuffer(allocator, stagingBuffer.resource, stagingBuffer.alloc);
 }
 	
 	

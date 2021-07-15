@@ -1,7 +1,7 @@
 #pragma once
 #include "Application.h"
 
-#include "GraphicsContext.h"
+#include "VulkanContext.h"
 #include "Window.h"
 #include "Utilities.h"
 
@@ -22,7 +22,7 @@ Purpose:
 class MinimalTriangleApp : public Application
 {
 public:
-	MinimalTriangleApp(Window& window, GraphicsContext& gfxCon);
+	MinimalTriangleApp(Window& window, VulkanContext& gfxCon);
 	~MinimalTriangleApp() = default;
 
 	MinimalTriangleApp() = delete;

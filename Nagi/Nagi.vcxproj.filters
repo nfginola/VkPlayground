@@ -24,7 +24,7 @@
     <ClCompile Include="Source\Window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\GraphicsContext.cpp">
+    <ClCompile Include="Source\VulkanContext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\Utilities.cpp">
@@ -42,6 +42,9 @@
     <ClCompile Include="Source\Application\QuadApp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Source\VulkanUtilities.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Includes\pch.h">
@@ -50,7 +53,7 @@
     <ClInclude Include="Includes\Window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Includes\GraphicsContext.h">
+    <ClInclude Include="Includes\VulkanContext.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Includes\Utilities.h">
@@ -72,6 +75,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Includes\Application\QuadApp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Includes\VulkanUtilities.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

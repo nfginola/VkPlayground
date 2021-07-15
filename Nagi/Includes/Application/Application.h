@@ -1,9 +1,11 @@
 #pragma once
 
 #include "Window.h"
-#include "GraphicsContext.h"
+#include "VulkanContext.h"
 #include "Utilities.h"
+#include "VulkanUtilities.h"
 #include "SingleInstance.h"
+
 
 // Important GLM defines
 #define GLM_FORCE_RADIANS
@@ -16,7 +18,7 @@ namespace Nagi
 {
 
 class Window;
-class GraphicsContext;
+class VulkanContext;
 
 class Application
 {
@@ -26,13 +28,13 @@ public:
 protected:
 	Application() = delete;
 	~Application() = default;
-	Application(Window& window, GraphicsContext& gfxCon);
+	Application(Window& window, VulkanContext& gfxCon);
 
 	// Default application behaviour that exists on all Applications should be here
 	
 protected:
 	Window& m_window;
-	GraphicsContext& m_gfxCon;
+	VulkanContext& m_gfxCon;
 
 };
 }

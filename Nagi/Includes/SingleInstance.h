@@ -3,9 +3,6 @@
 namespace Nagi
 {
 
-namespace Utils
-{
-
 template <typename T>
 class SingleInstance
 {
@@ -30,8 +27,6 @@ private:
 
 
 };
-
-}
 
 
 

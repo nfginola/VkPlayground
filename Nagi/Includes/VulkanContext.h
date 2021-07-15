@@ -6,8 +6,141 @@
 namespace Nagi
 {
 
-struct QueueFamilies;
 class Window;
+struct QueueFamilies;
+
+struct Buffer
+{
+public:
+	Buffer() = default;
+
+	Buffer(VmaAllocator allocator, vk::BufferCreateInfo bufCI, VmaAllocationCreateInfo allocCI) :
+		m_allocator(allocator)
+	{
+		auto res = vmaCreateBuffer(allocator, (VkBufferCreateInfo*)&bufCI, &allocCI, (VkBuffer*)&resource, &alloc, nullptr);
+		if (res != VK_SUCCESS) throw std::runtime_error("Couldnt create vertex buffer");
+
+	}
+
+	const vk::Buffer& getBuffer() const { return resource; }
+
+	// Maybe we want templated? (Instead of free form void* and size)
+	void putData(const void* inData, size_t dataSize)
+	{
+		// No validity checks done here (to check whether our resource is CPU mappable or not. The validation layer will catch right? o.o
+		// Neither checking if inData is nullptr or not
+
+		void* mappedData = nullptr;
+		vmaMapMemory(m_allocator, alloc, &mappedData);
+		memcpy(mappedData, inData, dataSize);
+		vmaUnmapMemory(m_allocator, alloc);
+	}
+
+	void destroy() { vmaDestroyBuffer(m_allocator, resource, alloc); }
+
+private:
+	VmaAllocator m_allocator;
+	VmaAllocation alloc;
+	vk::Buffer resource;
+
+};
+
+struct Texture
+{
+	VmaAllocation alloc;
+	vk::Image resource;
+	vk::UniqueImageView view;
+
+	//std::function<void(VmaAllocator)> destroyFunc;
+};
+
+struct Material
+{
+	vk::Pipeline pipeline;					// actual pipeline (e.g full graphics pipeline states)
+	vk::PipelineLayout pipelineLayout;		// has descriptor set layout and push range info
+
+	vk::UniqueDescriptorSet descSet;		// has the resource binding 
+
+	// Consists of a unique pair ( (pipeline, pipelineLayout), descSet )
+
+};
+
+class Mesh
+{
+public:
+	Mesh() = delete;
+	Mesh(const Buffer& vb, const Buffer& ib, uint32_t firstIndex, uint32_t numVerts, uint32_t vbOffset = 0) :
+		m_vb(vb), m_ib(ib), m_ibFirstIndex(firstIndex), m_numVerts(numVerts), m_vbOffset(vbOffset) {}
+	~Mesh() = default;
+
+	uint32_t getFirstIndex() const { return m_ibFirstIndex; }
+	uint32_t getNumVertices() const { return m_numVerts; }
+	uint32_t getVertexBufferOffset() const { return m_vbOffset; }
+
+private:
+	// Each mesh will have a reference which it will not use (for now)
+	// This is to simply make the dependency clear!
+	const Buffer& m_vb;
+	const Buffer& m_ib;
+	const uint32_t m_ibFirstIndex;
+	const uint32_t m_numVerts;
+	const uint32_t m_vbOffset;
+};
+
+struct RenderUnit
+{
+public:
+	RenderUnit() = delete;
+	RenderUnit(const Mesh& mesh, const Material& material) :
+		m_mesh(mesh), m_material(material) {}
+	~RenderUnit() = default;
+
+	const Mesh& getMesh() const { return m_mesh; }
+	const Material& getMaterial() const { return m_material; }
+
+private:
+	const Mesh& m_mesh;
+	const Material& m_material;
+};
+
+// A collection of coherent meshes to be rendered
+class RenderObject
+{
+public:
+	RenderObject() = delete;
+	RenderObject(const Buffer& vb, const Buffer& ib, const std::vector<RenderUnit>& renderUnits);
+	~RenderObject() = default;
+
+	const vk::Buffer& getVertexBuffer() const { return m_vb.getBuffer(); }
+	const vk::Buffer& getIndexBuffer() const { return m_ib.getBuffer(); }
+
+	// Temporary way of rendering (For each RenderObject, traverse this RenderUnit list
+	const std::vector<RenderUnit>& getRenderUnits() const { return m_renderUnits; }
+
+
+	RenderObject(const RenderObject&) = delete;
+	RenderObject& operator=(const RenderObject&) = delete;
+	RenderObject(RenderObject&&) = delete;
+	RenderObject operator=(RenderObject&&) = delete;
+
+private:
+	std::vector<RenderUnit> m_renderUnits;
+	Buffer m_vb;
+	Buffer m_ib;
+
+
+	/*
+		Render Units will consist of unique pairs of (mesh, material).
+
+		Buffers will be destroyed in the constructor of RenderObject
+
+		m_vb.destroy()
+		m_ib.destroy()
+	
+	*/
+};
+
+
 
 struct PerFrameSyncResource
 {
@@ -26,7 +159,7 @@ struct FrameResource
 	uint32_t frameIdx;
 };
 
-class UploadContext : Utils::SingleInstance<UploadContext>
+class UploadContext : private SingleInstance<UploadContext>
 {
 public:
 	UploadContext() = delete;
@@ -50,28 +183,30 @@ private:
 };
 
 
-class GraphicsContext : Utils::SingleInstance<GraphicsContext>
+class VulkanContext : private SingleInstance<VulkanContext>
 {
 public:
-	GraphicsContext(const Window& win, bool debugLayer = true);
-	~GraphicsContext();
+	VulkanContext(const Window& win, bool debugLayer = true);
+	~VulkanContext();
 
-	GraphicsContext() = delete;
-	GraphicsContext(const GraphicsContext&) = delete;
-	GraphicsContext& operator=(const GraphicsContext&) = delete;
-	GraphicsContext(GraphicsContext&&) = delete;
-	GraphicsContext operator=(GraphicsContext&&) = delete;
+	VulkanContext() = delete;
+	VulkanContext(const VulkanContext&) = delete;
+	VulkanContext& operator=(const VulkanContext&) = delete;
+	VulkanContext(VulkanContext&&) = delete;
+	VulkanContext operator=(VulkanContext&&) = delete;
 
 	FrameResource beginFrame();
 	void endFrame();								// Last external subpass must transition the swapchain image to proper presentation layout! 
 	void submitQueue(const vk::SubmitInfo& info); 	// One queue submit per frame is assumed right now until further exploration
 
 
+
+
 	// ========================== Below are dependencies needed outside
 	const vk::Device& getDevice() const;
 	VmaAllocator getResourceAllocator() const;
 	UploadContext& getUploadContext() const;
-	
+
 	// Maybe we can refactor to SwapchainInfo and DepthInfo
 	uint32_t getSwapchainImageCount() const;
 	const std::vector<vk::ImageView>& getSwapchainViews() const;
@@ -81,7 +216,6 @@ public:
 	const vk::ImageView& getDepthView() const;
 	vk::Format getDepthFormat() const;
 
-	// Public
 	static constexpr uint32_t s_maxFramesInFlight = 2;
 
 private:
@@ -98,7 +232,7 @@ private:
 	void createCommandPools(const vk::Device& logicalDevice, const QueueFamilies& qfs);
 	void createSyncObjects(const vk::Device& logicalDevice, uint32_t maxFramesInFlight);
 	void createCommandBuffers(const vk::Device& logicalDevice, const vk::CommandPool& cmdPool);
-		
+
 	// Helpers
 	QueueFamilies findQueueFamilies(const vk::PhysicalDevice& physDevice, vk::SurfaceKHR surface) const;
 	vk::SurfaceFormatKHR selectSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& surfaceFormats) const;
@@ -130,8 +264,6 @@ private:
 	std::vector<PerFrameSyncResource> m_frameSyncResources;
 
 	std::unique_ptr<UploadContext> m_uploadContext;
-
-	// VMA
 	VmaAllocator m_allocator;
 
 	vk::SurfaceKHR m_surface;
@@ -152,8 +284,6 @@ private:
 	//VmaAllocation m_vmaDepthAlloc;
 
 };
-
-
 
 
 }

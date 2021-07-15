@@ -8,7 +8,7 @@
 int main()
 {
 	Nagi::Window win(1920, 1080);
-	Nagi::GraphicsContext gfxCon(win);
+	Nagi::VulkanContext gfxCon(win);
 
 #if APP_MINIMAL_TRI
 	Nagi::MinimalTriangleApp app(win, gfxCon);
