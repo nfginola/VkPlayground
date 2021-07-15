@@ -9,17 +9,16 @@ namespace Nagi
 class Window;
 struct QueueFamilies;
 
-struct Buffer
+class Buffer
 {
 public:
 	Buffer() = default;
 
-	Buffer(VmaAllocator allocator, vk::BufferCreateInfo bufCI, VmaAllocationCreateInfo allocCI) :
+	Buffer(VmaAllocator allocator, const vk::BufferCreateInfo& bufCI, const VmaAllocationCreateInfo& allocCI) :
 		m_allocator(allocator)
 	{
-		auto res = vmaCreateBuffer(allocator, (VkBufferCreateInfo*)&bufCI, &allocCI, (VkBuffer*)&resource, &alloc, nullptr);
-		if (res != VK_SUCCESS) throw std::runtime_error("Couldnt create vertex buffer");
-
+		if (vmaCreateBuffer(allocator, (const VkBufferCreateInfo*)&bufCI, &allocCI, (VkBuffer*)&resource, &alloc, nullptr) != VK_SUCCESS) 
+			throw std::runtime_error("Could not create buffer");
 	}
 
 	const vk::Buffer& getBuffer() const { return resource; }
@@ -47,22 +46,47 @@ private:
 
 struct Texture
 {
-	VmaAllocation alloc;
-	vk::Image resource;
-	vk::UniqueImageView view;
+	Texture() = default;
 
-	//std::function<void(VmaAllocator)> destroyFunc;
+	Texture(VmaAllocator allocator, vk::Device dev, const vk::ImageCreateInfo& imgCI, const VmaAllocationCreateInfo& allocCI) :
+		m_allocator(allocator),
+		m_dev(dev)
+	{
+		if (vmaCreateImage(allocator, (const VkImageCreateInfo*)&imgCI, &allocCI, (VkImage*)&m_resource, &m_alloc, nullptr) != VK_SUCCESS)
+			throw std::runtime_error("Could not create image");
+	}
+
+	const vk::Image& getImage() const { return m_resource; }
+	const vk::ImageView& getImageView() const { return m_view; }
+
+	void setView(vk::ImageView view) { m_view = view; }
+	void destroy() { m_dev.destroyImageView(m_view); vmaDestroyImage(m_allocator, m_resource, m_alloc); }
+
+private:
+	VmaAllocator m_allocator;
+	VmaAllocation m_alloc;
+	vk::Image m_resource;
+	vk::ImageView m_view;
+	vk::Device m_dev;
+
 };
 
 struct Material
 {
-	vk::Pipeline pipeline;					// actual pipeline (e.g full graphics pipeline states)
-	vk::PipelineLayout pipelineLayout;		// has descriptor set layout and push range info
+public:
+	Material(const vk::Pipeline& pipeline, const vk::PipelineLayout& pipelineLayout, vk::DescriptorSet descriptorSet) :
+		m_pipeline(pipeline), m_pipelineLayout(pipelineLayout), m_descriptorSet(descriptorSet) { }
+	
+	const vk::Pipeline& getPipeline() const { return m_pipeline; }
+	const vk::PipelineLayout& getPipelineLayout() const { return m_pipelineLayout; }
+	const vk::DescriptorSet& getDescriptorSet() const { return m_descriptorSet; }
 
-	vk::UniqueDescriptorSet descSet;		// has the resource binding 
 
-	// Consists of a unique pair ( (pipeline, pipelineLayout), descSet )
+private:
+	const vk::Pipeline& m_pipeline;						// actual pipeline (e.g full graphics pipeline states)
 
+	const vk::PipelineLayout& m_pipelineLayout;			// has descriptor set layout and push range info (needed for setting descriptor sets and pushing data for push constants)
+	vk::DescriptorSet m_descriptorSet;			// has the resource binding 
 };
 
 class Mesh
@@ -104,12 +128,17 @@ private:
 };
 
 // A collection of coherent meshes to be rendered
-class RenderObject
+class RenderModel
 {
 public:
-	RenderObject() = delete;
-	RenderObject(const Buffer& vb, const Buffer& ib, const std::vector<RenderUnit>& renderUnits);
-	~RenderObject() = default;
+	RenderModel() = delete;
+	RenderModel(Buffer vb, Buffer ib, std::vector<RenderUnit> renderUnits) :
+		m_vb(vb), m_ib(ib), m_renderUnits(renderUnits) {}
+	~RenderModel()
+	{
+		m_vb.destroy();
+		m_ib.destroy();
+	}
 
 	const vk::Buffer& getVertexBuffer() const { return m_vb.getBuffer(); }
 	const vk::Buffer& getIndexBuffer() const { return m_ib.getBuffer(); }
@@ -118,10 +147,10 @@ public:
 	const std::vector<RenderUnit>& getRenderUnits() const { return m_renderUnits; }
 
 
-	RenderObject(const RenderObject&) = delete;
-	RenderObject& operator=(const RenderObject&) = delete;
-	RenderObject(RenderObject&&) = delete;
-	RenderObject operator=(RenderObject&&) = delete;
+	RenderModel(const RenderModel&) = delete;
+	RenderModel& operator=(const RenderModel&) = delete;
+	RenderModel(RenderModel&&) = delete;
+	RenderModel operator=(RenderModel&&) = delete;
 
 private:
 	std::vector<RenderUnit> m_renderUnits;
@@ -133,6 +162,8 @@ private:
 		Render Units will consist of unique pairs of (mesh, material).
 
 		Buffers will be destroyed in the constructor of RenderObject
+
+		RenderModel ARE the OWNERS of the Buffers they use
 
 		m_vb.destroy()
 		m_ib.destroy()

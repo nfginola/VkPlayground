@@ -9,15 +9,15 @@ namespace Nagi
 
 Texture loadVkImage(const VulkanContext& context, const std::string& filePath)
 {
-	Texture texture{};
+
 
 	// ========================== Load image data
 	int texWidth, texHeight, texChannels;
 
-	stbi_uc* pixels = stbi_load("Resources/Textures/images.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+	stbi_uc* pixels = stbi_load(filePath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
 	if (!pixels)
-		throw std::runtime_error("Can't find the image resource!");
+		throw std::runtime_error("Can't find the image resource: " + filePath);
 
 	size_t imageSize = texWidth * texHeight * sizeof(uint32_t);
 
@@ -33,12 +33,14 @@ Texture loadVkImage(const VulkanContext& context, const std::string& filePath)
 
 	stagingBuffer.putData(pixels, imageSize);
 
+	stbi_image_free(pixels);
+
 
 	// =========================== Create texture
 	auto texExtent = vk::Extent3D(texWidth, texHeight, 1);
 	vk::Format imageFormat = vk::Format::eR8G8B8A8Srgb;
 
-	vk::ImageCreateInfo imCI({},
+	vk::ImageCreateInfo imgCI({},
 		vk::ImageType::e2D, imageFormat,
 		texExtent,
 		1, 1,
@@ -50,8 +52,8 @@ Texture loadVkImage(const VulkanContext& context, const std::string& filePath)
 	VmaAllocationCreateInfo texAlloc{};
 	texAlloc.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-	if (vmaCreateImage(allocator, (VkImageCreateInfo*)&imCI, &texAlloc, (VkImage*)&texture.resource, &texture.alloc, nullptr) != VK_SUCCESS)
-		throw std::runtime_error("Could not create image");
+	Texture texture(allocator, context.getDevice(), imgCI, texAlloc);
+
 
 	// ======================================= Initial Layout of image is Undefined, we need to transition its layout!
 	auto& uploadContext = context.getUploadContext();
@@ -68,7 +70,7 @@ Texture loadVkImage(const VulkanContext& context, const std::string& filePath)
 				vk::ImageLayout::eTransferDstOptimal,	// -> puts into linear layout, best for copying data from buffer to texture
 				{},
 				{},
-				texture.resource,
+				texture.getImage(),
 				range
 			);
 
@@ -89,7 +91,7 @@ Texture loadVkImage(const VulkanContext& context, const std::string& filePath)
 				texExtent
 			);
 
-			cmd.copyBufferToImage(stagingBuffer.getBuffer(), texture.resource, vk::ImageLayout::eTransferDstOptimal, copyRegion);
+			cmd.copyBufferToImage(stagingBuffer.getBuffer(), texture.getImage(), vk::ImageLayout::eTransferDstOptimal, copyRegion);
 
 
 			// Now we can transfer the image layout to optimal for shader usage
@@ -100,7 +102,7 @@ Texture loadVkImage(const VulkanContext& context, const std::string& filePath)
 				vk::ImageLayout::eShaderReadOnlyOptimal,
 				{},
 				{},
-				texture.resource,
+				texture.getImage(),
 				range
 			);
 
@@ -124,14 +126,14 @@ Texture loadVkImage(const VulkanContext& context, const std::string& filePath)
 	vk::ImageSubresourceRange subresRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
 
 	vk::ImageViewCreateInfo viewCreateInfo({},
-		texture.resource,
+		texture.getImage(),
 		vk::ImageViewType::e2D,
 		imageFormat,
 		componentMapping,
 		subresRange
 	);
 
-	texture.view = context.getDevice().createImageViewUnique(viewCreateInfo);
+	texture.setView(context.getDevice().createImageView(viewCreateInfo));
 
 	return texture;
 }

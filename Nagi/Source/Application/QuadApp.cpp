@@ -54,6 +54,7 @@ QuadApp::QuadApp(Window& window, VulkanContext& gfxCon) :
 		// Set up Texture
 		loadImage();
 
+
 		setupDescriptorSetLayout();
 		createDescriptorPool();
 		allocateDescriptorSets();
@@ -64,6 +65,8 @@ QuadApp::QuadApp(Window& window, VulkanContext& gfxCon) :
 
 		createVertexIndexBuffer(gfxCon.getResourceAllocator());
 		
+		createRenderModel();
+
 
 		while (m_window.isRunning())
 		{
@@ -120,30 +123,68 @@ QuadApp::QuadApp(Window& window, VulkanContext& gfxCon) :
 			cmd.begin(vk::CommandBufferBeginInfo());		// implicitly calls resetCommandBuffer
 
 			cmd.beginRenderPass(rpInfo, {});
-			cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_gfxPipeline.get());
 
-			// Bind UBO after Pipeline
-			//vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, object.material->pipelineLayout, 0, 1, &get_current_frame().globalDescriptor, 0, nullptr);
-			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelineLayout.get(), 0, m_frameData[frameRes.frameIdx].descriptorSet, {});
 
-			// Bind texture
-			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelineLayout.get(), 1, m_materialDescSet, {});
+			for (const auto& model : m_testModels)
+			{
+				const auto& renderUnits = model->getRenderUnits();
+				const auto& vb = model->getVertexBuffer();
+				const auto& ib = model->getIndexBuffer();
 
-			// Flip viewport height https://www.saschawillems.de/blog/2019/03/29/flipping-the-vulkan-viewport/
-			// We set this on Graphics Pipeline instead of changing it dynamically
-			//cmd.setViewport(0, vk::Viewport(0.f, (float)m_scExtent.height, m_scExtent.width, -(float)m_scExtent.height, 0.0, 1.0));
+				// Bind VB/IB
+				std::array<vk::Buffer, 1> vbs{ vb };
+				std::array<vk::DeviceSize, 1> offsets{ 0 };
+				cmd.bindVertexBuffers(0, vbs, offsets);
+				cmd.bindIndexBuffer(ib, 0, vk::IndexType::eUint32);
 
-			// Bind vertex buffer
-			std::array<vk::Buffer, 1> vbs{ m_vb.getBuffer() };
-			std::array<vk::DeviceSize, 1> offsets{ 0 };
-			cmd.bindVertexBuffers(0, vbs, offsets);
+				for (const auto& renderUnit : renderUnits)
+				{
+					const auto& mesh = renderUnit.getMesh();
+					const auto& mat = renderUnit.getMaterial();
 
-			cmd.bindIndexBuffer(m_ib.getBuffer(), 0, vk::IndexType::eUint32);
+					cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, mat.getPipeline());
 
-			// ===================================================== Push constants (command constants)
-			cmd.pushConstants<PushConstant>(m_pipelineLayout.get(), vk::ShaderStageFlagBits::eVertex, 0, { frameConstants });
-			
-			cmd.drawIndexed(6, 1, 0, 0, 0);
+					// UBO
+					cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mat.getPipelineLayout(), 0, m_frameData[frameRes.frameIdx].descriptorSet, {});	// Set 0
+
+					// Bind texture
+					cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mat.getPipelineLayout(), 1, mat.getDescriptorSet(), {});	// Set 1
+
+					// Push constants
+					cmd.pushConstants<PushConstant>(mat.getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, { frameConstants });
+
+					cmd.drawIndexed(mesh.getNumVertices(), 1, mesh.getFirstIndex(), mesh.getVertexBufferOffset(), 0);
+				}
+			}
+
+				
+			{
+				cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_gfxPipeline.get());
+
+				// Bind UBO after Pipeline
+				//vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, object.material->pipelineLayout, 0, 1, &get_current_frame().globalDescriptor, 0, nullptr);
+				cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelineLayout.get(), 0, m_frameData[frameRes.frameIdx].descriptorSet, {});
+
+				// Bind texture
+				cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelineLayout.get(), 1, m_materialDescSet, {});
+
+				// Flip viewport height https://www.saschawillems.de/blog/2019/03/29/flipping-the-vulkan-viewport/
+				// We set this on Graphics Pipeline instead of changing it dynamically
+				//cmd.setViewport(0, vk::Viewport(0.f, (float)m_scExtent.height, m_scExtent.width, -(float)m_scExtent.height, 0.0, 1.0));
+
+				// Bind vertex buffer
+				std::array<vk::Buffer, 1> vbs{ m_vb.getBuffer() };
+				std::array<vk::DeviceSize, 1> offsets{ 0 };
+				cmd.bindVertexBuffers(0, vbs, offsets);
+
+				cmd.bindIndexBuffer(m_ib.getBuffer(), 0, vk::IndexType::eUint32);
+
+				cmd.pushConstants<PushConstant>(m_pipelineLayout.get(), vk::ShaderStageFlagBits::eVertex, 0, { frameConstants });
+				// ===================================================== Push constants (command constants)
+
+				cmd.drawIndexed(6, 1, 0, 0, 0);
+			}
+		
 			cmd.endRenderPass();
 
 			cmd.end();
@@ -196,7 +237,8 @@ QuadApp::~QuadApp()
 	for (int i = 0; i < VulkanContext::s_maxFramesInFlight; ++i)
 		m_frameData[i].ubo.destroy();
 
-	vmaDestroyImage(allocator, m_image.resource, m_image.alloc);
+	m_image.destroy();
+	m_texStorage.destroy();
 
 }
 
@@ -412,12 +454,12 @@ void QuadApp::createDescriptorPool()
 
 	std::vector<vk::DescriptorPoolSize> descriptorPoolSizes{
 		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 2),
-		vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 1)		// for texture
+		vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 2)		// for texture
 	};
 
 
 	vk::DescriptorPoolCreateInfo poolCI({}, 
-		5,										// max sets, just set a value, this means we have room to allocate 10 DescriptorSet with the specified DescriptorPoolSize content in each set
+		10,										// max sets, just set a value, this means we have room to allocate 10 DescriptorSet with the specified DescriptorPoolSize content in each set
 		descriptorPoolSizes
 	);
 	
@@ -449,7 +491,7 @@ void QuadApp::allocateDescriptorSets()
 	m_materialDescSet = m_gfxCon.getDevice().allocateDescriptorSets(texAllocInfo).front();
 
 	// Write to it (bind image and sampler)
-	vk::DescriptorImageInfo imageInfo(m_sampler.get(), m_image.view.get(), vk::ImageLayout::eShaderReadOnlyOptimal);
+	vk::DescriptorImageInfo imageInfo(m_sampler.get(), m_image.getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
 	vk::WriteDescriptorSet imageSetWrite(m_materialDescSet, 0, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo, {}, {});
 	m_gfxCon.getDevice().updateDescriptorSets(imageSetWrite, {});
 
@@ -467,6 +509,56 @@ void QuadApp::loadImage()
 	// Create sampler, allocate material set and bind combined image sampler 
 	vk::SamplerCreateInfo sCI({});	// nearest and repeat
 	m_sampler = m_gfxCon.getDevice().createSamplerUnique(sCI);
+}
+
+void QuadApp::createRenderModel()
+{
+	// Local space (RH)
+	std::vector<Vertex> vertices{
+		{ { -0.5f, 0.5f, -4.f }, { 0.f, 0.f }, { 1.f, 0.f, 0.f } },
+		{ { 0.5f, 0.5f, -4.f }, { 1.f, 0.f }, { 1.f, 0.f, 0.f } },
+		{ { 0.5f, -0.5f, -4.f }, { 1.f, 1.f }, { 0.f, 1.f, 0.f } },
+		{ { -0.5f, -0.5f, -4.f }, { 0.f, 1.f }, { 0.f, 0.f, 1.f } }
+	};
+
+	// CCW
+	std::vector<uint32_t> indices{
+		0, 2, 1,
+		0, 3, 2
+	};
+
+	// Create buffer resources
+	auto vb = loadVkImmutableBuffer(m_gfxCon, vertices, vk::BufferUsageFlagBits::eVertexBuffer);
+	auto ib = loadVkImmutableBuffer(m_gfxCon, indices, vk::BufferUsageFlagBits::eIndexBuffer);
+
+	// Create mesh
+	m_meshStorage = std::make_unique<Mesh>(
+		vb, ib,
+		0,
+		indices.size()
+	);
+
+	// Load Descriptor Resources (e.g Images)
+	m_texStorage = loadVkImage(m_gfxCon, "Resources/Textures/rimuru2.jpg");
+
+	// Create descriptor set with new material
+	vk::DescriptorSetAllocateInfo texAllocInfo(m_descriptorPool.get(), m_materialSetLayout.get());	// One setLayout given --> Returning one element in allocateDescriptorSets
+	auto newMatDescSet = m_gfxCon.getDevice().allocateDescriptorSets(texAllocInfo).front();
+
+	// Write to it (bind image and sampler)
+	vk::DescriptorImageInfo imageInfo(m_sampler.get(), m_texStorage.getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
+	vk::WriteDescriptorSet imageSetWrite(newMatDescSet, 0, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo, {}, {});
+	m_gfxCon.getDevice().updateDescriptorSets(imageSetWrite, {});
+
+	// Create material
+	m_materialStorage = std::make_unique<Material>(m_gfxPipeline.get(), m_pipelineLayout.get(), newMatDescSet);
+
+	// Create render unit
+	RenderUnit renderUnit(*m_meshStorage.get(), *m_materialStorage.get());
+
+	// Create render model
+	std::vector<RenderUnit> renderUnits{ renderUnit };
+	m_testModels.push_back(std::make_unique<RenderModel>(vb, ib, renderUnits));
 }
 	
 	

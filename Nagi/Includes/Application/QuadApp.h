@@ -140,6 +140,8 @@ private:
 
 	void loadImage();
 
+	void createRenderModel();
+
 private:
 	vk::UniqueRenderPass m_rendPass;
 	vk::UniquePipeline m_gfxPipeline;
@@ -160,6 +162,12 @@ private:
 	vk::UniqueDescriptorSetLayout m_descriptorSetLayout;	// Needed for UBO thing
 	vk::UniqueDescriptorSetLayout m_materialSetLayout;
 	vk::UniqueDescriptorPool m_descriptorPool;
+
+
+	std::vector<std::unique_ptr<RenderModel>> m_testModels;
+	std::unique_ptr<Mesh> m_meshStorage;
+	std::unique_ptr<Material> m_materialStorage;
+	Texture m_texStorage;
 };
 
 }
