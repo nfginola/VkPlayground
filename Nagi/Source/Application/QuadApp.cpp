@@ -48,23 +48,32 @@ QuadApp::QuadApp(Window& window, VulkanContext& gfxCon) :
 
 	try
 	{
+		// Unchanging state
+		createRenderPass();
+		createFramebuffers();
+
 		// Set up UBO
 		createUBO();
 
 		// Set up Texture
 		loadImage();
 
-
+		// Create sampler
+		vk::SamplerCreateInfo sCI({});	// nearest and repeat
+		m_sampler = m_gfxCon.getDevice().createSamplerUnique(sCI);
+		
+		// State setup
 		setupDescriptorSetLayout();
 		createDescriptorPool();
+
+		// Depend on resource existence (UBO exists, texture exists, sampler exists)
 		allocateDescriptorSets();
 
-		createRenderPass();
-		createFramebuffers();
+		// Frequently changing state
 		createGraphicsPipeline(m_rendPass.get());
 
+		// Models
 		createVertexIndexBuffer(gfxCon.getResourceAllocator());
-		
 		createRenderModel();
 
 
@@ -124,7 +133,7 @@ QuadApp::QuadApp(Window& window, VulkanContext& gfxCon) :
 
 			cmd.beginRenderPass(rpInfo, {});
 
-
+			// Testing the RenderModel abstraction
 			for (const auto& model : m_testModels)
 			{
 				const auto& renderUnits = model->getRenderUnits();
@@ -157,7 +166,7 @@ QuadApp::QuadApp(Window& window, VulkanContext& gfxCon) :
 				}
 			}
 
-				
+			// Old triangle
 			{
 				cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_gfxPipeline.get());
 
@@ -495,30 +504,23 @@ void QuadApp::allocateDescriptorSets()
 	vk::WriteDescriptorSet imageSetWrite(m_materialDescSet, 0, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo, {}, {});
 	m_gfxCon.getDevice().updateDescriptorSets(imageSetWrite, {});
 
-
-	//auto huh = m_gfxCon.getDevice().allocateDescriptorSets(texAllocInfo).front();
-	//auto haha = m_gfxCon.getDevice().allocateDescriptorSets(texAllocInfo).front();
-	//auto huhee = m_gfxCon.getDevice().allocateDescriptorSets(texAllocInfo).front();
-
 }
 
 void QuadApp::loadImage()
 {
 	m_image = loadVkImage(m_gfxCon, "Resources/Textures/images.jpg");
 
-	// Create sampler, allocate material set and bind combined image sampler 
-	vk::SamplerCreateInfo sCI({});	// nearest and repeat
-	m_sampler = m_gfxCon.getDevice().createSamplerUnique(sCI);
+
 }
 
 void QuadApp::createRenderModel()
 {
 	// Local space (RH)
 	std::vector<Vertex> vertices{
-		{ { -0.5f, 0.5f, -4.f }, { 0.f, 0.f }, { 1.f, 0.f, 0.f } },
-		{ { 0.5f, 0.5f, -4.f }, { 1.f, 0.f }, { 1.f, 0.f, 0.f } },
-		{ { 0.5f, -0.5f, -4.f }, { 1.f, 1.f }, { 0.f, 1.f, 0.f } },
-		{ { -0.5f, -0.5f, -4.f }, { 0.f, 1.f }, { 0.f, 0.f, 1.f } }
+		{ { -0.5f, 0.5f, 2.f }, { 0.f, 0.f }, { 1.f, 0.f, 0.f } },
+		{ { 0.5f, 0.5f, 2.f }, { 1.f, 0.f }, { 1.f, 0.f, 0.f } },
+		{ { 0.5f, -0.5f, 2.f }, { 1.f, 1.f }, { 0.f, 1.f, 0.f } },
+		{ { -0.5f, -0.5f, 2.f }, { 0.f, 1.f }, { 0.f, 0.f, 1.f } }
 	};
 
 	// CCW
@@ -535,7 +537,7 @@ void QuadApp::createRenderModel()
 	m_meshStorage = std::make_unique<Mesh>(
 		vb, ib,
 		0,
-		indices.size()
+		static_cast<uint32_t>(indices.size())
 	);
 
 	// Load Descriptor Resources (e.g Images)
@@ -553,7 +555,7 @@ void QuadApp::createRenderModel()
 	// Create material
 	m_materialStorage = std::make_unique<Material>(m_gfxPipeline.get(), m_pipelineLayout.get(), newMatDescSet);
 
-	// Create render unit
+	// Create render unit(s)
 	RenderUnit renderUnit(*m_meshStorage.get(), *m_materialStorage.get());
 
 	// Create render model

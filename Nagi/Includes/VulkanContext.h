@@ -86,7 +86,7 @@ private:
 	const vk::Pipeline& m_pipeline;						// actual pipeline (e.g full graphics pipeline states)
 
 	const vk::PipelineLayout& m_pipelineLayout;			// has descriptor set layout and push range info (needed for setting descriptor sets and pushing data for push constants)
-	vk::DescriptorSet m_descriptorSet;			// has the resource binding 
+	vk::DescriptorSet m_descriptorSet;					// has the resource bindings
 };
 
 class Mesh
@@ -154,21 +154,11 @@ public:
 
 private:
 	std::vector<RenderUnit> m_renderUnits;
+
+	// Owns Buffers
 	Buffer m_vb;
 	Buffer m_ib;
 
-
-	/*
-		Render Units will consist of unique pairs of (mesh, material).
-
-		Buffers will be destroyed in the constructor of RenderObject
-
-		RenderModel ARE the OWNERS of the Buffers they use
-
-		m_vb.destroy()
-		m_ib.destroy()
-	
-	*/
 };
 
 
