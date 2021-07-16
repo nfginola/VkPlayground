@@ -3,6 +3,7 @@
 #include "Window.h"
 #include "VulkanContext.h"
 #include "Utilities.h"
+#include "VulkanTypes.h"
 #include "VulkanUtilities.h"
 #include "SingleInstance.h"
 

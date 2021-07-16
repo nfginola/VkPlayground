@@ -80,5 +80,8 @@
     <ClInclude Include="Includes\VulkanUtilities.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Includes\VulkanTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

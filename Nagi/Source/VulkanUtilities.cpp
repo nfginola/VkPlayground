@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "VulkanUtilities.h"
+#include "VulkanTypes.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -7,7 +8,7 @@
 namespace Nagi
 {
 
-Texture loadVkImage(const VulkanContext& context, const std::string& filePath)
+std::unique_ptr<Texture> loadVkImage(VulkanContext& context, const std::string& filePath)
 {
 
 
@@ -21,7 +22,7 @@ Texture loadVkImage(const VulkanContext& context, const std::string& filePath)
 
 	size_t imageSize = texWidth * texHeight * sizeof(uint32_t);
 
-	auto allocator = context.getResourceAllocator();
+	auto allocator = context.getAllocator();
 
 
 	// ========================== Create staging buffer and copy data to staging buffer
@@ -52,8 +53,8 @@ Texture loadVkImage(const VulkanContext& context, const std::string& filePath)
 	VmaAllocationCreateInfo texAlloc{};
 	texAlloc.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-	Texture texture(allocator, context.getDevice(), imgCI, texAlloc);
-
+	//Texture texture(allocator, context.getDevice(), imgCI, texAlloc);
+	auto texture = std::make_unique<Texture>(allocator, context.getDevice(), imgCI, texAlloc);
 
 	// ======================================= Initial Layout of image is Undefined, we need to transition its layout!
 	auto& uploadContext = context.getUploadContext();
@@ -70,7 +71,7 @@ Texture loadVkImage(const VulkanContext& context, const std::string& filePath)
 				vk::ImageLayout::eTransferDstOptimal,	// -> puts into linear layout, best for copying data from buffer to texture
 				{},
 				{},
-				texture.getImage(),
+				texture->getImage(),
 				range
 			);
 
@@ -91,7 +92,7 @@ Texture loadVkImage(const VulkanContext& context, const std::string& filePath)
 				texExtent
 			);
 
-			cmd.copyBufferToImage(stagingBuffer.getBuffer(), texture.getImage(), vk::ImageLayout::eTransferDstOptimal, copyRegion);
+			cmd.copyBufferToImage(stagingBuffer.getBuffer(), texture->getImage(), vk::ImageLayout::eTransferDstOptimal, copyRegion);
 
 
 			// Now we can transfer the image layout to optimal for shader usage
@@ -102,7 +103,7 @@ Texture loadVkImage(const VulkanContext& context, const std::string& filePath)
 				vk::ImageLayout::eShaderReadOnlyOptimal,
 				{},
 				{},
-				texture.getImage(),
+				texture->getImage(),
 				range
 			);
 
@@ -126,14 +127,14 @@ Texture loadVkImage(const VulkanContext& context, const std::string& filePath)
 	vk::ImageSubresourceRange subresRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
 
 	vk::ImageViewCreateInfo viewCreateInfo({},
-		texture.getImage(),
+		texture->getImage(),
 		vk::ImageViewType::e2D,
 		imageFormat,
 		componentMapping,
 		subresRange
 	);
 
-	texture.setView(context.getDevice().createImageView(viewCreateInfo));
+	texture->createView(viewCreateInfo);
 
 	return texture;
 }
@@ -144,7 +145,7 @@ Texture loadVkImage(const VulkanContext& context, const std::string& filePath)
 namespace ezTmp
 {
 
-vk::UniqueRenderPass createDefaultRenderPass(const VulkanContext& context)
+vk::UniqueRenderPass createDefaultRenderPass(VulkanContext& context)
 {
 	auto dev = context.getDevice();
 
@@ -202,7 +203,7 @@ vk::UniqueRenderPass createDefaultRenderPass(const VulkanContext& context)
 	return dev.createRenderPassUnique(vk::RenderPassCreateInfo({}, attachmentDescs, subpassDesc, extInDep));
 }
 
-std::vector<vk::UniqueFramebuffer> createDefaultFramebuffers(const VulkanContext& context, const vk::RenderPass& suitableRenderPass)
+std::vector<vk::UniqueFramebuffer> createDefaultFramebuffers(VulkanContext& context, const vk::RenderPass& suitableRenderPass)
 {
 
 	auto dev = context.getDevice();

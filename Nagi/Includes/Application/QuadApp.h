@@ -122,7 +122,7 @@ private:
 
 	struct FrameData
 	{
-		Buffer ubo;
+		std::unique_ptr<Buffer> ubo;
 		vk::DescriptorSet descriptorSet;
 	};
 
@@ -148,12 +148,12 @@ private:
 	std::vector<vk::UniqueFramebuffer> m_framebuffers;
 	vk::Extent2D m_scExtent;
 
-	Texture m_image;
+	std::unique_ptr<Texture> m_image;
 	vk::UniqueSampler m_sampler;
 	vk::DescriptorSet m_materialDescSet;
 
-	Buffer m_vb;
-	Buffer m_ib;
+	std::unique_ptr<Buffer> m_vb;
+	std::unique_ptr<Buffer> m_ib;
 
 	std::vector<FrameData> m_frameData;
 
@@ -165,9 +165,8 @@ private:
 
 
 	std::vector<std::unique_ptr<RenderModel>> m_testModels;
-	std::unique_ptr<Mesh> m_meshStorage;
 	std::unique_ptr<Material> m_materialStorage;
-	Texture m_texStorage;
+	std::unique_ptr<Texture> m_texStorage;
 };
 
 }

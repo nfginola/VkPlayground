@@ -192,6 +192,7 @@
     <ClInclude Include="Includes\pch.h" />
     <ClInclude Include="Includes\SingleInstance.h" />
     <ClInclude Include="Includes\Utilities.h" />
+    <ClInclude Include="Includes\VulkanTypes.h" />
     <ClInclude Include="Includes\Window.h" />
     <ClInclude Include="Includes\Application\QuadApp.h" />
     <ClInclude Include="Includes\VulkanUtilities.h" />

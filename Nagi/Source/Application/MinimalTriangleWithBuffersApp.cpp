@@ -13,7 +13,7 @@ MinimalTriangleWithBuffersApp::MinimalTriangleWithBuffersApp(Window& window, Vul
 		createGraphicsPipeline(m_rendPass.get());
 		createFramebuffers();
 
-		createVertexIndexBuffer(gfxCon.getResourceAllocator());
+		createVertexIndexBuffer(gfxCon.getAllocator());
 
 		while (m_window.isRunning())
 		{
@@ -89,8 +89,8 @@ MinimalTriangleWithBuffersApp::MinimalTriangleWithBuffersApp(Window& window, Vul
 
 MinimalTriangleWithBuffersApp::~MinimalTriangleWithBuffersApp()
 {
-	vmaDestroyBuffer(m_gfxCon.getResourceAllocator(), m_vb.resource, m_vb.alloc);
-	vmaDestroyBuffer(m_gfxCon.getResourceAllocator(), m_ib.resource, m_ib.alloc);
+	vmaDestroyBuffer(m_gfxCon.getAllocator(), m_vb.resource, m_vb.alloc);
+	vmaDestroyBuffer(m_gfxCon.getAllocator(), m_ib.resource, m_ib.alloc);
 }
 
 void MinimalTriangleWithBuffersApp::createRenderPass()

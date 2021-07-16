@@ -9,6 +9,7 @@
 namespace Nagi
 {
 
+
 QuadApp::QuadApp(Window& window, VulkanContext& gfxCon) :
 	Application(window, gfxCon)
 {
@@ -73,7 +74,7 @@ QuadApp::QuadApp(Window& window, VulkanContext& gfxCon) :
 		createGraphicsPipeline(m_rendPass.get());
 
 		// Models
-		createVertexIndexBuffer(gfxCon.getResourceAllocator());
+		createVertexIndexBuffer(gfxCon.getAllocator());
 		createRenderModel();
 
 
@@ -112,7 +113,7 @@ QuadApp::QuadApp(Window& window, VulkanContext& gfxCon) :
 
 
 			// ================================================ Update UBO
-			m_frameData[frameRes.imageIdx].ubo.putData(&frameConstants, sizeof(UBO));
+			m_frameData[frameRes.imageIdx].ubo->putData(&frameConstants, sizeof(UBO));
 			
 			// reset push constant (to verify that we are using the UBO!)
 			memset(&frameConstants, 0, sizeof(PushConstant));
@@ -134,6 +135,8 @@ QuadApp::QuadApp(Window& window, VulkanContext& gfxCon) :
 			cmd.beginRenderPass(rpInfo, {});
 
 			// Testing the RenderModel abstraction
+			// This will work for now until we can can do some implementation to walk through RenderUnits and use draw instanced instead! (Batching + minimize Pipeline and Descriptor binds)
+			// Something like RenderUnit having a handle to the transform that it belongs to maybe?
 			for (const auto& model : m_testModels)
 			{
 				const auto& renderUnits = model->getRenderUnits();
@@ -182,11 +185,11 @@ QuadApp::QuadApp(Window& window, VulkanContext& gfxCon) :
 				//cmd.setViewport(0, vk::Viewport(0.f, (float)m_scExtent.height, m_scExtent.width, -(float)m_scExtent.height, 0.0, 1.0));
 
 				// Bind vertex buffer
-				std::array<vk::Buffer, 1> vbs{ m_vb.getBuffer() };
+				std::array<vk::Buffer, 1> vbs{ m_vb->getBuffer() };
 				std::array<vk::DeviceSize, 1> offsets{ 0 };
 				cmd.bindVertexBuffers(0, vbs, offsets);
 
-				cmd.bindIndexBuffer(m_ib.getBuffer(), 0, vk::IndexType::eUint32);
+				cmd.bindIndexBuffer(m_ib->getBuffer(), 0, vk::IndexType::eUint32);
 
 				cmd.pushConstants<PushConstant>(m_pipelineLayout.get(), vk::ShaderStageFlagBits::eVertex, 0, { frameConstants });
 				// ===================================================== Push constants (command constants)
@@ -238,16 +241,16 @@ QuadApp::QuadApp(Window& window, VulkanContext& gfxCon) :
 
 QuadApp::~QuadApp()
 {
-	auto allocator = m_gfxCon.getResourceAllocator();
+	auto allocator = m_gfxCon.getAllocator();
 
-	m_vb.destroy();
-	m_ib.destroy();
+	m_vb->destroy();
+	m_ib->destroy();
 
 	for (int i = 0; i < VulkanContext::s_maxFramesInFlight; ++i)
-		m_frameData[i].ubo.destroy();
+		m_frameData[i].ubo->destroy();
 
-	m_image.destroy();
-	m_texStorage.destroy();
+	m_image->destroy();
+	m_texStorage->destroy();
 
 }
 
@@ -400,7 +403,7 @@ void QuadApp::createUBO()
 	for (int i = 0; i < VulkanContext::s_maxFramesInFlight; ++i)
 	{
 		m_frameData.push_back(FrameData{});
-		m_frameData[i].ubo = Buffer(m_gfxCon.getResourceAllocator(), uboCI, uboAllocCI);
+		m_frameData[i].ubo = std::make_unique<Buffer>(m_gfxCon.getAllocator(), uboCI, uboAllocCI);
 	}
 }
 
@@ -489,7 +492,7 @@ void QuadApp::allocateDescriptorSets()
 
 		// We have a set, and now we need to point it to the UBOs
 
-		vk::DescriptorBufferInfo binfo(m_frameData[i].ubo.getBuffer(), 0, sizeof(UBO));
+		vk::DescriptorBufferInfo binfo(m_frameData[i].ubo->getBuffer(), 0, sizeof(UBO));
 		vk::WriteDescriptorSet setWrite(m_frameData[i].descriptorSet, 0 /* we will write to binding 0 in this Set */, 0, vk::DescriptorType::eUniformBuffer, {}, binfo);
 
 		m_gfxCon.getDevice().updateDescriptorSets(setWrite, {});
@@ -500,7 +503,7 @@ void QuadApp::allocateDescriptorSets()
 	m_materialDescSet = m_gfxCon.getDevice().allocateDescriptorSets(texAllocInfo).front();
 
 	// Write to it (bind image and sampler)
-	vk::DescriptorImageInfo imageInfo(m_sampler.get(), m_image.getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
+	vk::DescriptorImageInfo imageInfo(m_sampler.get(), m_image->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
 	vk::WriteDescriptorSet imageSetWrite(m_materialDescSet, 0, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo, {}, {});
 	m_gfxCon.getDevice().updateDescriptorSets(imageSetWrite, {});
 
@@ -509,7 +512,6 @@ void QuadApp::allocateDescriptorSets()
 void QuadApp::loadImage()
 {
 	m_image = loadVkImage(m_gfxCon, "Resources/Textures/images.jpg");
-
 
 }
 
@@ -533,13 +535,6 @@ void QuadApp::createRenderModel()
 	auto vb = loadVkImmutableBuffer(m_gfxCon, vertices, vk::BufferUsageFlagBits::eVertexBuffer);
 	auto ib = loadVkImmutableBuffer(m_gfxCon, indices, vk::BufferUsageFlagBits::eIndexBuffer);
 
-	// Create mesh
-	m_meshStorage = std::make_unique<Mesh>(
-		vb, ib,
-		0,
-		static_cast<uint32_t>(indices.size())
-	);
-
 	// Load Descriptor Resources (e.g Images)
 	m_texStorage = loadVkImage(m_gfxCon, "Resources/Textures/rimuru2.jpg");
 
@@ -548,19 +543,24 @@ void QuadApp::createRenderModel()
 	auto newMatDescSet = m_gfxCon.getDevice().allocateDescriptorSets(texAllocInfo).front();
 
 	// Write to it (bind image and sampler)
-	vk::DescriptorImageInfo imageInfo(m_sampler.get(), m_texStorage.getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
+	vk::DescriptorImageInfo imageInfo(m_sampler.get(), m_texStorage->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
 	vk::WriteDescriptorSet imageSetWrite(newMatDescSet, 0, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo, {}, {});
 	m_gfxCon.getDevice().updateDescriptorSets(imageSetWrite, {});
 
+
+	// ==== Create render unit(s)
 	// Create material
 	m_materialStorage = std::make_unique<Material>(m_gfxPipeline.get(), m_pipelineLayout.get(), newMatDescSet);
 
-	// Create render unit(s)
-	RenderUnit renderUnit(*m_meshStorage.get(), *m_materialStorage.get());
+	// Create mesh for each Render Unit(data into VB/IB)
+	auto mesh = Mesh(0, static_cast<uint32_t>(indices.size()));
+
+	// Combine to mesh and material into a render unit
+	RenderUnit renderUnit(mesh, *m_materialStorage.get());
 
 	// Create render model
 	std::vector<RenderUnit> renderUnits{ renderUnit };
-	m_testModels.push_back(std::make_unique<RenderModel>(vb, ib, renderUnits));
+	m_testModels.push_back(std::make_unique<RenderModel>(std::move(vb), std::move(ib), renderUnits));
 }
 	
 	

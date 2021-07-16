@@ -121,7 +121,7 @@ VulkanContext::~VulkanContext()
 	m_device.destroyImage(m_depthImage);
 	m_device.freeMemory(m_depthMemory);
 
-	for (auto res : m_frameSyncResources)
+	for (auto& res : m_frameSyncResources)
 	{
 		m_device.destroySemaphore(res.imageAvailableSemaphore);
 		m_device.destroySemaphore(res.renderFinishedSemaphore);
@@ -231,12 +231,12 @@ void VulkanContext::endFrame()
 	m_currFrame = (m_currFrame + 1) % s_maxFramesInFlight;
 }
 
-const vk::Device& VulkanContext::getDevice() const
+vk::Device& VulkanContext::getDevice()
 {
 	return m_device;
 }
 
-VmaAllocator VulkanContext::getResourceAllocator() const
+VmaAllocator VulkanContext::getAllocator() const
 {
 	return m_allocator;
 }
