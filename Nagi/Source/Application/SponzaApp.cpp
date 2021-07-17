@@ -102,6 +102,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 		});
 
 
+	// :)
 	try
 	{
 		m_defRenderPass = ezTmp::createDefaultRenderPass(m_gfxCon);
