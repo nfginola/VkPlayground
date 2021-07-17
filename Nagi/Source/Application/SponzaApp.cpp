@@ -5,6 +5,7 @@
 #include <assimp/scene.h>           // Output data structure
 #include <assimp/postprocess.h>     // Post processing flags
 
+#include "Camera.h"
 
 namespace Nagi
 {
@@ -12,16 +13,18 @@ namespace Nagi
 SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 	Application(window, gfxCon)
 {
-	glm::vec3 pos{ 0.f, 1.f, 1.f };
+	glm::vec3 pos{ 0.f, 10.f, 1.f };
 
-	std::array<Keystate, 5> keystates;
+	std::array<Keystate, 6> keystates;
 	auto& aKey = keystates[0];
 	auto& dKey = keystates[1];
 	auto& wKey = keystates[2];
 	auto& sKey = keystates[3];
 	auto& eKey = keystates[4];
+	auto& qKey = keystates[5];
 
-	window.setKeyCallback([&keystates](int key, int scancode, int action, int mods)
+	window.setKeyCallback(
+		[&keystates](GLFWwindow* window, int key, int scancode, int action, int mods)
 		{
 			static std::function handleFunc = [&action, &keystates](int keystateID)
 			{
@@ -42,8 +45,57 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 				handleFunc(3);
 			if (key == GLFW_KEY_E)
 				handleFunc(4);
+			if (key == GLFW_KEY_Q)
+				handleFunc(5);
 		});
 
+	auto scExtent = m_gfxCon.getSwapchainExtent();
+	Camera fpsCam((float)scExtent.width / scExtent.height, 80);
+
+	window.setMouseButtonCallback(
+		[&](GLFWwindow* window, int button, int action, int mods)
+		{
+			if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+			else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
+				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+
+		});
+
+	bool firstTime = true;
+	static int prevX = 0;
+	static int prevY = 0;
+	window.setMouseCursorCallback(
+		[&fpsCam, &firstTime](GLFWwindow* window, int xPos, int yPos)
+		{
+			if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
+			{
+				if (firstTime)
+				{
+					prevX = xPos;
+					prevY = yPos;
+					firstTime = false;
+				}
+				
+				int dx = xPos - prevX;
+				int dy = -(yPos - prevY);	// Down is positive in Screenspace, we flip it
+
+				//std::cout << "X: " << xPos << " || Y: " << yPos << "\n";
+				std::cout << "dx: " << dx << " || dy: " << dy << "\n";
+				fpsCam.rotateCamera(dx, dy, 0.16);
+
+				prevX = xPos;
+				prevY = yPos;
+			}
+			else
+			{
+				prevX = xPos;
+				prevY = yPos;
+			}
+
+
+		});
 
 
 	try
@@ -83,7 +135,8 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 		// ======== Load scene data
 		createRenderModels();
 
-		loadExternalModel();
+		loadExternalModel("Resources/Objs/Sponza_old/", "sponza.obj");
+		loadExternalModel("Resources/Objs/nanosuit/", "nanosuit.obj");
 
 		while (m_window.isRunning())
 		{
@@ -91,34 +144,43 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 			// Update camera (no frame-time fix for now)
 			if (aKey.isDown())
-				pos[0] += -0.1f;
+			{
+				fpsCam.moveDirLeft();
+			}
 			else if (dKey.isDown())
-				pos[0] += 0.1f;
+			{
+				fpsCam.moveDirRight();
+			}
 			if (wKey.isDown())
-				pos[2] += -0.1f;
+			{
+				fpsCam.moveDirForward();
+			}
 			else if (sKey.isDown())
-				pos[2] += 0.1f;
+			{
+				fpsCam.moveDirBackward();
+			}
 
-			if (eKey.justPressed())
-				std::cout << "hello from E world..\n";
+			if (eKey.isDown())
+				fpsCam.moveDirUp();
+			else if (qKey.isDown())
+				fpsCam.moveDirDown();
 
+			fpsCam.update(0.016);
 
-
-			auto scExtent = m_gfxCon.getSwapchainExtent();
 
 			// Update data for shader
 			GPUCameraData cameraData{};
-			auto matView = glm::lookAtRH(pos, glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f));
-			auto matProj = glm::perspectiveRH(glm::radians(70.f), (float)scExtent.width / scExtent.height, 0.01f, 1000.f);
-			matProj[1][1] *= -1;
-			cameraData.viewMat = matView;
-			cameraData.projectionMat = matProj;
-			cameraData.viewProjectionMat = matProj * matView;
+			cameraData.viewMat = fpsCam.getViewMatrix();
+			cameraData.projectionMat = fpsCam.getProjectionMatrix();
+			cameraData.viewProjectionMat = fpsCam.getProjectionMatrix() * fpsCam.getViewMatrix();
 
 			PushConstantData perObjectData{};
-			auto matModel = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, 0.f));
-			perObjectData.modelMat = matModel;
+			auto matModel = 
+				glm::translate(glm::mat4(1.f), glm::vec3(0.f, 2.5f, 0.f)) * 
+				glm::rotate(glm::mat4(1.f), glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f)) * 
+				glm::scale(glm::mat4(1.f), glm::vec3(8.f, 5.f, 8.f));
 
+			perObjectData.modelMat = matModel;
 
 
 			// GPU BELOW
@@ -141,7 +203,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 
 			// Record command buffer
-			cmd.begin(vk::CommandBufferBeginInfo());		// implicitly calls resetCommandBuffer
+			cmd.begin(vk::CommandBufferBeginInfo());
 
 
 			// Bind engine wide resources (Camera, Set 0)
@@ -163,9 +225,16 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 				cmd.bindVertexBuffers(0, vbs, offsets);
 				cmd.bindIndexBuffer(ib, 0, vk::IndexType::eUint32);
 				
+				// Sponza
 				if (tmpId == 1)
 				{
 					auto newMatModel = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, 0.f)) * glm::scale(glm::mat4(1.f), glm::vec3(0.07));
+					perObjectData.modelMat = newMatModel;
+				}
+				// Nanosuit
+				else if (tmpId == 2)
+				{
+					auto newMatModel = glm::translate(glm::mat4(1.f), glm::vec3(9.f, 0.f, -9.f)) * glm::scale(glm::mat4(1.f), glm::vec3(1.f));
 					perObjectData.modelMat = newMatModel;
 				}
 
@@ -339,7 +408,7 @@ void SponzaApp::createRenderModels()
 	vk::DescriptorImageInfo imageInfo(m_commonSampler.get(), m_mappedTextures["rimuru2"]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
 	vk::WriteDescriptorSet imageSetWrite(newMatDescSet, 0, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo, {}, {});
 	vk::DescriptorImageInfo opacityImageInfo(m_commonSampler.get(), m_mappedTextures["defaultopacity"]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
-	vk::WriteDescriptorSet opacityImageSetWrite(newMatDescSet, 1, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo, {}, {});
+	vk::WriteDescriptorSet opacityImageSetWrite(newMatDescSet, 1, 0, vk::DescriptorType::eCombinedImageSampler, opacityImageInfo, {}, {});
 	dev.updateDescriptorSets({ imageSetWrite, opacityImageSetWrite }, {});
 
 
@@ -488,14 +557,16 @@ void SponzaApp::createGraphicsPipeline()
 
 	// ======== Multisampling options
 	vk::PipelineMultisampleStateCreateInfo msC({}, vk::SampleCountFlagBits::e1 /*sample shading and sample mask*/);
+	msC.setAlphaToCoverageEnable(true);
+	msC.setAlphaToOneEnable(false);
 
 	// ======== Depth stencil
 	vk::PipelineDepthStencilStateCreateInfo dsC({}, true, true, vk::CompareOp::eLessOrEqual /*(depth bound test args and stencil)*/);
 
 	// ======== Blend state
 	vk::PipelineColorBlendAttachmentState colorBlendAttachment(
-		true,
-		vk::BlendFactor::eSrcAlpha,
+		false,
+		vk::BlendFactor::eSrcAlpha,				// This is what we supply as the Alpha component of the fragment shader output!
 		vk::BlendFactor::eOneMinusSrcAlpha,
 		vk::BlendOp::eAdd,
 		vk::BlendFactor::eZero,
@@ -625,6 +696,7 @@ void processMesh(aiMesh* mesh, const aiScene* scene, std::vector<Vertex>& vertic
 
 void processNode(aiNode* node, const aiScene* scene, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, std::vector<AssimpMeshSubset>& subsets)
 {
+
 	// For each mesh in the node, process it!
 	for (int i = 0; i < node->mNumMeshes; ++i)
 	{
@@ -638,7 +710,7 @@ void processNode(aiNode* node, const aiScene* scene, std::vector<Vertex>& vertic
 	}
 }
 
-void SponzaApp::loadExternalModel()
+void SponzaApp::loadExternalModel(const std::string& directory, const std::string& fileName)
 {
 	auto dev = m_gfxCon.getDevice();
 
@@ -647,11 +719,9 @@ void SponzaApp::loadExternalModel()
 	std::vector<AssimpMeshSubset> subsets;
 
 	Assimp::Importer importer;
-	const char* fileDirectory = "Resources/Objs/Sponza_old/";
-	const char* filePath = "Resources/Objs/Sponza_old/sponza.obj";
 
 	const aiScene* scene = importer.ReadFile(
-		filePath,
+		(directory + fileName).c_str(),
 		aiProcess_Triangulate |
 		aiProcess_FlipUVs |			// Vulkan screen space is LH but we are using RH 
 		aiProcess_GenNormals
@@ -659,7 +729,7 @@ void SponzaApp::loadExternalModel()
 
 	if (scene == nullptr)
 	{
-		std::cout << "Assimp: File not found!\n";
+		std::cout << "Assimp: File not found! : " << directory + fileName << "\n";
 		assert(false);
 	}
 
@@ -692,13 +762,13 @@ void SponzaApp::loadExternalModel()
 		auto mesh = Mesh(subset.m_indexStart, subset.m_indexCount, subset.m_vertexStart);
 	
 		// Create material
-		std::string albedoPath(fileDirectory);
+		std::string albedoPath(directory);
 		if (!subset.m_diffuseFilePath.empty())
 			albedoPath += subset.m_diffuseFilePath;
 		else
 			albedoPath = "Resources/Textures/defaulttexture.jpg";
 
-		std::string opacityPath(fileDirectory);
+		std::string opacityPath(directory);
 		if (!subset.m_opacityFilePath.empty())
 			opacityPath += subset.m_opacityFilePath;
 		else
@@ -736,7 +806,7 @@ void SponzaApp::loadExternalModel()
 
 			// Handle opacity (implicit that if albedo was not found, the opacity must be new)
 			{
-				// WARNING::::: Std move calls destructor if there is an existing element in the map!!!
+				// WARNING::::: Std move calls destructor if there is an existing element in the map!!! (why??)
 				if (m_mappedTextures.find(opacityPath) == m_mappedTextures.cend())
 					m_mappedTextures.insert({ opacityPath, std::move(loadVkImage(m_gfxCon, opacityPath)) });
 

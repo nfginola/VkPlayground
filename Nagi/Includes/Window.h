@@ -26,21 +26,28 @@ public:
 	uint32_t getClientHeight() const;
 	bool isRunning() const;
 	void processEvents() const;
-	void setResizeCallback(std::function<void(int, int)> function);
-	void setKeyCallback(std::function<void(int, int, int, int)> function);
+
+	void setResizeCallback(std::function<void(GLFWwindow*, int, int)> function);
+	void setKeyCallback(std::function<void(GLFWwindow*, int, int, int, int)> function);
+	void setMouseCursorCallback(std::function<void(GLFWwindow*, int, int)> function);
+	void setMouseButtonCallback(std::function<void(GLFWwindow*, int, int, int)> function);
+
 	vk::SurfaceKHR getSurface(const vk::Instance& vInst) const;
 	const std::vector<const char*>& getRequiredExtensions() const;
 
 	// GLFW callbacks which we re-route to our Window instance
 	static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 	static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+	static void mouseCursorCallback(GLFWwindow* window, double xpos, double ypos);
+	static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 
 private:
 	GLFWwindow* m_window;
 	std::pair<int, int> m_clientDimensions;
-	std::function<void(int, int)> m_resizeCallback;
-	std::function<void(int, int, int, int)> m_keyCallback;
-	//std::function<void(int, int)> m_cursorCallba
+	std::function<void(GLFWwindow*, int, int)> m_resizeCallback;
+	std::function<void(GLFWwindow*, int, int, int, int)> m_keyCallback;
+	std::function<void(GLFWwindow*, int, int)> m_mouseCursorCallback;
+	std::function<void(GLFWwindow*, int, int, int)> m_mouseButtonCallback;
 	std::vector<const char*> m_reqExtensions;
 };
 

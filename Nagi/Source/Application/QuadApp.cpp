@@ -20,7 +20,7 @@ QuadApp::QuadApp(Window& window, VulkanContext& gfxCon) :
 	auto& sKey = keystates[3];
 	auto& eKey = keystates[4];
 
-	window.setKeyCallback([&keystates](int key, int scancode, int action, int mods)
+	window.setKeyCallback([&keystates](GLFWwindow* window, int key, int scancode, int action, int mods)
 		{
 			static std::function handleFunc = [&action, &keystates](int keystateID)
 			{

@@ -167,6 +167,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Camera.cpp" />
     <ClCompile Include="Source\Application\QuadApp.cpp" />
     <ClCompile Include="Source\Application\Application.cpp" />
     <ClCompile Include="Source\Application\MinimalTriangleApp.cpp" />
@@ -185,6 +186,7 @@
     <ClCompile Include="Source\Application\SponzaApp.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Includes\Camera.h" />
     <ClInclude Include="Includes\Application\AppDefines.h" />
     <ClInclude Include="Includes\Application\Application.h" />
     <ClInclude Include="Includes\Application\MinimalTriangleApp.h" />

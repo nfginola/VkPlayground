@@ -8,12 +8,7 @@
 #include "SingleInstance.h"
 
 
-// Important GLM defines
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE // forces [0, 1] instead of [-1, -1] on persp matrix
-#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES  // make sure to align math types (for UBO --> there are alignment reqs)
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+
 
 namespace Nagi
 {

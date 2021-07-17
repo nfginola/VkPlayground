@@ -78,7 +78,7 @@ private:
 
 	void createDescriptorPool();
 
-	void loadExternalModel();
+	void loadExternalModel(const std::string& directory, const std::string& fileName);
 
 	void createRenderModels();
 
