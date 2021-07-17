@@ -15,6 +15,8 @@
 #include <exception>
 #include <optional>
 
+#include <filesystem>
+
 // Testing PCH build times with libs below
 #include <algorithm>
 #include <functional>

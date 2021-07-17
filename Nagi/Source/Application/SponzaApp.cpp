@@ -15,13 +15,15 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 {
 	glm::vec3 pos{ 0.f, 10.f, 1.f };
 
-	std::array<Keystate, 6> keystates;
+	std::array<Keystate, 8> keystates;
 	auto& aKey = keystates[0];
 	auto& dKey = keystates[1];
 	auto& wKey = keystates[2];
 	auto& sKey = keystates[3];
 	auto& eKey = keystates[4];
 	auto& qKey = keystates[5];
+	auto& spaceKey = keystates[6];
+	auto& shiftKey = keystates[7];
 
 	window.setKeyCallback(
 		[&keystates](GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -47,6 +49,10 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 				handleFunc(4);
 			if (key == GLFW_KEY_Q)
 				handleFunc(5);
+			if (key == GLFW_KEY_SPACE)
+				handleFunc(6);
+			if (key == GLFW_KEY_LEFT_SHIFT)
+				handleFunc(7);
 		});
 
 	auto scExtent = m_gfxCon.getSwapchainExtent();
@@ -81,8 +87,6 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 				int dx = xPos - prevX;
 				int dy = -(yPos - prevY);	// Down is positive in Screenspace, we flip it
 
-				//std::cout << "X: " << xPos << " || Y: " << yPos << "\n";
-				std::cout << "dx: " << dx << " || dy: " << dy << "\n";
 				fpsCam.rotateCamera(dx, dy, 0.16);
 
 				prevX = xPos;
@@ -135,8 +139,8 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 		// ======== Load scene data
 		createRenderModels();
 
-		loadExternalModel("Resources/Objs/Sponza_old/", "sponza.obj");
-		loadExternalModel("Resources/Objs/nanosuit/", "nanosuit.obj");
+		loadExternalModel("Resources/Objs/sponza/sponza.obj");
+		loadExternalModel("Resources/Objs/nanosuit/nanosuit.obj");
 
 		while (m_window.isRunning())
 		{
@@ -160,9 +164,9 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 				fpsCam.moveDirBackward();
 			}
 
-			if (eKey.isDown())
+			if (spaceKey.isDown())
 				fpsCam.moveDirUp();
-			else if (qKey.isDown())
+			else if (shiftKey.isDown())
 				fpsCam.moveDirDown();
 
 			fpsCam.update(0.016);
@@ -710,9 +714,11 @@ void processNode(aiNode* node, const aiScene* scene, std::vector<Vertex>& vertic
 	}
 }
 
-void SponzaApp::loadExternalModel(const std::string& directory, const std::string& fileName)
+void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 {
 	auto dev = m_gfxCon.getDevice();
+
+	std::string directory = filePath.parent_path().string() + "/";
 
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
@@ -721,7 +727,7 @@ void SponzaApp::loadExternalModel(const std::string& directory, const std::strin
 	Assimp::Importer importer;
 
 	const aiScene* scene = importer.ReadFile(
-		(directory + fileName).c_str(),
+		filePath.relative_path().string().c_str(),
 		aiProcess_Triangulate |
 		aiProcess_FlipUVs |			// Vulkan screen space is LH but we are using RH 
 		aiProcess_GenNormals
@@ -729,7 +735,7 @@ void SponzaApp::loadExternalModel(const std::string& directory, const std::strin
 
 	if (scene == nullptr)
 	{
-		std::cout << "Assimp: File not found! : " << directory + fileName << "\n";
+		std::cout << "Assimp: File not found! : " << filePath.filename() << "\n";
 		assert(false);
 	}
 
@@ -760,7 +766,7 @@ void SponzaApp::loadExternalModel(const std::string& directory, const std::strin
 	for (const auto& subset : subsets)
 	{
 		auto mesh = Mesh(subset.m_indexStart, subset.m_indexCount, subset.m_vertexStart);
-	
+
 		// Create material
 		std::string albedoPath(directory);
 		if (!subset.m_diffuseFilePath.empty())
@@ -797,7 +803,7 @@ void SponzaApp::loadExternalModel(const std::string& directory, const std::strin
 				vk::WriteDescriptorSet imageSetWrite(newMatDescSet, 0, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo, {}, {});
 				dev.updateDescriptorSets(imageSetWrite, {});
 
-		
+
 
 				// Create material
 				//m_loadedMaterials.push_back(std::make_unique<Material>(m_mainGfxPipeline.get(), m_mainGfxPipelineLayout.get(), newMatDescSet));
@@ -826,6 +832,5 @@ void SponzaApp::loadExternalModel(const std::string& directory, const std::strin
 
 	m_loadedModels.push_back(std::make_unique<RenderModel>(std::move(vb), std::move(ib), renderUnits));
 }
-
 
 }
