@@ -119,7 +119,7 @@ std::unique_ptr<Texture> loadVkImage(VulkanContext& context, const std::string& 
 
 		});
 
-	stagingBuffer.destroy();
+	//stagingBuffer.destroy();
 
 	// NOTE TO SELF: We can extend this later for mipmap generation
 	// ============================ Create image view

@@ -7,4 +7,9 @@ C:\VulkanSDK\1.2.182.0\Bin\glslc.exe shader_buf.frag -o ..\..\bin\compiled_shade
 C:\VulkanSDK\1.2.182.0\Bin\glslc.exe shader_quad.vert -o ..\..\bin\compiled_shaders\vertQuad.spv
 C:\VulkanSDK\1.2.182.0\Bin\glslc.exe shader_quad.frag -o ..\..\bin\compiled_shaders\fragQuad.spv
 
+C:\VulkanSDK\1.2.182.0\Bin\glslc.exe shader_sponza.vert -o ..\..\bin\compiled_shaders\vertSponza.spv
+C:\VulkanSDK\1.2.182.0\Bin\glslc.exe shader_sponza.frag -o ..\..\bin\compiled_shaders\fragSponza.spv
+C:\VulkanSDK\1.2.182.0\Bin\glslc.exe shader_sponza_unlit.frag -o ..\..\bin\compiled_shaders\fragSponzaUnlit.spv
+
+
 pause

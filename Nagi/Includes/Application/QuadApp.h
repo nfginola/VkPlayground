@@ -35,7 +35,7 @@ class QuadApp : public Application
 {
 public:
 	QuadApp(Window& window, VulkanContext& gfxCon);
-	~QuadApp();
+	~QuadApp() = default;
 
 	QuadApp() = delete;
 	QuadApp& operator=(const Application&) = delete;
@@ -68,7 +68,6 @@ private:
 
 	};
 
-
 	struct PushConstant
 	{
 		glm::mat4 mat;
@@ -79,45 +78,6 @@ private:
 	{
 		glm::mat4 mat;
 		glm::vec4 bogus;
-	};
-
-	// Handle key down / just pressed
-	class Keystate
-	{
-	public:
-		// Called on GLFW key down
-		void onPress()
-		{
-			m_isDown = true;
-			if (m_justPressed)
-				m_justPressed = false;
-			else
-				m_justPressed = true;
-		};
-
-		// Called on GLFW key release
-		void onRelease()
-		{
-			m_isDown = false;
-			m_justPressed = false;
-		};
-
-		bool isDown()
-		{
-			return m_isDown;
-		};
-
-		bool justPressed()
-		{
-			// Turns off isPressed after the first time its retrieved 
-			bool ret = m_justPressed;
-			m_justPressed = false;
-			return ret;
-		};
-
-	private:
-		bool m_justPressed = false;
-		bool m_isDown = false;
 	};
 
 	struct FrameData

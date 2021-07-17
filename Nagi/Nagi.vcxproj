@@ -134,14 +134,14 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.2.182.0\Include;$(ProjectDir)Dependencies\glm-master;$(ProjectDir)Dependencies\stb-master;$(ProjectDir)Dependencies\tinyobjloader-master;$(ProjectDir)Dependencies\glfw-3.3.4.bin.WIN64\include;$(ProjectDir)Dependencies\VulkanMemoryAllocator-master\include;$(ProjectDir)Includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Dependencies\AssimpBin\include;$(ProjectDir)Dependencies\assimp-4.1.0\include;C:\VulkanSDK\1.2.182.0\Include;$(ProjectDir)Dependencies\glm-master;$(ProjectDir)Dependencies\stb-master;$(ProjectDir)Dependencies\glfw-3.3.4.bin.WIN64\include;$(ProjectDir)Dependencies\VulkanMemoryAllocator-master\include;$(ProjectDir)Includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\VulkanSDK\1.2.182.0\Lib;$(ProjectDir)Dependencies\glfw-3.3.4.bin.WIN64\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;assimp-vc140-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>D:\Github\Nagi\Nagi\Dependencies\AssimpBin\code\Release;C:\VulkanSDK\1.2.182.0\Lib;$(ProjectDir)Dependencies\glfw-3.3.4.bin.WIN64\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -154,7 +154,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.2.182.0\Include;$(ProjectDir)Dependencies\glm-master;$(ProjectDir)Dependencies\stb-master;$(ProjectDir)Dependencies\tinyobjloader-master;$(ProjectDir)Dependencies\glfw-3.3.4.bin.WIN64\include;$(ProjectDir)Dependencies\VulkanMemoryAllocator-master\include;$(ProjectDir)Includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Dependencies\AssimpBin\include;$(ProjectDir)Dependencies\assimp-4.1.0\include;C:\VulkanSDK\1.2.182.0\Include;$(ProjectDir)Dependencies\glm-master;$(ProjectDir)Dependencies\stb-master;$(ProjectDir)Dependencies\glfw-3.3.4.bin.WIN64\include;$(ProjectDir)Dependencies\VulkanMemoryAllocator-master\include;$(ProjectDir)Includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -162,8 +162,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\VulkanSDK\1.2.182.0\Lib;$(ProjectDir)Dependencies\glfw-3.3.4.bin.WIN64\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;assimp-vc140-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>D:\Github\Nagi\Nagi\Dependencies\AssimpBin\code\Release;C:\VulkanSDK\1.2.182.0\Lib;$(ProjectDir)Dependencies\glfw-3.3.4.bin.WIN64\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -182,6 +182,7 @@
     <ClCompile Include="Source\Utilities.cpp" />
     <ClCompile Include="Source\Window.cpp" />
     <ClCompile Include="Source\VulkanUtilities.cpp" />
+    <ClCompile Include="Source\Application\SponzaApp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Includes\Application\AppDefines.h" />
@@ -196,6 +197,7 @@
     <ClInclude Include="Includes\Window.h" />
     <ClInclude Include="Includes\Application\QuadApp.h" />
     <ClInclude Include="Includes\VulkanUtilities.h" />
+    <ClInclude Include="Includes\Application\SponzaApp.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

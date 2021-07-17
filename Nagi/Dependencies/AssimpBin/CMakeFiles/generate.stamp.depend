@@ -1,0 +1,42 @@
+# CMake generation dependency list for this directory.
+C:/Program Files/CMake/share/cmake-3.21/Modules/CMakeCInformation.cmake
+C:/Program Files/CMake/share/cmake-3.21/Modules/CMakeCXXInformation.cmake
+C:/Program Files/CMake/share/cmake-3.21/Modules/CMakeCommonLanguageInclude.cmake
+C:/Program Files/CMake/share/cmake-3.21/Modules/CMakeGenericSystem.cmake
+C:/Program Files/CMake/share/cmake-3.21/Modules/CMakeInitializeConfigs.cmake
+C:/Program Files/CMake/share/cmake-3.21/Modules/CMakeLanguageInformation.cmake
+C:/Program Files/CMake/share/cmake-3.21/Modules/CMakeRCInformation.cmake
+C:/Program Files/CMake/share/cmake-3.21/Modules/CMakeSystemSpecificInformation.cmake
+C:/Program Files/CMake/share/cmake-3.21/Modules/CMakeSystemSpecificInitialize.cmake
+C:/Program Files/CMake/share/cmake-3.21/Modules/CheckFunctionExists.cmake
+C:/Program Files/CMake/share/cmake-3.21/Modules/CheckIncludeFile.cmake
+C:/Program Files/CMake/share/cmake-3.21/Modules/CheckIncludeFileCXX.cmake
+C:/Program Files/CMake/share/cmake-3.21/Modules/CheckTypeSize.cmake
+C:/Program Files/CMake/share/cmake-3.21/Modules/Compiler/CMakeCommonCompilerMacros.cmake
+C:/Program Files/CMake/share/cmake-3.21/Modules/Compiler/MSVC-C.cmake
+C:/Program Files/CMake/share/cmake-3.21/Modules/Compiler/MSVC-CXX.cmake
+C:/Program Files/CMake/share/cmake-3.21/Modules/FindOpenGL.cmake
+C:/Program Files/CMake/share/cmake-3.21/Modules/FindPackageHandleStandardArgs.cmake
+C:/Program Files/CMake/share/cmake-3.21/Modules/FindPackageMessage.cmake
+C:/Program Files/CMake/share/cmake-3.21/Modules/FindPkgConfig.cmake
+C:/Program Files/CMake/share/cmake-3.21/Modules/Platform/Windows-MSVC-C.cmake
+C:/Program Files/CMake/share/cmake-3.21/Modules/Platform/Windows-MSVC-CXX.cmake
+C:/Program Files/CMake/share/cmake-3.21/Modules/Platform/Windows-MSVC.cmake
+C:/Program Files/CMake/share/cmake-3.21/Modules/Platform/Windows.cmake
+C:/Program Files/CMake/share/cmake-3.21/Modules/Platform/WindowsPaths.cmake
+D:/Github/Nagi/Nagi/Dependencies/assimp-4.1.0/CMakeLists.txt
+D:/Github/Nagi/Nagi/Dependencies/assimp-4.1.0/assimp-config-version.cmake.in
+D:/Github/Nagi/Nagi/Dependencies/assimp-4.1.0/assimp-config.cmake.in
+D:/Github/Nagi/Nagi/Dependencies/assimp-4.1.0/assimp.pc.in
+D:/Github/Nagi/Nagi/Dependencies/assimp-4.1.0/cmake-modules/FindDevIL.cmake
+D:/Github/Nagi/Nagi/Dependencies/assimp-4.1.0/cmake-modules/FindDirectX.cmake
+D:/Github/Nagi/Nagi/Dependencies/assimp-4.1.0/cmake-modules/FindPkgMacros.cmake
+D:/Github/Nagi/Nagi/Dependencies/assimp-4.1.0/cmake-modules/FindZLIB.cmake
+D:/Github/Nagi/Nagi/Dependencies/assimp-4.1.0/cmake-modules/PrecompiledHeader.cmake
+D:/Github/Nagi/Nagi/Dependencies/assimp-4.1.0/cmake-modules/cmake_uninstall.cmake.in
+D:/Github/Nagi/Nagi/Dependencies/assimp-4.1.0/include/assimp/config.h.in
+D:/Github/Nagi/Nagi/Dependencies/assimp-4.1.0/revision.h.in
+D:/Github/Nagi/bin/AssimpBin/CMakeFiles/3.21.0/CMakeCCompiler.cmake
+D:/Github/Nagi/bin/AssimpBin/CMakeFiles/3.21.0/CMakeCXXCompiler.cmake
+D:/Github/Nagi/bin/AssimpBin/CMakeFiles/3.21.0/CMakeRCCompiler.cmake
+D:/Github/Nagi/bin/AssimpBin/CMakeFiles/3.21.0/CMakeSystem.cmake

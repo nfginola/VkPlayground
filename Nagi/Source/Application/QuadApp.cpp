@@ -1,8 +1,6 @@
 #include "pch.h"
 #include "Application/QuadApp.h"
 
-//#define STB_IMAGE_IMPLEMENTATION
-//#include <stb_image.h>
 
 
 
@@ -165,7 +163,7 @@ QuadApp::QuadApp(Window& window, VulkanContext& gfxCon) :
 					// Push constants
 					cmd.pushConstants<PushConstant>(mat.getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, { frameConstants });
 
-					cmd.drawIndexed(mesh.getNumVertices(), 1, mesh.getFirstIndex(), mesh.getVertexBufferOffset(), 0);
+					cmd.drawIndexed(mesh.getNumIndices(), 1, mesh.getFirstIndex(), mesh.getVertexBufferOffset(), 0);
 				}
 			}
 
@@ -236,21 +234,6 @@ QuadApp::QuadApp(Window& window, VulkanContext& gfxCon) :
 		std::cout << "Unknown error\n";
 		assert(false);
 	}
-
-}
-
-QuadApp::~QuadApp()
-{
-	auto allocator = m_gfxCon.getAllocator();
-
-	m_vb->destroy();
-	m_ib->destroy();
-
-	for (int i = 0; i < VulkanContext::s_maxFramesInFlight; ++i)
-		m_frameData[i].ubo->destroy();
-
-	m_image->destroy();
-	m_texStorage->destroy();
 
 }
 
@@ -511,7 +494,7 @@ void QuadApp::allocateDescriptorSets()
 
 void QuadApp::loadImage()
 {
-	m_image = loadVkImage(m_gfxCon, "Resources/Textures/images.jpg");
+	m_image = loadVkImage(m_gfxCon, "Resources/Textures/rimuru.jpg");
 
 }
 

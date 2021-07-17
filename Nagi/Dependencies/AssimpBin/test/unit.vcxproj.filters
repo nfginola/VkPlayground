@@ -1,0 +1,288 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\contrib\gtest\src\gtest-all.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\CCompilerTest.c">
+      <Filter>UnitTests\Compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\code\Version.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utIOSystem.cpp">
+      <Filter>UnitTests\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utIOStreamBuffer.cpp">
+      <Filter>UnitTests\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utIssues.cpp">
+      <Filter>UnitTests\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utAnim.cpp">
+      <Filter>UnitTests\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\AssimpAPITest.cpp">
+      <Filter>UnitTests\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utBatchLoader.cpp">
+      <Filter>UnitTests\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utDefaultIOStream.cpp">
+      <Filter>UnitTests\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utFastAtof.cpp">
+      <Filter>UnitTests\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utMetadata.cpp">
+      <Filter>UnitTests\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\SceneDiffer.cpp">
+      <Filter>UnitTests\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\AbstractImportExportBase.cpp">
+      <Filter>UnitTests\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utTypes.cpp">
+      <Filter>UnitTests\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utVersion.cpp">
+      <Filter>UnitTests\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utProfiler.cpp">
+      <Filter>UnitTests\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utSharedPPData.cpp">
+      <Filter>UnitTests\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utStringUtils.cpp">
+      <Filter>UnitTests\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utLWSImportExport.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utSMDImportExport.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utglTFImportExport.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utglTF2ImportExport.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utHMPImportExport.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utIFCImportExport.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utFBXImporterExporter.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utImporter.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\ut3DImportExport.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\ut3DSImportExport.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utACImportExport.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utAMFImportExport.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utASEImportExport.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utD3MFImportExport.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utQ3DImportExport.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utSTLImportExport.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utXImporterExporter.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utX3DImportExport.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utDXFImporterExporter.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utPMXImporter.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utPLYImportExport.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utObjImportExport.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utObjTools.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utOpenGEXImportExport.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utSIBImporter.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utBlenderIntermediate.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utBlendImportAreaLight.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utBlenderImportExport.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utBlendImportMaterials.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utBVHImportExport.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utColladaExportCamera.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utColladaExportLight.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utColladaImportExport.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utCSMImportExport.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utB3DImportExport.cpp">
+      <Filter>UnitTests\Importers</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utMaterialSystem.cpp">
+      <Filter>UnitTests\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utMatrix3x3.cpp">
+      <Filter>UnitTests\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utMatrix4x4.cpp">
+      <Filter>UnitTests\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utVector3.cpp">
+      <Filter>UnitTests\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utImproveCacheLocality.cpp">
+      <Filter>UnitTests\PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utFixInfacingNormals.cpp">
+      <Filter>UnitTests\PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utGenNormals.cpp">
+      <Filter>UnitTests\PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utTriangulate.cpp">
+      <Filter>UnitTests\PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utTextureTransform.cpp">
+      <Filter>UnitTests\PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utRemoveRedundantMaterials.cpp">
+      <Filter>UnitTests\PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utRemoveVCProcess.cpp">
+      <Filter>UnitTests\PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utScaleProcess.cpp">
+      <Filter>UnitTests\PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utJoinVertices.cpp">
+      <Filter>UnitTests\PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utRemoveComments.cpp">
+      <Filter>UnitTests\PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utRemoveComponent.cpp">
+      <Filter>UnitTests\PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utVertexTriangleAdjacency.cpp">
+      <Filter>UnitTests\PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utSplitLargeMeshes.cpp">
+      <Filter>UnitTests\PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utFindDegenerates.cpp">
+      <Filter>UnitTests\PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utFindInvalidData.cpp">
+      <Filter>UnitTests\PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utLimitBoneWeights.cpp">
+      <Filter>UnitTests\PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utPretransformVertices.cpp">
+      <Filter>UnitTests\PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utScenePreprocessor.cpp">
+      <Filter>UnitTests\PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utTargetAnimation.cpp">
+      <Filter>UnitTests\PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utSortByPType.cpp">
+      <Filter>UnitTests\PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\utSceneCombiner.cpp">
+      <Filter>UnitTests\PostProcess</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\SceneDiffer.h">
+      <Filter>UnitTests\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\UTLogStream.h">
+      <Filter>UnitTests\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\TestIOSystem.h">
+      <Filter>UnitTests\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\unit\TestModelFactory.h">
+      <Filter>UnitTests\Common</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Github\Nagi\Nagi\Dependencies\assimp-4.1.0\test\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{77F6848D-5FBC-39DF-9680-9FA91FDF7310}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UnitTests">
+      <UniqueIdentifier>{01F66D26-3F62-3BB7-A0D8-71AF3A2B4EBB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UnitTests\Common">
+      <UniqueIdentifier>{037714E0-E4BA-3792-8CB6-A97C3140932D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UnitTests\Compiler">
+      <UniqueIdentifier>{CEF123F1-5D14-3BFE-B4AE-5D3FA8F3A5C0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UnitTests\Importers">
+      <UniqueIdentifier>{9400E267-026B-3DF8-8AC1-AAE0A26FD799}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UnitTests\Material">
+      <UniqueIdentifier>{FFA1296A-BC9E-3F7D-B969-B865348B2A3A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UnitTests\Math">
+      <UniqueIdentifier>{F4AB2886-3925-3F1A-BC1C-FFF8EFD09A84}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UnitTests\PostProcess">
+      <UniqueIdentifier>{20FF6D8C-8DBC-3A03-9036-411D16E2377A}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

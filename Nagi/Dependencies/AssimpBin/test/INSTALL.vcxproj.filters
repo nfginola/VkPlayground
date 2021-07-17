@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="D:\Github\Nagi\bin\AssimpBin\CMakeFiles\3111464745e84f9392c5b9c7c062b2f7\INSTALL_force.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{2CDA7F55-A44F-31EB-8340-BA9EB803BBAC}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

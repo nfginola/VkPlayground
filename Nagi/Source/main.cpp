@@ -4,6 +4,7 @@
 #include "Application/MinimalTriangleApp.h"
 #include "Application/MinimalTriangleWithBuffersApp.h"
 #include "Application/QuadApp.h"
+#include "Application/SponzaApp.h"
 
 int main()
 {
@@ -16,6 +17,8 @@ int main()
 	Nagi::MinimalTriangleWithBuffersApp app(*win.get(), *gfxCon.get());
 #elif APP_QUAD
 	Nagi::QuadApp app(*win.get(), *gfxCon.get());
+#elif APP_SPONZA
+	Nagi::SponzaApp app(*win.get(), *gfxCon.get());
 #endif
 
 

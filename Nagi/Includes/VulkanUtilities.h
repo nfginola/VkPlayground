@@ -51,7 +51,6 @@ namespace Nagi
 				cmd.copyBuffer(stagingBuffer->getBuffer(), vertexBuffer->getBuffer(), copyRegion);
 			});
 
-		stagingBuffer->destroy();
 
 		return vertexBuffer;
 	}

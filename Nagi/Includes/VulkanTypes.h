@@ -9,7 +9,7 @@ class Buffer
 {
 public:
 	Buffer() = delete;
-	~Buffer() = default;
+	~Buffer() { vmaDestroyBuffer(m_allocator, resource, alloc); };
 	Buffer(VmaAllocator allocator, const vk::BufferCreateInfo& bufCI, const VmaAllocationCreateInfo& allocCI) :
 		m_allocator(allocator)
 	{
@@ -26,7 +26,6 @@ public:
 	}
 
 	const vk::Buffer& getBuffer() const { return resource; }
-	void destroy() { vmaDestroyBuffer(m_allocator, resource, alloc); }
 
 private:
 	// Non owning 
@@ -42,7 +41,7 @@ class Texture
 {
 public:
 	Texture() = default;
-	~Texture() = default;
+	~Texture() { m_dev.destroyImageView(m_view); vmaDestroyImage(m_allocator, m_resource, m_alloc); }
 	Texture(VmaAllocator allocator, vk::Device& dev, const vk::ImageCreateInfo& imgCI, const VmaAllocationCreateInfo& allocCI) :
 		m_allocator(allocator),
 		m_dev(dev)
@@ -59,7 +58,6 @@ public:
 
 	const vk::Image& getImage() const { return m_resource; }
 	const vk::ImageView& getImageView() const { return m_view; }
-	void destroy() { m_dev.destroyImageView(m_view); vmaDestroyImage(m_allocator, m_resource, m_alloc); }
 
 private:
 	// Non owning
@@ -97,17 +95,17 @@ class Mesh
 {
 public:
 	Mesh() = delete;
-	Mesh(uint32_t firstIndex, uint32_t numVerts, uint32_t vbOffset = 0) :
-		m_ibFirstIndex(firstIndex), m_numVerts(numVerts), m_vbOffset(vbOffset) {}
+	Mesh(uint32_t firstIndex, uint32_t numIndices, uint32_t vbOffset = 0) :
+		m_ibFirstIndex(firstIndex), m_numIndices(numIndices), m_vbOffset(vbOffset) {}
 	~Mesh() = default;
 
 	uint32_t getFirstIndex() const { return m_ibFirstIndex; }
-	uint32_t getNumVertices() const { return m_numVerts; }
+	uint32_t getNumIndices() const { return m_numIndices; }
 	uint32_t getVertexBufferOffset() const { return m_vbOffset; }
 
 private:
 	const uint32_t m_ibFirstIndex;
-	const uint32_t m_numVerts;
+	const uint32_t m_numIndices;
 	const uint32_t m_vbOffset;
 };
 
@@ -137,11 +135,7 @@ public:
 	RenderModel(std::unique_ptr<Buffer> vb, std::unique_ptr<Buffer> ib, std::vector<RenderUnit> renderUnits) :
 		m_vb(std::move(vb)), m_ib(std::move(ib)),	// Move ownership
 		m_renderUnits(renderUnits) {}
-	~RenderModel()
-	{
-		m_vb->destroy();
-		m_ib->destroy();
-	}
+	~RenderModel() = default;
 
 	const vk::Buffer& getVertexBuffer() const { return m_vb->getBuffer(); }
 	const vk::Buffer& getIndexBuffer() const { return m_ib->getBuffer(); }

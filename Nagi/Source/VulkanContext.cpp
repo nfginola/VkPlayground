@@ -286,9 +286,6 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanContext::debugCallback(VkDebugUtilsMessageS
 
 void VulkanContext::createInstance(std::vector<const char*> requiredExtensions, bool debugLayer)
 {
-
-
-
 	vk::ApplicationInfo appInfo("Nagi App", 1, "Nagi Engine", 1, VK_API_VERSION_1_1);
 
 	std::vector<const char*> validationLayers;
