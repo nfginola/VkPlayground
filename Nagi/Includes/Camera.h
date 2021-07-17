@@ -9,7 +9,7 @@ public:
 	Camera(float aspectRatio, float fovInDegs, float nearPlane = 0.1f, float farPlane = 200.f, float moveSpeed = 10.f, const glm::vec3& initialPosition = glm::vec3(0.f, 5.f, 0.f));
 	~Camera() = default;
 
-	void rotateCamera(int mouseDx, int mouseDy, float dt);
+	void rotateCamera(double mouseDx, double mouseDy, float dt);
 	void moveDir(const glm::vec3& dir);
 	void moveDirLeft();
 	void moveDirRight();
@@ -45,8 +45,8 @@ private:
 	glm::vec3 m_localUp;
 	glm::vec3 m_localForward;
 
-	float m_camPitch;
-	float m_camYaw;
+	double m_camPitch;
+	double m_camYaw;
 	float m_mouseSpeed;
 	float m_moveSpeed;
 	float m_fovInDegs;

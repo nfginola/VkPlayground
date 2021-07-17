@@ -29,7 +29,7 @@ public:
 
 	void setResizeCallback(std::function<void(GLFWwindow*, int, int)> function);
 	void setKeyCallback(std::function<void(GLFWwindow*, int, int, int, int)> function);
-	void setMouseCursorCallback(std::function<void(GLFWwindow*, int, int)> function);
+	void setMouseCursorCallback(std::function<void(GLFWwindow*, double, double)> function);
 	void setMouseButtonCallback(std::function<void(GLFWwindow*, int, int, int)> function);
 
 	vk::SurfaceKHR getSurface(const vk::Instance& vInst) const;
@@ -46,7 +46,7 @@ private:
 	std::pair<int, int> m_clientDimensions;
 	std::function<void(GLFWwindow*, int, int)> m_resizeCallback;
 	std::function<void(GLFWwindow*, int, int, int, int)> m_keyCallback;
-	std::function<void(GLFWwindow*, int, int)> m_mouseCursorCallback;
+	std::function<void(GLFWwindow*, double, double)> m_mouseCursorCallback;
 	std::function<void(GLFWwindow*, int, int, int)> m_mouseButtonCallback;
 	std::vector<const char*> m_reqExtensions;
 };

@@ -70,10 +70,10 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 		});
 
 	bool firstTime = true;
-	static int prevX = 0;
-	static int prevY = 0;
+	static double prevX = 0;
+	static double prevY = 0;
 	window.setMouseCursorCallback(
-		[&fpsCam, &firstTime](GLFWwindow* window, int xPos, int yPos)
+		[&fpsCam, &firstTime](GLFWwindow* window, double xPos, double yPos)
 		{
 			if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
 			{
@@ -84,10 +84,10 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 					firstTime = false;
 				}
 				
-				int dx = xPos - prevX;
-				int dy = -(yPos - prevY);	// Down is positive in Screenspace, we flip it
+				double dx = xPos - prevX;
+				double dy = -(yPos - prevY);	// Down is positive in Screenspace, we flip it
 
-				fpsCam.rotateCamera(dx, dy, 0.16);
+				fpsCam.rotateCamera(dx, dy, 0.16f);
 
 				prevX = xPos;
 				prevY = yPos;
@@ -170,7 +170,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			else if (shiftKey.isDown())
 				fpsCam.moveDirDown();
 
-			fpsCam.update(0.016);
+			fpsCam.update(0.016f);
 
 
 			// Update data for shader
@@ -233,7 +233,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 				// Sponza
 				if (tmpId == 1)
 				{
-					auto newMatModel = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, 0.f)) * glm::scale(glm::mat4(1.f), glm::vec3(0.07));
+					auto newMatModel = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, 0.f)) * glm::scale(glm::mat4(1.f), glm::vec3(0.07f));
 					perObjectData.modelMat = newMatModel;
 				}
 				// Nanosuit
@@ -642,7 +642,7 @@ struct AssimpMeshSubset
 
 void processMesh(aiMesh* mesh, const aiScene* scene, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, std::vector<AssimpMeshSubset>& subsets)
 {
-	for (int i = 0; i < mesh->mNumVertices; ++i)
+	for (unsigned int i = 0; i < mesh->mNumVertices; ++i)
 	{
 		Vertex vert{};
 		vert.pos.x = mesh->mVertices[i].x;
@@ -663,11 +663,11 @@ void processMesh(aiMesh* mesh, const aiScene* scene, std::vector<Vertex>& vertic
 	}
 
 	unsigned int indicesThisMesh = 0;
-	for (int i = 0; i < mesh->mNumFaces; ++i)
+	for (unsigned int i = 0; i < mesh->mNumFaces; ++i)
 	{
 		aiFace face = mesh->mFaces[i];
 
-		for (int j = 0; j < face.mNumIndices; ++j)
+		for (unsigned int j = 0; j < face.mNumIndices; ++j)
 		{
 			indices.push_back(face.mIndices[j]);
 			++indicesThisMesh;
@@ -703,13 +703,13 @@ void processNode(aiNode* node, const aiScene* scene, std::vector<Vertex>& vertic
 {
 
 	// For each mesh in the node, process it!
-	for (int i = 0; i < node->mNumMeshes; ++i)
+	for (unsigned int i = 0; i < node->mNumMeshes; ++i)
 	{
 		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
 		processMesh(mesh, scene, vertices, indices, subsets);
 	}
 
-	for (int i = 0; i < node->mNumChildren; ++i)
+	for (unsigned int i = 0; i < node->mNumChildren; ++i)
 	{
 		processNode(node->mChildren[i], scene, vertices, indices, subsets);
 	}

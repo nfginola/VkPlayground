@@ -78,7 +78,7 @@ void Window::setKeyCallback(std::function<void(GLFWwindow*, int, int, int, int)>
 	m_keyCallback = function;
 }
 
-void Window::setMouseCursorCallback(std::function<void(GLFWwindow*, int, int)> function)
+void Window::setMouseCursorCallback(std::function<void(GLFWwindow*, double, double)> function)
 {
 	m_mouseCursorCallback = function;
 }
