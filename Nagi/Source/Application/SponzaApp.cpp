@@ -38,7 +38,10 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 
 			if (key == GLFW_KEY_A)
+			{
+				std::cout << "huh\n";
 				handleFunc(0);
+			}
 			if (key == GLFW_KEY_D)
 				handleFunc(1);
 			if (key == GLFW_KEY_W)
@@ -70,8 +73,8 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 		});
 
 	bool firstTime = true;
-	static double prevX = 0;
-	static double prevY = 0;
+	static double prevX = 0.0;
+	static double prevY = 0.0;
 	window.setMouseCursorCallback(
 		[&fpsCam, &firstTime](GLFWwindow* window, double xPos, double yPos)
 		{
@@ -86,7 +89,8 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 				
 				double dx = xPos - prevX;
 				double dy = -(yPos - prevY);	// Down is positive in Screenspace, we flip it
-
+			
+				std::cout << "dx: " << dx << " || dy: " << dy << "\n";
 				fpsCam.rotateCamera(dx, dy, 0.16f);
 
 				prevX = xPos;
@@ -199,7 +203,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 			// Setup render pass info
 			std::array<vk::ClearValue, 2> clearValues = {
-				vk::ClearColorValue(std::array<float, 4>({0.f, 0.f, 0.f, 1.f})),
+				vk::ClearColorValue(std::array<float, 4>({0.529f, 0.808f, 0.922f, 1.f})),
 				vk::ClearDepthStencilValue( /*depth*/ 1.f, /*stencil*/ 0)
 			};
 
@@ -687,6 +691,9 @@ void processMesh(aiMesh* mesh, const aiScene* scene, std::vector<Vertex>& vertic
 	subsetData.m_diffuseFilePath = diffPath.C_Str();
 	subsetData.m_normalFilePath = norPath.C_Str();
 	subsetData.m_opacityFilePath = opacityPath.C_Str();
+	
+	if (diffPath.length == 0)
+		std::cout << "I am empty :)\n";		// We can use this for using std::optional for AssimpMeshSubset texture paths. If length 0, assign nullopt
 
 	subsetData.m_vertexCount = mesh->mNumVertices;
 	subsetData.m_vertexStart = s_meshVertexCount;

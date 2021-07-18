@@ -10,7 +10,7 @@ namespace Nagi
 		m_localUp(s_worldUp),
 		m_localForward(s_worldForward),
 		m_camPitch(0.f),
-		m_camYaw(-90.f),		// Positive degrees rotate CCW
+		m_camYaw(-90.f),		// Positive degrees rotate CCW		--> Point it at -z
 		m_mouseSpeed(0.3f),
 		m_moveSpeed(moveSpeed),
 		m_aspectRatio(aspectRatio),
@@ -28,12 +28,12 @@ namespace Nagi
 		m_camYaw += deltaYaw;
 		m_camPitch += deltaPitch;
 
-		m_localForward.x = cos(glm::radians(m_camYaw)) * cos(glm::radians(m_camPitch));
-		m_localForward.y = sin(glm::radians(m_camPitch));
-		m_localForward.z = sin(glm::radians(m_camYaw)) * cos(glm::radians(m_camPitch));
+		// Constrain to avoid gimbal lock
+		if (m_camPitch > 89.f)
+			m_camPitch = 89.f;
+		else if (m_camPitch < -89.f)
+			m_camPitch = -89.f;
 
-		m_localRight.x = cos(glm::radians(m_camYaw + 90));
-		m_localRight.z = sin(glm::radians(m_camYaw + 90));
 	}
 
 	void Camera::moveDir(const glm::vec3& dir)
@@ -103,6 +103,15 @@ namespace Nagi
 		if (!(glm::length(m_frameMoveDir) <= glm::epsilon<float>()))
 			moveInDirection(glm::normalize(m_frameMoveDir), m_moveSpeed, dt);
 		m_frameMoveDir = glm::vec3(0.f);
+
+
+		// Spherical coordinates. We use 2nd factor cos, cos, sin because we are using angles that start on the plane going towards the Y axis, not like traditional Y axis down towards XZ plane
+		m_localForward.x = cos(glm::radians(m_camYaw)) * cos(glm::radians(m_camPitch));
+		m_localForward.z = sin(glm::radians(m_camYaw)) * cos(glm::radians(m_camPitch));
+		m_localForward.y = sin(glm::radians(m_camPitch));
+
+		m_localRight.x = cos(glm::radians(m_camYaw + 90));
+		m_localRight.z = sin(glm::radians(m_camYaw + 90));
 	}
 
 	void Camera::moveInDirection(const glm::vec3& direction, float speed, float dt)
