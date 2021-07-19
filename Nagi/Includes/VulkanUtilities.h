@@ -8,7 +8,7 @@ namespace Nagi
 	class Buffer;
 
 	// We can add a gen mipmap down the line..
-	std::unique_ptr<Texture> loadVkImage(VulkanContext& context, const std::string& filePath);
+	std::unique_ptr<Texture> loadVkImage(VulkanContext& context, const std::string& filePath, bool generateMips = false);
 
 	// Designed with Vertex/Index buffers in mind
 	template <typename T>

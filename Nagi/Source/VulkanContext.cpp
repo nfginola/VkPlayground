@@ -246,6 +246,11 @@ UploadContext& VulkanContext::getUploadContext() const
 	return *m_uploadContext.get();
 }
 
+const vk::PhysicalDeviceProperties& VulkanContext::getPhysicalDeviceProperties() const
+{
+	return m_physicalDeviceProperties;
+}
+
 uint32_t VulkanContext::getSwapchainImageCount() const
 {
 	return m_swapchainImageCount;
@@ -366,6 +371,8 @@ void VulkanContext::getPhysicalDevice(const vk::Instance& instance)
 	// Simply get the one in front. We will assume that this is our primary graphics card
 	// We can extend this by having some score value checking for each physical device in the future
 	m_physicalDevice = instance.enumeratePhysicalDevices().front();
+	m_physicalDeviceProperties = m_physicalDevice.getProperties();
+
 }
 
 QueueFamilies VulkanContext::findQueueFamilies(const vk::PhysicalDevice& physicalDevice, vk::SurfaceKHR surface) const
@@ -431,10 +438,10 @@ vk::PresentModeKHR VulkanContext::selectPresentMode(const std::vector<vk::Presen
 	// Fallback to FIFO if Mailbox not available --> Guaranteed to be implemented
 	// FIFO: Show on next vertical blank (vsync)
 	// Immediate: May cause tearing (No vsync)
-	vk::PresentModeKHR fallbackPresntMode = vk::PresentModeKHR::eFifo;
+	vk::PresentModeKHR fallbackPresentMode = vk::PresentModeKHR::eFifo;
 
 	if (selectedPresentModeIt == presentModes.cend())
-		return fallbackPresntMode;
+		return fallbackPresentMode;
 
 	return *selectedPresentModeIt;
 }
@@ -477,7 +484,13 @@ void VulkanContext::createLogicalDevice(const vk::PhysicalDevice& physicalDevice
 	// Enable device specific extension
 	std::vector<const char*> enabledExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
-	m_device = physicalDevice.createDevice(vk::DeviceCreateInfo(vk::DeviceCreateFlags(), queueCreateInfos, enabledLayers, enabledExtensions));
+	// Enable anisotropic filtering (currently not doing checks to see if we do support it..)
+	vk::PhysicalDeviceFeatures physDevFeatures;
+	physDevFeatures.setSamplerAnisotropy(true);
+
+	
+
+	m_device = physicalDevice.createDevice(vk::DeviceCreateInfo(vk::DeviceCreateFlags(), queueCreateInfos, enabledLayers, enabledExtensions, &physDevFeatures));
 
 
 	// Retrieve the queues

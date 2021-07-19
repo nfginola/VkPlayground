@@ -8,7 +8,7 @@
 namespace Nagi
 {
 
-std::unique_ptr<Texture> loadVkImage(VulkanContext& context, const std::string& filePath)
+std::unique_ptr<Texture> loadVkImage(VulkanContext& context, const std::string& filePath, bool generateMips)
 {
 
 
@@ -24,6 +24,10 @@ std::unique_ptr<Texture> loadVkImage(VulkanContext& context, const std::string& 
 
 	auto allocator = context.getAllocator();
 
+	// Get mip levels
+	uint32_t mipLevels = 1;
+	if (generateMips)
+		mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 
 	// ========================== Create staging buffer and copy data to staging buffer
 	vk::BufferCreateInfo stagingCI({}, imageSize, vk::BufferUsageFlagBits::eTransferSrc);
@@ -41,13 +45,17 @@ std::unique_ptr<Texture> loadVkImage(VulkanContext& context, const std::string& 
 	auto texExtent = vk::Extent3D(texWidth, texHeight, 1);
 	vk::Format imageFormat = vk::Format::eR8G8B8A8Srgb;
 
+	auto imageUsageBits = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
+	if (generateMips)
+		imageUsageBits |= vk::ImageUsageFlagBits::eTransferSrc;
+
 	vk::ImageCreateInfo imgCI({},
 		vk::ImageType::e2D, imageFormat,
 		texExtent,
-		1, 1,
+		mipLevels, 1,
 		vk::SampleCountFlagBits::e1,
 		vk::ImageTiling::eOptimal,
-		vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled
+		imageUsageBits
 	);
 
 	VmaAllocationCreateInfo texAlloc{};
@@ -59,10 +67,11 @@ std::unique_ptr<Texture> loadVkImage(VulkanContext& context, const std::string& 
 	// ======================================= Initial Layout of image is Undefined, we need to transition its layout!
 	auto& uploadContext = context.getUploadContext();
 
+	// Transition layout, copy buffer, transition again to shader read only optimal
 	uploadContext.submitWork(
 		[&](const vk::CommandBuffer& cmd)
 		{
-			vk::ImageSubresourceRange range(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+			vk::ImageSubresourceRange range(vk::ImageAspectFlagBits::eColor, 0, mipLevels, 0, 1);	// mipLevels --> makes sure that all mips get transitioned to linear layout
 
 			vk::ImageMemoryBarrier barrierForTransfer(
 				{},
@@ -94,37 +103,145 @@ std::unique_ptr<Texture> loadVkImage(VulkanContext& context, const std::string& 
 
 			cmd.copyBufferToImage(stagingBuffer.getBuffer(), texture->getImage(), vk::ImageLayout::eTransferDstOptimal, copyRegion);
 
+			// IF we dont generate mips --> Transfer layout to shader read optimal
+			// IF we will generate mips --> Leave layout in Transfer Destination Optimal
+			if (!generateMips)
+			{
+				// Now we can transfer the image layout to optimal for shader usage
+				vk::ImageMemoryBarrier barrierForReading(
+					vk::AccessFlagBits::eTransferWrite,
+					vk::AccessFlagBits::eShaderRead,
+					vk::ImageLayout::eTransferDstOptimal,
+					vk::ImageLayout::eShaderReadOnlyOptimal,
+					{},
+					{},
+					texture->getImage(),
+					range
+				);
 
-			// Now we can transfer the image layout to optimal for shader usage
-			vk::ImageMemoryBarrier barrierForReading(
-				vk::AccessFlagBits::eTransferWrite,
-				vk::AccessFlagBits::eShaderRead,
-				vk::ImageLayout::eTransferDstOptimal,
-				vk::ImageLayout::eShaderReadOnlyOptimal,
-				{},
-				{},
-				texture->getImage(),
-				range
-			);
-
-			// Transition layout to Read Only Optimal through pipeline barrier (after availability ops and before visibility ops)
-			cmd.pipelineBarrier(
-				vk::PipelineStageFlagBits::eTransfer,
-				vk::PipelineStageFlagBits::eFragmentShader,		// guarantee that transition has happened before any subsequent fragment shader reads
-				{},												// above stage doesnt really matter since we are waiting for a Fence in submitWork which waits until the submitted work has COMPLETED execution
-				{},
-				{},
-				barrierForReading
-			);
-
+				// Transition layout to Read Only Optimal through pipeline barrier (after availability ops and before visibility ops)
+				cmd.pipelineBarrier(
+					vk::PipelineStageFlagBits::eTransfer,
+					vk::PipelineStageFlagBits::eFragmentShader,		// guarantee that transition has happened before any subsequent fragment shader reads
+					{},												// above stage doesnt really matter since we are waiting for a Fence in submitWork which waits until the submitted work has COMPLETED execution
+					{},
+					{},
+					barrierForReading
+				);
+			}
 		});
 
-	//stagingBuffer.destroy();
+
+	if (generateMips)
+	{
+		// Note that each mip is now still in Transfer Dst Optimal state given that generateMips = true
+			// Generate mips
+		uploadContext.submitWork(
+			[&](const vk::CommandBuffer& cmd)
+			{
+				uint32_t mipWidth = texWidth;
+				uint32_t mipHeight = texHeight;
+
+				for (uint32_t i = 1; i < mipLevels; ++i)
+				{
+					// We choose to transition subres i-1 
+					vk::ImageSubresourceRange range(vk::ImageAspectFlagBits::eColor, i - 1, 1, 0, 1);
+
+					vk::ImageMemoryBarrier barrierTransitionForBlit(
+						vk::AccessFlagBits::eTransferWrite,
+						vk::AccessFlagBits::eTransferRead,		// we will be reading from mip[i - 1]
+						vk::ImageLayout::eTransferDstOptimal,
+						vk::ImageLayout::eTransferSrcOptimal,
+						{},
+						{},
+						texture->getImage(),
+						range
+					);
+
+					// Make sure any previous transfer writes has been done (both copy from staging but also previous mip blits)
+					cmd.pipelineBarrier(
+						vk::PipelineStageFlagBits::eTransfer,
+						vk::PipelineStageFlagBits::eTransfer,
+						{},
+						{},
+						{},
+						barrierTransitionForBlit
+					);
+
+
+
+					std::array<vk::Offset3D, 2> srcBounds;
+					srcBounds[0] = vk::Offset3D(0, 0, 0);
+					srcBounds[1] = vk::Offset3D(mipWidth, mipHeight, 1);	// tex dim of i-1 texture (which starts at texWidth and texHeight respectively on 0th mip
+
+					std::array<vk::Offset3D, 2> dstBounds;
+					dstBounds[0] = vk::Offset3D(0, 0, 0);
+					dstBounds[1] = vk::Offset3D(mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1);
+
+					vk::ImageSubresourceLayers srcSubres(vk::ImageAspectFlagBits::eColor, i - 1, 0, 1);
+					vk::ImageSubresourceLayers dstSubres(vk::ImageAspectFlagBits::eColor, i, 0, 1);
+
+					// Blit image from i-1 to i
+					vk::ImageBlit blitInfo(srcSubres, srcBounds, dstSubres, dstBounds);
+
+					cmd.blitImage(texture->getImage(), vk::ImageLayout::eTransferSrcOptimal, texture->getImage(), vk::ImageLayout::eTransferDstOptimal, blitInfo, vk::Filter::eLinear);
+
+
+
+
+					// Done reading from i-1, lets change its layout to shader read optimal
+					barrierTransitionForBlit.setOldLayout(vk::ImageLayout::eTransferSrcOptimal);
+					barrierTransitionForBlit.setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+					barrierTransitionForBlit.setSrcAccessMask(vk::AccessFlagBits::eTransferWrite);
+					barrierTransitionForBlit.setDstAccessMask(vk::AccessFlagBits::eShaderRead);
+
+					// We guarantee that the image layout transition happens after blit transfer write and happens before shader read in fragment shader
+					cmd.pipelineBarrier(
+						vk::PipelineStageFlagBits::eTransfer,
+						vk::PipelineStageFlagBits::eFragmentShader,
+						{},
+						{},
+						{},
+						barrierTransitionForBlit
+					);
+
+
+					if (mipWidth > 1) mipWidth /= 2;
+					if (mipHeight > 1) mipHeight /= 2;
+				}
+
+				// Handle last mip since for loop doesnt take care of it
+				vk::ImageSubresourceRange lastSubresRange(vk::ImageAspectFlagBits::eColor, mipLevels - 1, 1, 0, 1);
+				vk::ImageMemoryBarrier barrierTransitionForBlit(
+					vk::AccessFlagBits::eTransferWrite,
+					vk::AccessFlagBits::eShaderRead,
+					vk::ImageLayout::eTransferDstOptimal,
+					vk::ImageLayout::eShaderReadOnlyOptimal,
+					{},
+					{},
+					texture->getImage(),
+					lastSubresRange
+				);
+
+				cmd.pipelineBarrier(
+					vk::PipelineStageFlagBits::eTransfer,
+					vk::PipelineStageFlagBits::eFragmentShader,
+					{},
+					{},
+					{},
+					barrierTransitionForBlit
+				);
+
+
+
+			});
+	}
+	
 
 	// NOTE TO SELF: We can extend this later for mipmap generation
 	// ============================ Create image view
 	vk::ComponentMapping componentMapping(vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG, vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA);
-	vk::ImageSubresourceRange subresRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+	vk::ImageSubresourceRange subresRange(vk::ImageAspectFlagBits::eColor, 0, mipLevels, 0, 1);
 
 	vk::ImageViewCreateInfo viewCreateInfo({},
 		texture->getImage(),

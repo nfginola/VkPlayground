@@ -46,6 +46,7 @@ public:
 	vk::Device& getDevice();
 	VmaAllocator getAllocator() const;
 	UploadContext& getUploadContext() const;
+	const vk::PhysicalDeviceProperties& getPhysicalDeviceProperties() const;
 
 	// Maybe we can refactor to SwapchainInfo and DepthInfo
 	uint32_t getSwapchainImageCount() const;
@@ -97,6 +98,7 @@ private:
 private:
 	vk::Instance m_instance;
 	vk::PhysicalDevice m_physicalDevice;
+	vk::PhysicalDeviceProperties m_physicalDeviceProperties;
 	vk::Device m_device;
 	vk::Queue m_gfxQueue;
 	vk::Queue m_presentQueue;

@@ -75,6 +75,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 	bool firstTime = true;
 	static double prevX = 0.0;
 	static double prevY = 0.0;
+
 	window.setMouseCursorCallback(
 		[&fpsCam, &firstTime](GLFWwindow* window, double xPos, double yPos)
 		{
@@ -123,7 +124,15 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 		// Set up Texture
 		loadTextures();
 
-		vk::SamplerCreateInfo sCI({}, vk::Filter::eLinear, vk::Filter::eLinear);
+		vk::SamplerCreateInfo sCI({},
+			vk::Filter::eLinear, vk::Filter::eLinear,	// min/mag filter
+			vk::SamplerMipmapMode::eLinear,				// mipmapMode
+			vk::SamplerAddressMode::eRepeat, vk::SamplerAddressMode::eRepeat, vk::SamplerAddressMode::eRepeat,
+			0.f,							// mipLodBias
+			true, m_gfxCon.getPhysicalDeviceProperties().limits.maxSamplerAnisotropy,		// anisotropy enabled / max anisotropy (max clamp value) (we are just maxing out here (16))
+			false, vk::CompareOp::eNever,	// compare enabled/op
+			0.f, VK_LOD_CLAMP_NONE
+		);
 		m_commonSampler = m_gfxCon.getDevice().createSamplerUnique(sCI);
 
 
@@ -144,8 +153,12 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 		// ======== Load scene data
 		createRenderModels();
 
-		loadExternalModel("Resources/Objs/sponza/sponza.obj");
+
 		loadExternalModel("Resources/Objs/nanosuit/nanosuit.obj");
+		loadExternalModel("Resources/Objs/sponza/sponza.obj");
+		
+		// We dont wait for sponza! (Testing)
+		//std::thread loadThr([&]() { loadExternalModel("Resources/Objs/sponza/sponza.obj"); });
 
 		while (m_window.isRunning())
 		{
@@ -234,14 +247,14 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 				cmd.bindVertexBuffers(0, vbs, offsets);
 				cmd.bindIndexBuffer(ib, 0, vk::IndexType::eUint32);
 				
-				// Sponza
-				if (tmpId == 1)
+				// Nanosuit
+				if (tmpId == 2)
 				{
 					auto newMatModel = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, 0.f)) * glm::scale(glm::mat4(1.f), glm::vec3(0.07f));
 					perObjectData.modelMat = newMatModel;
 				}
-				// Nanosuit
-				else if (tmpId == 2)
+				// Sponza
+				else if (tmpId == 1)
 				{
 					auto newMatModel = glm::translate(glm::mat4(1.f), glm::vec3(9.f, 0.f, -9.f)) * glm::scale(glm::mat4(1.f), glm::vec3(1.f));
 					perObjectData.modelMat = newMatModel;
@@ -293,6 +306,8 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			gfxCon.endFrame();
 
 		}
+
+		//loadThr.join();
 
 		// Idle to wait for GPU resources to stop being used before resource destruction
 		gfxCon.getDevice().waitIdle();
@@ -364,8 +379,8 @@ void SponzaApp::loadTextures()
 {
 	//m_loadedTextures.push_back(loadVkImage(m_gfxCon, "Resources/Textures/rimuru.jpg"));
 	//m_loadedTextures.push_back(loadVkImage(m_gfxCon, "Resources/Textures/rimuru2.jpg"));
-	m_mappedTextures.insert({ "rimuru", loadVkImage(m_gfxCon, "Resources/Textures/rimuru.jpg") });
-	m_mappedTextures.insert({ "rimuru2", loadVkImage(m_gfxCon, "Resources/Textures/rimuru2.jpg") });
+	m_mappedTextures.insert({ "rimuru", loadVkImage(m_gfxCon, "Resources/Textures/rimuru.jpg", true) });
+	m_mappedTextures.insert({ "rimuru2", loadVkImage(m_gfxCon, "Resources/Textures/rimuru2.jpg", true) });
 	m_mappedTextures.insert({ "defaultopacity", loadVkImage(m_gfxCon, "Resources/Textures/defaultopacity.jpg") });
 }
 
@@ -737,7 +752,7 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 	const aiScene* scene = importer.ReadFile(
 		filePath.relative_path().string().c_str(),
 		aiProcess_Triangulate |
-		aiProcess_FlipUVs |			// Vulkan screen space is LH but we are using RH 
+		aiProcess_FlipUVs |			// Vulkan screen space is 0,0 on top left
 		aiProcess_GenNormals
 	);
 
@@ -799,7 +814,7 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 			// Handle albedo
 			{
 
-				m_mappedTextures.insert(lb, { albedoPath, std::move(loadVkImage(m_gfxCon, albedoPath)) });
+				m_mappedTextures.insert(lb, { albedoPath, std::move(loadVkImage(m_gfxCon, albedoPath, true)) });
 
 
 				// Create descriptor set with new material
