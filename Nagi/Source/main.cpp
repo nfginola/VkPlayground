@@ -8,7 +8,7 @@
 
 int main()
 {
-	auto win = std::make_unique<Nagi::Window>(1920, 1080);
+	auto win = std::make_unique<Nagi::Window>(2464, 1386);
 	auto gfxCon = std::make_unique<Nagi::VulkanContext>(*win.get()); 
 
 #if APP_MINIMAL_TRI

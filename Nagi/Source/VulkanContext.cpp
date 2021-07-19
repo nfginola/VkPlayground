@@ -373,6 +373,8 @@ void VulkanContext::getPhysicalDevice(const vk::Instance& instance)
 	m_physicalDevice = instance.enumeratePhysicalDevices().front();
 	m_physicalDeviceProperties = m_physicalDevice.getProperties();
 
+	m_physicalDevice.getFeatures();	// Fix best practices but dont use any for now
+
 }
 
 QueueFamilies VulkanContext::findQueueFamilies(const vk::PhysicalDevice& physicalDevice, vk::SurfaceKHR surface) const
@@ -524,7 +526,10 @@ vk::SurfaceFormatKHR VulkanContext::createSwapchain(const vk::PhysicalDevice& ph
 
 	// Recommended to have one more image than minimum
 	// We make sure that doesn't exceed maximum
-	m_swapchainImageCount = std::clamp(surfaceCapabilities.minImageCount + 1, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount);
+	//m_swapchainImageCount = std::clamp(surfaceCapabilities.minImageCount + 1, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount);
+
+	uint32_t chosenCount = 3;		// FIFO best practice
+	m_swapchainImageCount = std::clamp(chosenCount, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount);
 
 
 	// --------------------------------------------------------

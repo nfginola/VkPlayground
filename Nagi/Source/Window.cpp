@@ -16,6 +16,8 @@ Window::Window(int clientWidth, int clientHeight, const char* title) :
 
 	m_window = glfwCreateWindow(clientWidth, clientHeight, title, nullptr, nullptr);
 
+	glfwSetWindowPos(m_window, 70, 35);
+
 	glfwSetWindowUserPointer(m_window, this);
 	glfwSetFramebufferSizeCallback(m_window, framebufferResizeCallback);
 	glfwSetKeyCallback(m_window, keyCallback);

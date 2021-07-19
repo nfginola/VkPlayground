@@ -211,7 +211,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 
 			// ================================================ Update UBO
-			m_engineFrameData[frameRes.imageIdx].cameraBuffer->putData(&cameraData, sizeof(GPUCameraData));
+			m_engineFrameData[frameRes.frameIdx].cameraBuffer->putData(&cameraData, sizeof(GPUCameraData));
 
 
 			// Setup render pass info
