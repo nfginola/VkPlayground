@@ -28,7 +28,7 @@ VulkanContext::VulkanContext(const Window& win, bool debugLayer) :
 	// We limit the use of member variables in these creation helpers for learning purposes
 	// This way, we can make it easy to see what each step of the creation requires at a glance!
 
-	debugLayer = false;
+	//debugLayer = false;
 
 	try
 	{
@@ -442,7 +442,7 @@ vk::PresentModeKHR VulkanContext::selectPresentMode(const std::vector<vk::Presen
 	// Fallback to FIFO if Mailbox not available --> Guaranteed to be implemented
 	// FIFO: Show on next vertical blank (vsync)
 	// Immediate: May cause tearing (No vsync)
-	vk::PresentModeKHR fallbackPresentMode = vk::PresentModeKHR::eImmediate;
+	vk::PresentModeKHR fallbackPresentMode = vk::PresentModeKHR::eFifo;
 
 	if (selectedPresentModeIt == presentModes.cend())
 		return fallbackPresentMode;
