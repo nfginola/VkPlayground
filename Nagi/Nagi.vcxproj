@@ -171,6 +171,7 @@
     <ClCompile Include="Source\Camera.cpp" />
     <ClCompile Include="Source\Application\Application.cpp" />
     <ClCompile Include="Source\MouseHandler.cpp" />
+    <ClCompile Include="Source\ResourceTypes.cpp" />
     <ClCompile Include="Source\VulkanContext.cpp" />
     <ClCompile Include="Source\main.cpp" />
     <ClCompile Include="Source\pch.cpp">
@@ -189,11 +190,11 @@
     <ClInclude Include="Includes\Application\AppDefines.h" />
     <ClInclude Include="Includes\Application\Application.h" />
     <ClInclude Include="Includes\MouseHandler.h" />
+    <ClInclude Include="Includes\ResourceTypes.h" />
     <ClInclude Include="Includes\VulkanContext.h" />
     <ClInclude Include="Includes\pch.h" />
     <ClInclude Include="Includes\SingleInstance.h" />
     <ClInclude Include="Includes\Utilities.h" />
-    <ClInclude Include="Includes\VulkanTypes.h" />
     <ClInclude Include="Includes\Window.h" />
     <ClInclude Include="Includes\VulkanUtilities.h" />
     <ClInclude Include="Includes\Application\SponzaApp.h" />

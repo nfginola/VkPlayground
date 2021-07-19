@@ -21,6 +21,9 @@ namespace Nagi
 			m_frameDeltaX = static_cast<float>(dx);
 			m_frameDeltaY = static_cast<float>(dy);
 
+			//std::cout << "deltaX: " << m_frameDeltaX << "\n";
+			//std::cout << "deltaY: " << m_frameDeltaY << "\n";
+
 			if (m_cursorHook)
 				m_cursorHook(m_frameDeltaX, m_frameDeltaY);
 
@@ -49,6 +52,8 @@ namespace Nagi
 
 	float MouseHandler::getDeltaX()
 	{
+		// Reset delta, or it will stick. 
+		// When no movement --> No callback --> No prevX/Y == currX/Y
 		auto ret = m_frameDeltaX;
 		m_frameDeltaX = 0.f;
 		return ret;

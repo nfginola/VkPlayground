@@ -38,39 +38,37 @@ namespace Nagi
 
 	}
 
-	void Camera::moveDir(const glm::vec3& dir)
+	void Camera::applyMoveDirection(const glm::vec3& dir)
 	{
 		m_frameMoveDir += dir;
 	}
 
-	void Camera::moveDirLeft()
+	void Camera::move(MoveDirection direction)
 	{
-		moveDir(-m_localRight);
-	}
+		switch (direction)
+		{
+		case MoveDirection::Left:
+			applyMoveDirection(-m_localRight);
+			break;
+		case MoveDirection::Right:
+			applyMoveDirection(m_localRight);
+			break;
+		case MoveDirection::Up:
+			applyMoveDirection(s_worldUp);
+			break;
+		case MoveDirection::Down:
+			applyMoveDirection(-s_worldUp);
+			break;
+		case MoveDirection::Forward:
+			applyMoveDirection(m_localForward);
+			break;
+		case MoveDirection::Backward:
+			applyMoveDirection(-m_localForward);
+			break;
 
-	void Camera::moveDirRight()
-	{
-		moveDir(m_localRight);
-	}
-
-	void Camera::moveDirForward()
-	{
-		moveDir(m_localForward);
-	}
-
-	void Camera::moveDirBackward()
-	{
-		moveDir(-m_localForward);
-	}
-
-	void Camera::moveDirUp()
-	{
-		moveDir(s_worldUp);
-	}
-
-	void Camera::moveDirDown()
-	{
-		moveDir(-s_worldUp);
+		default:
+			break;
+		}
 	}
 
 	void Camera::setPosition(const glm::vec3& newPosition)

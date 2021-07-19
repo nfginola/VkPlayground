@@ -48,6 +48,9 @@
     <ClCompile Include="Source\MouseHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Source\ResourceTypes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Includes\pch.h">
@@ -74,9 +77,6 @@
     <ClInclude Include="Includes\VulkanUtilities.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Includes\VulkanTypes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Includes\Application\SponzaApp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -87,6 +87,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Includes\MouseHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Includes\ResourceTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -14,8 +14,10 @@ namespace Nagi
 		void handleCursor(GLFWwindow* win, double xPos, double yPos);
 		void handleButton(GLFWwindow* win, int button, int action, int mods);
 
+		// We are not using getDeltaX/Y. We are instead subscribing our Camera to the window message callback for a consistent update frequency
 		float getDeltaX();
 		float getDeltaY();
+
 		float getPosX();
 		float getPosY();
 

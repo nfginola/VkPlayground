@@ -3,6 +3,11 @@
 namespace Nagi
 {
 
+	enum class MoveDirection
+	{
+		Left, Right, Up, Down, Forward, Backward
+	};
+
 class Camera
 {
 public:
@@ -10,13 +15,7 @@ public:
 	~Camera() = default;
 
 	void rotateCamera(double mouseDx, double mouseDy, float dt);
-	void moveDir(const glm::vec3& dir);
-	void moveDirLeft();
-	void moveDirRight();
-	void moveDirForward();
-	void moveDirBackward();
-	void moveDirUp();
-	void moveDirDown();
+	void move(MoveDirection direction);
 
 
 	void setPosition(const glm::vec3& newPosition);
@@ -28,10 +27,12 @@ public:
 
 	void update(float dt);
 
+	// Temporary count to check update frequency of each
 	int m_rotateCount = 0;
 	int m_updateCount = 0;
 
 private:
+	void applyMoveDirection(const glm::vec3& dir);
 	void moveInDirection(const glm::vec3& direction, float speed, float dt);
 
 private:

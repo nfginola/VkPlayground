@@ -14,7 +14,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon, KeyHandler* keyHandl
 	Application(window, gfxCon)
 {
 	auto scExtent = m_gfxCon.getSwapchainExtent();
-	Camera fpsCam((float)scExtent.width / scExtent.height, 77);
+	Camera fpsCam((float)scExtent.width / scExtent.height, 77.f);
 
 	try
 	{
@@ -64,7 +64,9 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon, KeyHandler* keyHandl
 
 		loadExternalModel("Resources/Objs/nanosuit/nanosuit.obj");
 		loadExternalModel("Resources/Objs/sponza/sponza.obj");
+		//loadExternalModel("Resources/Objs/sibenik/sibenik.obj");
 		//loadExternalModel("Resources/Objs/rungholt/rungholt.obj");
+
 
 
 		float dt = 0.f;
@@ -75,7 +77,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon, KeyHandler* keyHandl
 		mouseHandler->hookFunctionToCursor([&fpsCam](float deltaX, float deltaY)
 			{
 				// 0.07 --> Arbitrary dt
-				fpsCam.rotateCamera(deltaX, deltaY, 0.07);
+				fpsCam.rotateCamera(deltaX, deltaY, 0.07f);
 			});
 
 		while (m_window.isRunning())
@@ -83,22 +85,15 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon, KeyHandler* keyHandl
 			auto timeStart = std::chrono::system_clock::now();			
 			m_window.processEvents();
 
-			// Update camera (no frame-time fix for now)
+			// Update camera
 			//fpsCam.rotateCamera(mouseHandler->getDeltaX(), mouseHandler->getDeltaY(), dt);
 
-			if (keyHandler->isKeyDown(KeyName::A))
-				fpsCam.moveDirLeft();
-			else if (keyHandler->isKeyDown(KeyName::D))
-				fpsCam.moveDirRight();
-			if (keyHandler->isKeyDown(KeyName::W))
-				fpsCam.moveDirForward();
-			else if (keyHandler->isKeyDown(KeyName::S))
-				fpsCam.moveDirBackward();
-
-			if (keyHandler->isKeyDown(KeyName::Space))
-				fpsCam.moveDirUp();
-			else if (keyHandler->isKeyDown(KeyName::LShift))
-				fpsCam.moveDirDown();
+			if (keyHandler->isKeyDown(KeyName::A))		fpsCam.move(MoveDirection::Left);
+			if (keyHandler->isKeyDown(KeyName::D))		fpsCam.move(MoveDirection::Right);
+			if (keyHandler->isKeyDown(KeyName::W))		fpsCam.move(MoveDirection::Forward);
+			if (keyHandler->isKeyDown(KeyName::S))		fpsCam.move(MoveDirection::Backward);
+			if (keyHandler->isKeyDown(KeyName::Space))	fpsCam.move(MoveDirection::Up);
+			if (keyHandler->isKeyDown(KeyName::LShift))	fpsCam.move(MoveDirection::Down);
 
 			fpsCam.update(dt);
 
@@ -184,6 +179,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon, KeyHandler* keyHandl
 					const auto& mesh = renderUnit.getMesh();
 					const auto& mat = renderUnit.getMaterial();
 
+					// This check doesnt work! 
 					if (&mat != lastMaterial)
 					{
 						cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, mat.getPipeline());
@@ -225,7 +221,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon, KeyHandler* keyHandl
 			gfxCon.endFrame();
 
 			auto timeEnd = std::chrono::system_clock::now();
-			std::chrono::duration<double> diff = timeEnd - timeStart;
+			std::chrono::duration<float> diff = timeEnd - timeStart;
 			dt = diff.count();
 		}
 
@@ -299,9 +295,9 @@ void SponzaApp::loadTextures()
 {
 	//m_loadedTextures.push_back(loadVkImage(m_gfxCon, "Resources/Textures/rimuru.jpg"));
 	//m_loadedTextures.push_back(loadVkImage(m_gfxCon, "Resources/Textures/rimuru2.jpg"));
-	m_mappedTextures.insert({ "rimuru", loadVkImage(m_gfxCon, "Resources/Textures/rimuru.jpg", true) });
-	m_mappedTextures.insert({ "rimuru2", loadVkImage(m_gfxCon, "Resources/Textures/rimuru2.jpg", true) });
-	m_mappedTextures.insert({ "defaultopacity", loadVkImage(m_gfxCon, "Resources/Textures/defaultopacity.jpg") });
+	m_mappedTextures.insert({ "rimuru", Texture::fromFile(m_gfxCon, "Resources/Textures/rimuru.jpg", true) });
+	m_mappedTextures.insert({ "rimuru2", Texture::fromFile(m_gfxCon, "Resources/Textures/rimuru2.jpg", true) });
+	m_mappedTextures.insert({ "defaultopacity", Texture::fromFile(m_gfxCon, "Resources/Textures/defaultopacity.jpg") });
 }
 
 void SponzaApp::createDescriptorPool()
@@ -341,8 +337,8 @@ void SponzaApp::createRenderModels()
 	};
 
 	// Create buffer resources
-	auto vb = loadVkImmutableBuffer(m_gfxCon, vertices, vk::BufferUsageFlagBits::eVertexBuffer);
-	auto ib = loadVkImmutableBuffer(m_gfxCon, indices, vk::BufferUsageFlagBits::eIndexBuffer);
+	auto vb = Buffer::loadImmutable(m_gfxCon, vertices, vk::BufferUsageFlagBits::eVertexBuffer);
+	auto ib = Buffer::loadImmutable(m_gfxCon, indices, vk::BufferUsageFlagBits::eIndexBuffer);
 
 	// Create descriptor set with new material
 	vk::DescriptorSetAllocateInfo texAllocInfo(m_descriptorPool.get(), m_materialDescriptorSetLayout.get());
@@ -688,8 +684,8 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 	// ============== Assimp loading done
 	// Now load data to Vulkan =============
 
-	auto vb = loadVkImmutableBuffer(m_gfxCon, vertices, vk::BufferUsageFlagBits::eVertexBuffer);
-	auto ib = loadVkImmutableBuffer(m_gfxCon, indices, vk::BufferUsageFlagBits::eIndexBuffer);
+	auto vb = Buffer::loadImmutable(m_gfxCon, vertices, vk::BufferUsageFlagBits::eVertexBuffer);
+	auto ib = Buffer::loadImmutable(m_gfxCon, indices, vk::BufferUsageFlagBits::eIndexBuffer);
 
 	std::vector<RenderUnit> renderUnits;
 	renderUnits.reserve(subsets.size());
@@ -723,7 +719,7 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 			// Handle albedo
 			{
 
-				m_mappedTextures.insert(lb, { albedoPath, std::move(loadVkImage(m_gfxCon, albedoPath, true)) });
+				m_mappedTextures.insert(lb, { albedoPath, std::move(Texture::fromFile(m_gfxCon, albedoPath, true)) });
 
 
 				// Create descriptor set with new material
@@ -746,7 +742,7 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 			{
 				// WARNING::::: Std move calls destructor if there is an existing element in the map!!! (why??)
 				if (m_mappedTextures.find(opacityPath) == m_mappedTextures.cend())
-					m_mappedTextures.insert({ opacityPath, std::move(loadVkImage(m_gfxCon, opacityPath)) });
+					m_mappedTextures.insert({ opacityPath, std::move(Texture::fromFile(m_gfxCon, opacityPath)) });
 
 				// Write to existing descriptor set (existing material that was made from Albedo) (bind image and sampler)
 				vk::DescriptorImageInfo imageInfo(m_commonSampler.get(), m_mappedTextures[opacityPath]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);

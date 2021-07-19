@@ -6,6 +6,8 @@
 #include "Application/QuadApp.h"
 #include "Application/SponzaApp.h"
 
+
+
 int main()
 {
 	auto keyHandler = std::make_unique<Nagi::KeyHandler>();
@@ -26,8 +28,6 @@ int main()
 #elif APP_SPONZA
 	Nagi::SponzaApp app(*win.get(), *gfxCon.get(), keyHandler.get(), mouseHandler.get());
 #endif
-
-
 
 	return 0;
 }
