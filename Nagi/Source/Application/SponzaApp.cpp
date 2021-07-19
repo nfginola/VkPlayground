@@ -10,104 +10,12 @@
 namespace Nagi
 {
 
-SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
+SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon, KeyHandler* keyHandler, MouseHandler* mouseHandler) :
 	Application(window, gfxCon)
 {
-	glm::vec3 pos{ 0.f, 10.f, 1.f };
-
-	std::array<Keystate, 8> keystates;
-	auto& aKey = keystates[0];
-	auto& dKey = keystates[1];
-	auto& wKey = keystates[2];
-	auto& sKey = keystates[3];
-	auto& eKey = keystates[4];
-	auto& qKey = keystates[5];
-	auto& spaceKey = keystates[6];
-	auto& shiftKey = keystates[7];
-
-	window.setKeyCallback(
-		[&keystates](GLFWwindow* window, int key, int scancode, int action, int mods)
-		{
-			static std::function handleFunc = [&action, &keystates](int keystateID)
-			{
-				if (action == GLFW_PRESS)
-					keystates[keystateID].onPress();
-				else if (action == GLFW_RELEASE)
-					keystates[keystateID].onRelease();
-			};
-
-
-			if (key == GLFW_KEY_A)
-			{
-				std::cout << "huh\n";
-				handleFunc(0);
-			}
-			if (key == GLFW_KEY_D)
-				handleFunc(1);
-			if (key == GLFW_KEY_W)
-				handleFunc(2);
-			if (key == GLFW_KEY_S)
-				handleFunc(3);
-			if (key == GLFW_KEY_E)
-				handleFunc(4);
-			if (key == GLFW_KEY_Q)
-				handleFunc(5);
-			if (key == GLFW_KEY_SPACE)
-				handleFunc(6);
-			if (key == GLFW_KEY_LEFT_SHIFT)
-				handleFunc(7);
-		});
-
 	auto scExtent = m_gfxCon.getSwapchainExtent();
-	Camera fpsCam((float)scExtent.width / scExtent.height, 80);
+	Camera fpsCam((float)scExtent.width / scExtent.height, 77);
 
-	window.setMouseButtonCallback(
-		[&](GLFWwindow* window, int button, int action, int mods)
-		{
-			if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
-				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-			else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
-				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-
-
-		});
-
-	bool firstTime = true;
-	static double prevX = 0.0;
-	static double prevY = 0.0;
-
-	window.setMouseCursorCallback(
-		[&fpsCam, &firstTime](GLFWwindow* window, double xPos, double yPos)
-		{
-			if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
-			{
-				if (firstTime)
-				{
-					prevX = xPos;
-					prevY = yPos;
-					firstTime = false;
-				}
-				
-				double dx = xPos - prevX;
-				double dy = -(yPos - prevY);	// Down is positive in Screenspace, we flip it
-			
-				std::cout << "dx: " << dx << " || dy: " << dy << "\n";
-				fpsCam.rotateCamera(dx, dy, 0.16f);
-
-				prevX = xPos;
-				prevY = yPos;
-			}
-			else
-			{
-				prevX = xPos;
-				prevY = yPos;
-			}
-
-
-		});
-
-
-	// :)
 	try
 	{
 		m_defRenderPass = ezTmp::createDefaultRenderPass(m_gfxCon);
@@ -156,38 +64,49 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 		loadExternalModel("Resources/Objs/nanosuit/nanosuit.obj");
 		loadExternalModel("Resources/Objs/sponza/sponza.obj");
-		
-		// We dont wait for sponza! (Testing)
-		//std::thread loadThr([&]() { loadExternalModel("Resources/Objs/sponza/sponza.obj"); });
+		//loadExternalModel("Resources/Objs/rungholt/rungholt.obj");
+
+
+		float dt = 0.f;
+
+		// We can hook to cursor function instead to subscribe to the callback which updates more frequently (but fixed timestep?) for smoother mouse!
+		// I assume that the "fixed timestep" effect comes from the fact that Window Events do not occur more frequently or less frequently if we have more/less FPS!
+		// This is why the below function has the "same sensitivity" regardless of application FPS!
+		mouseHandler->hookFunctionToCursor([&fpsCam](float deltaX, float deltaY)
+			{
+				// 0.07 --> Arbitrary dt
+				fpsCam.rotateCamera(deltaX, deltaY, 0.07);
+			});
 
 		while (m_window.isRunning())
 		{
+			auto timeStart = std::chrono::system_clock::now();			
 			m_window.processEvents();
 
 			// Update camera (no frame-time fix for now)
-			if (aKey.isDown())
-			{
-				fpsCam.moveDirLeft();
-			}
-			else if (dKey.isDown())
-			{
-				fpsCam.moveDirRight();
-			}
-			if (wKey.isDown())
-			{
-				fpsCam.moveDirForward();
-			}
-			else if (sKey.isDown())
-			{
-				fpsCam.moveDirBackward();
-			}
+			//fpsCam.rotateCamera(mouseHandler->getDeltaX(), mouseHandler->getDeltaY(), dt);
 
-			if (spaceKey.isDown())
+			if (keyHandler->isKeyDown(KeyName::A))
+				fpsCam.moveDirLeft();
+			else if (keyHandler->isKeyDown(KeyName::D))
+				fpsCam.moveDirRight();
+			if (keyHandler->isKeyDown(KeyName::W))
+				fpsCam.moveDirForward();
+			else if (keyHandler->isKeyDown(KeyName::S))
+				fpsCam.moveDirBackward();
+
+			if (keyHandler->isKeyDown(KeyName::Space))
 				fpsCam.moveDirUp();
-			else if (shiftKey.isDown())
+			else if (keyHandler->isKeyDown(KeyName::LShift))
 				fpsCam.moveDirDown();
 
-			fpsCam.update(0.016f);
+			fpsCam.update(dt);
+
+			if (keyHandler->isKeyPressed(KeyName::E))
+			{
+				std::cout << "Rotate count: " << fpsCam.m_rotateCount << "\n";
+				std::cout << "Update count: " << fpsCam.m_updateCount<< "\n\n";
+			}
 
 
 			// Update data for shader
@@ -247,13 +166,13 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 				cmd.bindVertexBuffers(0, vbs, offsets);
 				cmd.bindIndexBuffer(ib, 0, vk::IndexType::eUint32);
 				
-				// Nanosuit
+				// Sponza
 				if (tmpId == 2)
 				{
 					auto newMatModel = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, 0.f)) * glm::scale(glm::mat4(1.f), glm::vec3(0.07f));
 					perObjectData.modelMat = newMatModel;
 				}
-				// Sponza
+				// Nanosuit
 				else if (tmpId == 1)
 				{
 					auto newMatModel = glm::translate(glm::mat4(1.f), glm::vec3(9.f, 0.f, -9.f)) * glm::scale(glm::mat4(1.f), glm::vec3(1.f));
@@ -305,9 +224,10 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			gfxCon.submitQueue(submitInfo);
 			gfxCon.endFrame();
 
+			auto timeEnd = std::chrono::system_clock::now();
+			std::chrono::duration<double> diff = timeEnd - timeStart;
+			dt = diff.count();
 		}
-
-		//loadThr.join();
 
 		// Idle to wait for GPU resources to stop being used before resource destruction
 		gfxCon.getDevice().waitIdle();
@@ -646,16 +566,14 @@ uint32_t s_meshVertexCount = 0;
 uint32_t s_meshIndexCount = 0;
 struct AssimpMeshSubset
 {
-	unsigned int m_vertexCount;
-	unsigned int m_vertexStart;
+	unsigned int vertexStart;
+	unsigned int indextStart;
+	unsigned int indexCount;
 
-	unsigned int m_indexStart;
-	unsigned int m_indexCount;
-
-	std::string m_diffuseFilePath;
-	std::string m_specularFilePath;
-	std::string m_normalFilePath;
-	std::string m_opacityFilePath;
+	std::optional<std::string> diffuseFilePath;
+	std::optional<std::string> specularFilePath;
+	std::optional<std::string> normalFilePath;
+	std::optional<std::string> opacityFilePath;
 };
 
 
@@ -703,19 +621,15 @@ void processMesh(aiMesh* mesh, const aiScene* scene, std::vector<Vertex>& vertic
 
 	// Subset data
 	AssimpMeshSubset subsetData = { };
-	subsetData.m_diffuseFilePath = diffPath.C_Str();
-	subsetData.m_normalFilePath = norPath.C_Str();
-	subsetData.m_opacityFilePath = opacityPath.C_Str();
-	
-	if (diffPath.length == 0)
-		std::cout << "I am empty :)\n";		// We can use this for using std::optional for AssimpMeshSubset texture paths. If length 0, assign nullopt
+	subsetData.diffuseFilePath = (diffPath.length == 0) ? std::nullopt : std::optional<std::string>(diffPath.C_Str());
+	subsetData.normalFilePath = (norPath.length == 0) ? std::nullopt : std::optional<std::string>(norPath.C_Str());
+	subsetData.opacityFilePath = (opacityPath.length == 0) ? std::nullopt : std::optional<std::string>(opacityPath.C_Str());
 
-	subsetData.m_vertexCount = mesh->mNumVertices;
-	subsetData.m_vertexStart = s_meshVertexCount;
+	subsetData.vertexStart = s_meshVertexCount;
 	s_meshVertexCount += mesh->mNumVertices;
 
-	subsetData.m_indexCount = indicesThisMesh;
-	subsetData.m_indexStart = s_meshIndexCount;
+	subsetData.indexCount = indicesThisMesh;
+	subsetData.indextStart = s_meshIndexCount;
 	s_meshIndexCount += indicesThisMesh;
 
 	subsets.push_back(subsetData);
@@ -723,8 +637,6 @@ void processMesh(aiMesh* mesh, const aiScene* scene, std::vector<Vertex>& vertic
 
 void processNode(aiNode* node, const aiScene* scene, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, std::vector<AssimpMeshSubset>& subsets)
 {
-
-	// For each mesh in the node, process it!
 	for (unsigned int i = 0; i < node->mNumMeshes; ++i)
 	{
 		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
@@ -732,14 +644,13 @@ void processNode(aiNode* node, const aiScene* scene, std::vector<Vertex>& vertic
 	}
 
 	for (unsigned int i = 0; i < node->mNumChildren; ++i)
-	{
 		processNode(node->mChildren[i], scene, vertices, indices, subsets);
-	}
 }
 
 void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 {
 	auto dev = m_gfxCon.getDevice();
+
 
 	std::string directory = filePath.parent_path().string() + "/";
 
@@ -757,21 +668,17 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 	);
 
 	if (scene == nullptr)
-	{
-		std::cout << "Assimp: File not found! : " << filePath.filename() << "\n";
-		assert(false);
-	}
+		throw std::runtime_error(std::string("Assimp: File not found! : ") + filePath.filename().string());
 
+	// Pre-allocate memory for resources
 	unsigned int totalVertexCount = 0;
 	unsigned int totalSubsetCount = 0;
 	for (unsigned int i = 0; i < scene->mNumMeshes; ++i)
-	{
 		totalVertexCount += scene->mMeshes[i]->mNumVertices;
-		++totalSubsetCount;
-	}
+
 	vertices.reserve(totalVertexCount);
 	indices.reserve(totalVertexCount);
-	subsets.reserve(totalSubsetCount);
+	subsets.reserve(scene->mNumMeshes);
 
 	processNode(scene->mRootNode, scene, vertices, indices, subsets);
 
@@ -788,21 +695,23 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 	renderUnits.reserve(subsets.size());
 	for (const auto& subset : subsets)
 	{
-		auto mesh = Mesh(subset.m_indexStart, subset.m_indexCount, subset.m_vertexStart);
+		auto mesh = Mesh(subset.indextStart, subset.indexCount, subset.vertexStart);
 
-		// Create material
+		// Get final albedo path
 		std::string albedoPath(directory);
-		if (!subset.m_diffuseFilePath.empty())
-			albedoPath += subset.m_diffuseFilePath;
+		if (subset.diffuseFilePath.has_value())
+			albedoPath += subset.diffuseFilePath.value();
 		else
 			albedoPath = "Resources/Textures/defaulttexture.jpg";
 
+		// Get final opacity path
 		std::string opacityPath(directory);
-		if (!subset.m_opacityFilePath.empty())
-			opacityPath += subset.m_opacityFilePath;
+		if (subset.opacityFilePath.has_value())
+			opacityPath += subset.opacityFilePath.value();
 		else
 			opacityPath = "Resources/Textures/defaultopacity.jpg";
 
+		// Insert texture data and create material
 		auto lb = m_mappedTextures.lower_bound(albedoPath);
 		if (lb != m_mappedTextures.end() && !(m_mappedTextures.key_comp()(albedoPath, lb->first)))
 		{
@@ -845,8 +754,6 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 				dev.updateDescriptorSets(imageSetWrite, {});
 
 			}
-
-
 
 			// Combine to mesh and material into a render unit
 			renderUnits.push_back(RenderUnit(mesh, *m_mappedMaterials[albedoPath].get()));

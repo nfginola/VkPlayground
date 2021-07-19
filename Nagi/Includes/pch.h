@@ -22,7 +22,6 @@
 #include <algorithm>
 #include <functional>
 #include <memory>
-#include <thread>
 #include <utility>
 
 // Data structures

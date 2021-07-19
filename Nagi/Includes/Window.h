@@ -12,6 +12,9 @@ namespace vk
 namespace Nagi
 {
 
+	class KeyHandler;
+	class MouseHandler;
+
 class Window : SingleInstance<Window>
 {
 public:
@@ -27,11 +30,12 @@ public:
 	bool isRunning() const;
 	void processEvents() const;
 
-	void setResizeCallback(std::function<void(GLFWwindow*, int, int)> function);
-	void setKeyCallback(std::function<void(GLFWwindow*, int, int, int, int)> function);
-	void setMouseCursorCallback(std::function<void(GLFWwindow*, double, double)> function);
-	void setMouseButtonCallback(std::function<void(GLFWwindow*, int, int, int)> function);
+	void setKeyHandler(KeyHandler* handler);
+	void setMouseHandler(MouseHandler* handler);
 
+	void setResizeCallback(std::function<void(GLFWwindow*, int, int)> function);
+
+	// Vulkan helpers
 	vk::SurfaceKHR getSurface(const vk::Instance& vInst) const;
 	const std::vector<const char*>& getRequiredExtensions() const;
 
@@ -45,9 +49,10 @@ private:
 	GLFWwindow* m_window;
 	std::pair<int, int> m_clientDimensions;
 	std::function<void(GLFWwindow*, int, int)> m_resizeCallback;
-	std::function<void(GLFWwindow*, int, int, int, int)> m_keyCallback;
-	std::function<void(GLFWwindow*, double, double)> m_mouseCursorCallback;
-	std::function<void(GLFWwindow*, int, int, int)> m_mouseButtonCallback;
+	
+	KeyHandler* m_keyHandler;
+	MouseHandler* m_mouseHandler;
+
 	std::vector<const char*> m_reqExtensions;
 };
 

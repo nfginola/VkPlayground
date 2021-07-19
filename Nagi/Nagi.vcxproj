@@ -167,11 +167,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\KeyHandler.cpp" />
     <ClCompile Include="Source\Camera.cpp" />
-    <ClCompile Include="Source\Application\QuadApp.cpp" />
     <ClCompile Include="Source\Application\Application.cpp" />
-    <ClCompile Include="Source\Application\MinimalTriangleApp.cpp" />
-    <ClCompile Include="Source\Application\MinimalTriangleWithBuffersApp.cpp" />
+    <ClCompile Include="Source\MouseHandler.cpp" />
     <ClCompile Include="Source\VulkanContext.cpp" />
     <ClCompile Include="Source\main.cpp" />
     <ClCompile Include="Source\pch.cpp">
@@ -189,17 +188,16 @@
     <ClInclude Include="Includes\Camera.h" />
     <ClInclude Include="Includes\Application\AppDefines.h" />
     <ClInclude Include="Includes\Application\Application.h" />
-    <ClInclude Include="Includes\Application\MinimalTriangleApp.h" />
-    <ClInclude Include="Includes\Application\MinimalTriangleWithBuffersApp.h" />
+    <ClInclude Include="Includes\MouseHandler.h" />
     <ClInclude Include="Includes\VulkanContext.h" />
     <ClInclude Include="Includes\pch.h" />
     <ClInclude Include="Includes\SingleInstance.h" />
     <ClInclude Include="Includes\Utilities.h" />
     <ClInclude Include="Includes\VulkanTypes.h" />
     <ClInclude Include="Includes\Window.h" />
-    <ClInclude Include="Includes\Application\QuadApp.h" />
     <ClInclude Include="Includes\VulkanUtilities.h" />
     <ClInclude Include="Includes\Application\SponzaApp.h" />
+    <ClInclude Include="Includes\KeyHandler.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

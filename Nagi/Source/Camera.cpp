@@ -11,7 +11,7 @@ namespace Nagi
 		m_localForward(s_worldForward),
 		m_camPitch(0.f),
 		m_camYaw(-90.f),		// Positive degrees rotate CCW		--> Point it at -z
-		m_mouseSpeed(0.3f),
+		m_mouseSpeed(1.f),
 		m_moveSpeed(moveSpeed),
 		m_aspectRatio(aspectRatio),
 		m_fovInDegs(fovInDegs),
@@ -25,14 +25,16 @@ namespace Nagi
 		double deltaYaw = mouseDx * m_mouseSpeed * dt;
 		double deltaPitch = mouseDy * m_mouseSpeed * dt;
 
-		m_camYaw += deltaYaw;
-		m_camPitch += deltaPitch;
+		m_camYaw += static_cast<float>(deltaYaw);
+		m_camPitch += static_cast<float>(deltaPitch);
 
 		// Constrain to avoid gimbal lock
 		if (m_camPitch > 89.f)
 			m_camPitch = 89.f;
 		else if (m_camPitch < -89.f)
 			m_camPitch = -89.f;
+
+		m_rotateCount++;
 
 	}
 
@@ -105,13 +107,22 @@ namespace Nagi
 		m_frameMoveDir = glm::vec3(0.f);
 
 
-		// Spherical coordinates. We use 2nd factor cos, cos, sin because we are using angles that start on the plane going towards the Y axis, not like traditional Y axis down towards XZ plane
+		// Spherical coordinates. 
+		// We use 2nd factor cos, cos, sin because we are using angles that start on the XZ plane going towards the Y axis, not like traditional Y axis down towards XZ plane
 		m_localForward.x = cos(glm::radians(m_camYaw)) * cos(glm::radians(m_camPitch));
 		m_localForward.z = sin(glm::radians(m_camYaw)) * cos(glm::radians(m_camPitch));
 		m_localForward.y = sin(glm::radians(m_camPitch));
 
+		// We currently dont allow changing the local up vector for the camera. We will just use world up/down
+		
+		// Change our local right vector (partially, for yaw changes)
 		m_localRight.x = cos(glm::radians(m_camYaw + 90));
 		m_localRight.z = sin(glm::radians(m_camYaw + 90));
+
+		// Change our local up vector
+		// ...
+
+		m_updateCount++;
 	}
 
 	void Camera::moveInDirection(const glm::vec3& direction, float speed, float dt)

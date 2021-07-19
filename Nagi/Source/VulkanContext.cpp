@@ -28,6 +28,7 @@ VulkanContext::VulkanContext(const Window& win, bool debugLayer) :
 	// We limit the use of member variables in these creation helpers for learning purposes
 	// This way, we can make it easy to see what each step of the creation requires at a glance!
 
+	debugLayer = false;
 
 	try
 	{
@@ -133,7 +134,8 @@ VulkanContext::~VulkanContext()
 
 	// ==================================== Instance related destructions
 	m_instance.destroySurfaceKHR(m_surface);
-	m_instance.destroyDebugUtilsMessengerEXT(m_debugMessenger, {}, m_dld);		// We used the dynamic dispatch to create our debug utils
+	if (m_debugMessenger)
+		m_instance.destroyDebugUtilsMessengerEXT(m_debugMessenger, {}, m_dld);		// We used the dynamic dispatch to create our debug utils
 
 	m_instance.destroy();
 }
@@ -440,7 +442,7 @@ vk::PresentModeKHR VulkanContext::selectPresentMode(const std::vector<vk::Presen
 	// Fallback to FIFO if Mailbox not available --> Guaranteed to be implemented
 	// FIFO: Show on next vertical blank (vsync)
 	// Immediate: May cause tearing (No vsync)
-	vk::PresentModeKHR fallbackPresentMode = vk::PresentModeKHR::eFifo;
+	vk::PresentModeKHR fallbackPresentMode = vk::PresentModeKHR::eImmediate;
 
 	if (selectedPresentModeIt == presentModes.cend())
 		return fallbackPresentMode;

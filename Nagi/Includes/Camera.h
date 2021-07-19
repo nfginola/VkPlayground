@@ -6,7 +6,7 @@ namespace Nagi
 class Camera
 {
 public:
-	Camera(float aspectRatio, float fovInDegs, float nearPlane = 0.1f, float farPlane = 1000.f, float moveSpeed = 10.f, const glm::vec3& initialPosition = glm::vec3(0.f, 5.f, 0.f));
+	Camera(float aspectRatio, float fovInDegs, float nearPlane = 0.1f, float farPlane = 1000.f, float moveSpeed = 35.f, const glm::vec3& initialPosition = glm::vec3(0.f, 5.f, 0.f));
 	~Camera() = default;
 
 	void rotateCamera(double mouseDx, double mouseDy, float dt);
@@ -28,8 +28,10 @@ public:
 
 	void update(float dt);
 
-private:
+	int m_rotateCount = 0;
+	int m_updateCount = 0;
 
+private:
 	void moveInDirection(const glm::vec3& direction, float speed, float dt);
 
 private:
@@ -45,14 +47,15 @@ private:
 	glm::vec3 m_localUp;
 	glm::vec3 m_localForward;
 
-	double m_camPitch;
-	double m_camYaw;
+	float m_camPitch;
+	float m_camYaw;
 	float m_mouseSpeed;
 	float m_moveSpeed;
 	float m_fovInDegs;
 	float m_aspectRatio;
 	float m_nearPlane;
 	float m_farPlane;
+
 
 
 };

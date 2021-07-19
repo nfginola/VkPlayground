@@ -2,6 +2,9 @@
 #include "Window.h"
 #include <vulkan/vulkan.hpp>
 
+#include "KeyHandler.h"
+#include "MouseHandler.h"
+
 namespace Nagi
 {
 
@@ -70,24 +73,19 @@ void Window::processEvents() const
 	glfwPollEvents();
 }
 
+void Window::setKeyHandler(KeyHandler* handler)
+{
+	m_keyHandler = handler;
+}
+
+void Window::setMouseHandler(MouseHandler* handler)
+{
+	m_mouseHandler = handler;
+}
+
 void Window::setResizeCallback(std::function<void(GLFWwindow*, int, int)> function)
 {
 	m_resizeCallback = function;
-}
-
-void Window::setKeyCallback(std::function<void(GLFWwindow*, int, int, int, int)> function)
-{
-	m_keyCallback = function;
-}
-
-void Window::setMouseCursorCallback(std::function<void(GLFWwindow*, double, double)> function)
-{
-	m_mouseCursorCallback = function;
-}
-
-void Window::setMouseButtonCallback(std::function<void(GLFWwindow*, int, int, int)> function)
-{
-	m_mouseButtonCallback = function;
 }
 
 vk::SurfaceKHR Window::getSurface(const vk::Instance& vInst) const
@@ -118,29 +116,23 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GLFW_TRUE);
 
-	// Handle application specific responses
 	auto app = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-	if (app->m_keyCallback)
-		app->m_keyCallback(window, key, scancode, action, mods);
+	if (app->m_keyHandler)
+		app->m_keyHandler->handleKeyEvent(window, key, scancode, action, mods);
 }
 
 void Window::mouseCursorCallback(GLFWwindow* window, double xPos, double yPos)
 {
 	auto app = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-	if (app->m_mouseCursorCallback)
-	{
-		app->m_mouseCursorCallback(window, xPos, yPos);	
-	}
-
+	if (app->m_mouseHandler)
+		app->m_mouseHandler->handleCursor(window, xPos, yPos);
 }
 
 void Window::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
-
-
 	auto app = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-	if (app->m_mouseButtonCallback)
-		app->m_mouseButtonCallback(window, button, action, mods);
+	if (app->m_mouseHandler)
+		app->m_mouseHandler->handleButton(window, button, action, mods);
 }
 
 }

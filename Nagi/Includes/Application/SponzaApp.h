@@ -68,7 +68,7 @@ struct ObjectFrameData
 class SponzaApp : public Application
 {
 public:
-	SponzaApp(Window& window, VulkanContext& gfxCon);
+	SponzaApp(Window& window, VulkanContext& gfxCon, KeyHandler* keyHandler, MouseHandler* mouseHandler);
 	~SponzaApp();
 
 	SponzaApp() = delete;
