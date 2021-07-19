@@ -440,7 +440,7 @@ vk::PresentModeKHR VulkanContext::selectPresentMode(const std::vector<vk::Presen
 	// Fallback to FIFO if Mailbox not available --> Guaranteed to be implemented
 	// FIFO: Show on next vertical blank (vsync)
 	// Immediate: May cause tearing (No vsync)
-	vk::PresentModeKHR fallbackPresentMode = vk::PresentModeKHR::eFifo;
+	vk::PresentModeKHR fallbackPresentMode = vk::PresentModeKHR::eImmediate;
 
 	if (selectedPresentModeIt == presentModes.cend())
 		return fallbackPresentMode;

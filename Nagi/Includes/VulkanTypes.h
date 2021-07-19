@@ -74,6 +74,8 @@ private:
 class Material
 {
 public:
+	Material() = default;
+	~Material() = default;
 	Material(const vk::Pipeline& pipeline, const vk::PipelineLayout& pipelineLayout, vk::DescriptorSet descriptorSet) :
 		m_pipeline(pipeline), m_pipelineLayout(pipelineLayout), m_descriptorSet(descriptorSet) { }
 
@@ -81,11 +83,25 @@ public:
 	const vk::PipelineLayout& getPipelineLayout() const { return m_pipelineLayout; }
 	const vk::DescriptorSet& getDescriptorSet() const { return m_descriptorSet; }
 
+	bool operator==(const Material& b) const
+	{
+		return 	m_descriptorSet == b.m_descriptorSet && m_pipelineLayout == b.m_pipelineLayout && m_pipeline == b.m_pipeline;
+	}
+
+	bool operator!=(const Material& b) const
+	{
+		return !(*this == b);
+	}
+
+	bool operator<(const Material& b) const
+	{
+		return 	m_descriptorSet < b.m_descriptorSet;
+	}
 
 private:
 	// Non owning
-	const vk::Pipeline& m_pipeline;						// actual pipeline (e.g full graphics pipeline states)
-	const vk::PipelineLayout& m_pipelineLayout;			// has descriptor set layout and push range info (needed for setting descriptor sets and pushing data for push constants)
+	vk::Pipeline m_pipeline;						// actual pipeline (e.g full graphics pipeline states)
+	vk::PipelineLayout m_pipelineLayout;			// has descriptor set layout and push range info (needed for setting descriptor sets and pushing data for push constants)
 
 	// Non owning too (Pool is responsible internals for this)
 	vk::DescriptorSet m_descriptorSet;					// has the resource bindings
@@ -99,20 +115,27 @@ public:
 		m_ibFirstIndex(firstIndex), m_numIndices(numIndices), m_vbOffset(vbOffset) {}
 	~Mesh() = default;
 
+	bool operator<(const Mesh& b) const
+	{
+		return m_ibFirstIndex < b.m_ibFirstIndex &&
+			m_numIndices < b.m_numIndices &&
+			m_vbOffset < b.m_vbOffset;
+	}
+
 	uint32_t getFirstIndex() const { return m_ibFirstIndex; }
 	uint32_t getNumIndices() const { return m_numIndices; }
 	uint32_t getVertexBufferOffset() const { return m_vbOffset; }
 
 private:
-	const uint32_t m_ibFirstIndex;
-	const uint32_t m_numIndices;
-	const uint32_t m_vbOffset;
+	uint32_t m_ibFirstIndex;
+	uint32_t m_numIndices;
+	uint32_t m_vbOffset;
 };
 
 class RenderUnit
 {
 public:
-	RenderUnit() = delete;
+	//RenderUnit() = delete;
 	RenderUnit(const Mesh& mesh, const Material& material) :
 		m_mesh(mesh), m_material(material) {}
 	~RenderUnit() = default;
@@ -120,11 +143,14 @@ public:
 	const Mesh& getMesh() const { return m_mesh; }
 	const Material& getMaterial() const { return m_material; }
 
+
 private:
-	const Mesh m_mesh;				// POD
+	//const Mesh m_mesh;				// POD
+	Mesh m_mesh;				// POD
 
 	// Non-owning
-	const Material& m_material;
+	//const Material& m_material;
+	Material m_material;
 };
 
 // A collection of coherent meshes to be rendered

@@ -13,7 +13,6 @@ namespace Nagi
 SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 	Application(window, gfxCon)
 {
-	glm::vec3 pos{ 0.f, 10.f, 1.f };
 
 	std::array<Keystate, 8> keystates;
 	auto& aKey = keystates[0];
@@ -31,7 +30,10 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			static std::function handleFunc = [&action, &keystates](int keystateID)
 			{
 				if (action == GLFW_PRESS)
+				{
 					keystates[keystateID].onPress();
+					std::cout << "pressed!!!\n";
+				}
 				else if (action == GLFW_RELEASE)
 					keystates[keystateID].onRelease();
 			};
@@ -58,9 +60,6 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 				handleFunc(7);
 		});
 
-	auto scExtent = m_gfxCon.getSwapchainExtent();
-	Camera fpsCam((float)scExtent.width / scExtent.height, 80);
-
 	window.setMouseButtonCallback(
 		[&](GLFWwindow* window, int button, int action, int mods)
 		{
@@ -71,6 +70,10 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 
 		});
+
+
+	auto scExtent = m_gfxCon.getSwapchainExtent();
+	Camera fpsCam((float)scExtent.width / scExtent.height, 80);
 
 	bool firstTime = true;
 	static double prevX = 0.0;
@@ -107,7 +110,6 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 		});
 
 
-	// :)
 	try
 	{
 		m_defRenderPass = ezTmp::createDefaultRenderPass(m_gfxCon);
@@ -155,7 +157,11 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 
 		loadExternalModel("Resources/Objs/nanosuit/nanosuit.obj");
+		//loadExternalModel("Resources/Objs/rungholt/rungholt.obj");
 		loadExternalModel("Resources/Objs/sponza/sponza.obj");
+		//loadExternalModel("Resources/Objs/sibenik/sibenik.obj");
+		//loadExternalModel("Resources/Objs/lost_empire/lost_empire.obj");
+		loadExternalModel("Resources/Objs/survival_backpack/backpack.obj");
 		
 		// We dont wait for sponza! (Testing)
 		//std::thread loadThr([&]() { loadExternalModel("Resources/Objs/sponza/sponza.obj"); });
@@ -234,7 +240,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			cmd.beginRenderPass(rpInfo, {});
 
 			int tmpId = 0;
-			const Material* lastMaterial = nullptr;
+			Material lastMaterial;
 			for (const auto& model : m_loadedModels)
 			{
 				const auto& renderUnits = model->getRenderUnits();
@@ -247,16 +253,22 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 				cmd.bindVertexBuffers(0, vbs, offsets);
 				cmd.bindIndexBuffer(ib, 0, vk::IndexType::eUint32);
 				
-				// Nanosuit
+				// Sponza
 				if (tmpId == 2)
 				{
 					auto newMatModel = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, 0.f)) * glm::scale(glm::mat4(1.f), glm::vec3(0.07f));
 					perObjectData.modelMat = newMatModel;
 				}
-				// Sponza
+				// Nanosuit
 				else if (tmpId == 1)
 				{
 					auto newMatModel = glm::translate(glm::mat4(1.f), glm::vec3(9.f, 0.f, -9.f)) * glm::scale(glm::mat4(1.f), glm::vec3(1.f));
+					perObjectData.modelMat = newMatModel;
+				}
+				// Backpack
+				else if (tmpId == 3)
+				{
+					auto newMatModel = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 10.f, 0.f)) * glm::scale(glm::mat4(1.f), glm::vec3(1.f));
 					perObjectData.modelMat = newMatModel;
 				}
 
@@ -265,14 +277,17 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 					const auto& mesh = renderUnit.getMesh();
 					const auto& mat = renderUnit.getMaterial();
 
-					if (&mat != lastMaterial)
+					if (mat != lastMaterial)
 					{
-						cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, mat.getPipeline());
-						lastMaterial = &mat;
+						if (mat.getPipeline() != lastMaterial.getPipeline())
+							cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, mat.getPipeline());
+
+						// Bind per material resources (Textures, Set 2)
+						cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mat.getPipelineLayout(), 2, mat.getDescriptorSet(), {});
+
+						lastMaterial = mat;
 					}
 
-					// Bind per material resources (Textures, Set 2)
-					cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mat.getPipelineLayout(), 2, mat.getDescriptorSet(), {});
 
 					// Bind model matrix (Buffer style, disabled_
 					//perObjectFrameData.modelMatBuffer->putData(&perObjectData, sizeof(ObjectData));
@@ -723,10 +738,12 @@ void processMesh(aiMesh* mesh, const aiScene* scene, std::vector<Vertex>& vertic
 
 void processNode(aiNode* node, const aiScene* scene, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, std::vector<AssimpMeshSubset>& subsets)
 {
+	auto transform = node->mTransformation;
 
 	// For each mesh in the node, process it!
 	for (unsigned int i = 0; i < node->mNumMeshes; ++i)
 	{
+		unsigned int theIndexIntoScene = node->mMeshes[i];
 		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
 		processMesh(mesh, scene, vertices, indices, subsets);
 	}
@@ -852,6 +869,9 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 			renderUnits.push_back(RenderUnit(mesh, *m_mappedMaterials[albedoPath].get()));
 		}
 	}
+
+	std::sort(renderUnits.begin(), renderUnits.end(), [](const RenderUnit& a, const RenderUnit& b) { 	return a.getMaterial() < b.getMaterial(); });
+
 
 	m_loadedModels.push_back(std::make_unique<RenderModel>(std::move(vb), std::move(ib), renderUnits));
 }
