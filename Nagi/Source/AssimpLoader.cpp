@@ -116,16 +116,19 @@ namespace Nagi
 
 		// Get material
 		auto mtl = scene->mMaterials[mesh->mMaterialIndex];
-		aiString diffPath, norPath, opacityPath;
+		aiString diffPath, norPath, opacityPath, specularPath;
 		mtl->GetTexture(aiTextureType_DIFFUSE, 0, &diffPath);
 		mtl->GetTexture(aiTextureType_HEIGHT, 0, &norPath);
 		mtl->GetTexture(aiTextureType_OPACITY, 0, &opacityPath);
+		mtl->GetTexture(aiTextureType_SPECULAR, 0, &specularPath);
 
 		// Subset data
 		AssimpMeshSubset subsetData = { };
 		subsetData.diffuseFilePath = (diffPath.length == 0) ? std::nullopt : std::optional<std::string>(diffPath.C_Str());
 		subsetData.normalFilePath = (norPath.length == 0) ? std::nullopt : std::optional<std::string>(norPath.C_Str());
 		subsetData.opacityFilePath = (opacityPath.length == 0) ? std::nullopt : std::optional<std::string>(opacityPath.C_Str());
+		subsetData.specularFilePath = (specularPath.length == 0) ? std::nullopt : std::optional<std::string>(specularPath.C_Str());
+
 
 		subsetData.vertexStart = m_meshVertexCount;
 		m_meshVertexCount += mesh->mNumVertices;

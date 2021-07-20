@@ -26,8 +26,6 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 		// Allocate pool for descriptors
 		createDescriptorPool();
 
-		// =========== Load Resources
-
 		// Create UBOs that will be used in this App
 		createUBOs();
 
@@ -61,12 +59,13 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 		createGraphicsPipeline();
 
 		// ======== Load scene data
+		// Create custom render model
 		createRenderModels();
-
 
 		// Load with assimp
 		loadExternalModel("Resources/Objs/nanosuit/nanosuit.obj");
 		loadExternalModel("Resources/Objs/sponza/sponza.obj");
+		loadExternalModel("Resources/Objs/survival_backpack/backpack.obj");
 
 
 
@@ -81,8 +80,10 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 				fpsCam.rotateCamera(deltaX, deltaY, 0.07f);
 			});
 
+		float timeElapsed = 0.f;
 		while (m_window.isRunning())
 		{
+			timeElapsed += dt;
 			auto timeStart = std::chrono::system_clock::now();			
 			m_window.processEvents();
 
@@ -119,6 +120,12 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 			perObjectData.modelMat = matModel;
 
+			SceneData sceneData{};
+			sceneData.lightColor = glm::vec4(1.f);
+			//sceneData.lightDirection = glm::vec4(cosf(timeElapsed) * 0.5f - 0.5f, -1.f, -1.f, 0.f);
+			//sceneData.lightDirection = glm::normalize(glm::vec4(cosf(timeElapsed), -1.f, -1.f, 0.f));
+			//sceneData.lightDirection = glm::normalize(glm::vec4(0.f, 0.f, -1.f, 0.f));
+			sceneData.lightDirection = glm::normalize(glm::vec4(-0.35f, -1.f, -1.f, 0.f));
 
 			// GPU BELOW
 			auto frameRes = gfxCon.beginFrame();
@@ -127,6 +134,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 			// ================================================ Update UBO
 			m_engineFrameData[frameRes.frameIdx].cameraBuffer->putData(&cameraData, sizeof(GPUCameraData));
+			m_engineFrameData[frameRes.frameIdx].sceneBuffer->putData(&sceneData, sizeof(SceneData));
 
 
 			// Setup render pass info
@@ -143,7 +151,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			cmd.begin(vk::CommandBufferBeginInfo());
 
 
-			// Bind engine wide resources (Camera, Set 0)
+			// Bind engine wide resources (Camera, Scene, Set 0)
 			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineFrameData[frameRes.frameIdx].descriptorSet, {});
 
 			cmd.beginRenderPass(rpInfo, {});
@@ -173,6 +181,11 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 				else if (tmpId == 1)
 				{
 					auto newMatModel = glm::translate(glm::mat4(1.f), glm::vec3(9.f, 0.f, -9.f)) * glm::scale(glm::mat4(1.f), glm::vec3(1.f));
+					perObjectData.modelMat = newMatModel;
+				}
+				else if (tmpId == 3)
+				{
+					auto newMatModel = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 7.f, 0.f)) * glm::scale(glm::mat4(1.f), glm::vec3(1.f));
 					perObjectData.modelMat = newMatModel;
 				}
 
@@ -265,6 +278,7 @@ void SponzaApp::createUBOs()
 	{
 		EngineFrameData dat{};
 		dat.cameraBuffer = std::make_unique<Buffer>(m_gfxCon.getAllocator(), engineUBOCI, engineUBOAllocCI);
+		dat.sceneBuffer = std::make_unique<Buffer>(m_gfxCon.getAllocator(), vk::BufferCreateInfo({}, sizeof(SceneData), vk::BufferUsageFlagBits::eUniformBuffer), engineUBOAllocCI);
 
 		m_engineFrameData.push_back(std::move(dat));
 	}
@@ -299,6 +313,7 @@ void SponzaApp::loadTextures()
 	m_mappedTextures.insert({ "rimuru", Texture::fromFile(m_gfxCon, "Resources/Textures/rimuru.jpg", true) });
 	m_mappedTextures.insert({ "rimuru2", Texture::fromFile(m_gfxCon, "Resources/Textures/rimuru2.jpg", true) });
 	m_mappedTextures.insert({ "defaultopacity", Texture::fromFile(m_gfxCon, "Resources/Textures/defaultopacity.jpg") });
+	m_mappedTextures.insert({ "defaultspecular", Texture::fromFile(m_gfxCon, "Resources/Textures/defaultspecular.jpg") });
 }
 
 void SponzaApp::createDescriptorPool()
@@ -323,9 +338,9 @@ void SponzaApp::createRenderModels()
 
 	// Local space (RH)
 	std::vector<Vertex> vertices{
-		{ { -0.5f, 0.5f, 0.f }, { 0.f, 0.f }, { 1.f, 0.f, 0.f } },
-		{ { 0.5f, 0.5f, 0.f }, { 1.f, 0.f }, { 1.f, 0.f, 0.f } },
-		{ { 0.5f, -0.5f, 0.f }, { 1.f, 1.f }, { 0.f, 1.f, 0.f } },
+		{ { -0.5f, 0.5f, 0.f }, { 0.f, 0.f }, { 0.f, 0.f, 1.f } },
+		{ { 0.5f, 0.5f, 0.f }, { 1.f, 0.f }, { 0.f, 0.f, 1.f } },
+		{ { 0.5f, -0.5f, 0.f }, { 1.f, 1.f }, { 0.f, 0.f, 1.f } },
 		{ { -0.5f, -0.5f, 0.f }, { 0.f, 1.f }, { 0.f, 0.f, 1.f } }
 	};
 
@@ -348,7 +363,9 @@ void SponzaApp::createRenderModels()
 	vk::WriteDescriptorSet imageSetWrite(newMatDescSet, 0, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo, {}, {});
 	vk::DescriptorImageInfo opacityImageInfo(m_commonSampler.get(), m_mappedTextures["defaultopacity"]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
 	vk::WriteDescriptorSet opacityImageSetWrite(newMatDescSet, 1, 0, vk::DescriptorType::eCombinedImageSampler, opacityImageInfo, {}, {});
-	dev.updateDescriptorSets({ imageSetWrite, opacityImageSetWrite }, {});
+	vk::DescriptorImageInfo specularImageInfo(m_commonSampler.get(), m_mappedTextures["defaultspecular"]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
+	vk::WriteDescriptorSet specularImageSetWrite(newMatDescSet, 2, 0, vk::DescriptorType::eCombinedImageSampler, specularImageInfo, {}, {});
+	dev.updateDescriptorSets({ imageSetWrite, opacityImageSetWrite, specularImageSetWrite}, {});
 
 
 	// ==== Create render unit(s)
@@ -371,7 +388,8 @@ void SponzaApp::setupDescriptorSetLayouts()
 {
 	// Engine set layout
 	std::vector<vk::DescriptorSetLayoutBinding> engineSetBindings{
-		vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex)
+		vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment),			// Camera
+		vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)		// Scene Lighting
 	};
 	vk::DescriptorSetLayoutCreateInfo engineSetLayoutCI({}, engineSetBindings);
 	
@@ -384,7 +402,8 @@ void SponzaApp::setupDescriptorSetLayouts()
 	// Per material layout
 	std::vector<vk::DescriptorSetLayoutBinding> materialBindings{
 		vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment),	// diffuse 
-		vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment)		// Opacity
+		vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment),	// Opacity
+		vk::DescriptorSetLayoutBinding(2, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment)		// Specular
 	};
 	vk::DescriptorSetLayoutCreateInfo materialSetLayoutCI({}, materialBindings);
 
@@ -424,7 +443,12 @@ void SponzaApp::allocateDescriptorSets()
 		// Write to the set (bind actual resource)
 		vk::DescriptorBufferInfo binfo(m_engineFrameData[i].cameraBuffer->getBuffer(), 0, sizeof(GPUCameraData));
 		vk::WriteDescriptorSet writeInfo(m_engineFrameData[i].descriptorSet, 0, 0, vk::DescriptorType::eUniformBuffer, {}, binfo);
-		dev.updateDescriptorSets(writeInfo, {});
+
+		vk::DescriptorBufferInfo binfoScene(m_engineFrameData[i].sceneBuffer->getBuffer(), 0, sizeof(SceneData));
+		vk::WriteDescriptorSet writeInfoScene(m_engineFrameData[i].descriptorSet, 0, 1, vk::DescriptorType::eUniformBuffer, {}, binfoScene);
+
+		dev.updateDescriptorSets({ writeInfo }, {});
+		dev.updateDescriptorSets({ writeInfoScene }, {});
 	}
 
 	// NOTE: We wont be using them yet, but soon.
@@ -582,6 +606,9 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 		vertex.pos.z = vert.position.z;
 		vertex.uv.x = vert.uv.x;
 		vertex.uv.y = vert.uv.y;
+		vertex.normal.x = vert.normal.x;
+		vertex.normal.y = vert.normal.y;
+		vertex.normal.z = vert.normal.z;
 		finalVerts.push_back(vertex);
 	}
 
@@ -611,6 +638,14 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 		else
 			opacityPath = "Resources/Textures/defaultopacity.jpg";
 
+		// Get final specular path
+		std::string specularPath(directory);
+		if (subset.specularFilePath.has_value())
+			specularPath += subset.specularFilePath.value();
+		else
+			specularPath = "Resources/Textures/defaultspecular.jpg";
+
+
 		// Insert texture data and create material
 		auto lb = m_mappedTextures.lower_bound(diffusePath);
 		if (lb != m_mappedTextures.end() && !(m_mappedTextures.key_comp()(diffusePath, lb->first)))
@@ -636,7 +671,6 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 				dev.updateDescriptorSets(imageSetWrite, {});
 
 
-
 				// Create material
 				//m_loadedMaterials.push_back(std::make_unique<Material>(m_mainGfxPipeline.get(), m_mainGfxPipelineLayout.get(), newMatDescSet));
 				m_mappedMaterials.insert({ diffusePath, std::make_unique<Material>(m_mainGfxPipeline.get(), m_mainGfxPipelineLayout.get(), newMatDescSet) });
@@ -651,6 +685,17 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 				// Write to existing descriptor set (existing material that was made from diffuse) (bind image and sampler)
 				vk::DescriptorImageInfo imageInfo(m_commonSampler.get(), m_mappedTextures[opacityPath]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
 				vk::WriteDescriptorSet imageSetWrite(m_mappedMaterials[diffusePath]->getDescriptorSet(), 1, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo, {}, {});	// Binding 1
+				dev.updateDescriptorSets(imageSetWrite, {});
+			}
+
+			// Handle specular
+			{
+				if (m_mappedTextures.find(specularPath) == m_mappedTextures.cend())
+					m_mappedTextures.insert({ specularPath, std::move(Texture::fromFile(m_gfxCon, specularPath)) });
+
+				// Write to existing descriptor set (existing material that was made from diffuse) (bind image and sampler)
+				vk::DescriptorImageInfo imageInfo(m_commonSampler.get(), m_mappedTextures[specularPath]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
+				vk::WriteDescriptorSet imageSetWrite(m_mappedMaterials[diffusePath]->getDescriptorSet(), 2, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo, {}, {});	// Binding 2
 				dev.updateDescriptorSets(imageSetWrite, {});
 
 			}

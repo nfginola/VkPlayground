@@ -8,7 +8,7 @@ struct Vertex
 {
 	glm::vec3 pos;
 	glm::vec2 uv;
-	glm::vec3 color;
+	glm::vec3 normal;
 
 	constexpr static int s_bindingSlot = 0;
 
@@ -25,7 +25,7 @@ struct Vertex
 		// 2nd arg is 0 because thats the bindinng number from where we take the data from! We hardcoded it to 0 as above
 		dscs[0] = vk::VertexInputAttributeDescription(0, s_bindingSlot, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, pos));
 		dscs[1] = vk::VertexInputAttributeDescription(1, s_bindingSlot, vk::Format::eR32G32Sfloat, offsetof(Vertex, uv));
-		dscs[2] = vk::VertexInputAttributeDescription(2, s_bindingSlot, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, color));
+		dscs[2] = vk::VertexInputAttributeDescription(2, s_bindingSlot, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, normal));
 		return dscs;
 	}
 };
@@ -48,10 +48,17 @@ struct GPUCameraData
 	glm::mat4 viewProjectionMat;
 };
 
+struct SceneData
+{
+	glm::vec4 lightDirection;
+	glm::vec4 lightColor;
+};
+
 struct EngineFrameData
 {
 	// Resources
 	std::unique_ptr<Buffer> cameraBuffer;
+	std::unique_ptr<Buffer> sceneBuffer;
 
 	// Set that encapsulates above resources
 	vk::DescriptorSet descriptorSet;
