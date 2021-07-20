@@ -278,7 +278,7 @@ const vk::Extent2D& VulkanContext::getSwapchainExtent() const
 	return m_swapchainExtent;
 }
 
-const vk::Format& VulkanContext::getSwapchainImageFormat() const
+vk::Format VulkanContext::getSwapchainImageFormat() const
 {
 	return m_swapchainFormat;
 }

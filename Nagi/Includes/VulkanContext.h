@@ -52,7 +52,7 @@ public:
 	uint32_t getSwapchainImageCount() const;
 	const std::vector<vk::ImageView>& getSwapchainViews() const;
 	const vk::Extent2D& getSwapchainExtent() const;
-	const vk::Format& getSwapchainImageFormat() const;
+	vk::Format getSwapchainImageFormat() const;
 
 	const vk::ImageView& getDepthView() const;
 	vk::Format getDepthFormat() const;

@@ -167,6 +167,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\AssimpLoader.cpp" />
     <ClCompile Include="Source\KeyHandler.cpp" />
     <ClCompile Include="Source\Camera.cpp" />
     <ClCompile Include="Source\Application\Application.cpp" />
@@ -186,6 +187,7 @@
     <ClCompile Include="Source\Application\SponzaApp.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Includes\AssimpLoader.h" />
     <ClInclude Include="Includes\Camera.h" />
     <ClInclude Include="Includes\Application\AppDefines.h" />
     <ClInclude Include="Includes\Application\Application.h" />

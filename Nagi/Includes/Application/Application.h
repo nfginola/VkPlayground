@@ -11,6 +11,7 @@
 #include "MouseHandler.h"
 
 
+
 namespace Nagi
 {
 
@@ -27,8 +28,6 @@ protected:
 	~Application() = default;
 	Application(Window& window, VulkanContext& gfxCon);
 
-	// Default application behaviour that exists on all Applications should be here
-	
 protected:
 	Window& m_window;
 	VulkanContext& m_gfxCon;

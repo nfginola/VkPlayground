@@ -1,18 +1,20 @@
 #include "pch.h"
 #include "Application/SponzaApp.h"
 
-#include <assimp/Importer.hpp>      // C++ importer interface
-#include <assimp/scene.h>           // Output data structure
-#include <assimp/postprocess.h>     // Post processing flags
-
+#include "AssimpLoader.h"
 #include "Camera.h"
 
 namespace Nagi
 {
 
-SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon, KeyHandler* keyHandler, MouseHandler* mouseHandler) :
+SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 	Application(window, gfxCon)
 {
+	// Get input handlers
+	auto keyHandler = window.getKeyHandler();
+	auto mouseHandler = window.getMouseHandler();
+	assert(keyHandler != nullptr && mouseHandler != nullptr);
+
 	auto scExtent = m_gfxCon.getSwapchainExtent();
 	Camera fpsCam((float)scExtent.width / scExtent.height, 77.f);
 
@@ -62,10 +64,9 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon, KeyHandler* keyHandl
 		createRenderModels();
 
 
+		// Load with assimp
 		loadExternalModel("Resources/Objs/nanosuit/nanosuit.obj");
 		loadExternalModel("Resources/Objs/sponza/sponza.obj");
-		//loadExternalModel("Resources/Objs/sibenik/sibenik.obj");
-		//loadExternalModel("Resources/Objs/rungholt/rungholt.obj");
 
 
 
@@ -147,8 +148,9 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon, KeyHandler* keyHandl
 
 			cmd.beginRenderPass(rpInfo, {});
 
+			// Render Objects
 			int tmpId = 0;
-			const Material* lastMaterial = nullptr;
+			Material lastMaterial;
 			for (const auto& model : m_loadedModels)
 			{
 				const auto& renderUnits = model->getRenderUnits();
@@ -179,11 +181,10 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon, KeyHandler* keyHandl
 					const auto& mesh = renderUnit.getMesh();
 					const auto& mat = renderUnit.getMaterial();
 
-					// This check doesnt work! 
-					if (&mat != lastMaterial)
+					if (mat != lastMaterial)
 					{
 						cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, mat.getPipeline());
-						lastMaterial = &mat;
+						lastMaterial = mat;
 					}
 
 					// Bind per material resources (Textures, Set 2)
@@ -316,8 +317,6 @@ void SponzaApp::createDescriptorPool()
 	m_descriptorPool = m_gfxCon.getDevice().createDescriptorPoolUnique(poolCI);
 }
 
-
-
 void SponzaApp::createRenderModels()
 {
 	auto dev = m_gfxCon.getDevice();
@@ -368,7 +367,6 @@ void SponzaApp::createRenderModels()
 	m_loadedModels.push_back(std::make_unique<RenderModel>(std::move(vb), std::move(ib), renderUnits));
 }
 
-
 void SponzaApp::setupDescriptorSetLayouts()
 {
 	// Engine set layout
@@ -385,7 +383,7 @@ void SponzaApp::setupDescriptorSetLayouts()
 
 	// Per material layout
 	std::vector<vk::DescriptorSetLayoutBinding> materialBindings{
-		vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment),	// Albedo 
+		vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment),	// diffuse 
 		vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment)		// Opacity
 	};
 	vk::DescriptorSetLayoutCreateInfo materialSetLayoutCI({}, materialBindings);
@@ -557,148 +555,54 @@ void SponzaApp::createGraphicsPipeline()
 	).value;
 }
 
-// Assimp
-uint32_t s_meshVertexCount = 0;
-uint32_t s_meshIndexCount = 0;
-struct AssimpMeshSubset
-{
-	unsigned int vertexStart;
-	unsigned int indextStart;
-	unsigned int indexCount;
-
-	std::optional<std::string> diffuseFilePath;
-	std::optional<std::string> specularFilePath;
-	std::optional<std::string> normalFilePath;
-	std::optional<std::string> opacityFilePath;
-};
-
-
-void processMesh(aiMesh* mesh, const aiScene* scene, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, std::vector<AssimpMeshSubset>& subsets)
-{
-	for (unsigned int i = 0; i < mesh->mNumVertices; ++i)
-	{
-		Vertex vert{};
-		vert.pos.x = mesh->mVertices[i].x;
-		vert.pos.y = mesh->mVertices[i].y;
-		vert.pos.z = mesh->mVertices[i].z;
-
-		vert.color.x = mesh->mNormals[i].x;
-		vert.color.y = mesh->mNormals[i].y;
-		vert.color.z = mesh->mNormals[i].z;
-
-		if (mesh->mTextureCoords[0])
-		{
-			vert.uv.x = mesh->mTextureCoords[0][i].x;
-			vert.uv.y = mesh->mTextureCoords[0][i].y;
-		}
-
-		vertices.push_back(vert);
-	}
-
-	unsigned int indicesThisMesh = 0;
-	for (unsigned int i = 0; i < mesh->mNumFaces; ++i)
-	{
-		aiFace face = mesh->mFaces[i];
-
-		for (unsigned int j = 0; j < face.mNumIndices; ++j)
-		{
-			indices.push_back(face.mIndices[j]);
-			++indicesThisMesh;
-		}
-
-	}
-
-	// Get material
-	auto mtl = scene->mMaterials[mesh->mMaterialIndex];
-	aiString diffPath, norPath, opacityPath;
-	mtl->GetTexture(aiTextureType_DIFFUSE, 0, &diffPath);
-	mtl->GetTexture(aiTextureType_HEIGHT, 0, &norPath);
-	mtl->GetTexture(aiTextureType_OPACITY, 0, &opacityPath);
-
-	// Subset data
-	AssimpMeshSubset subsetData = { };
-	subsetData.diffuseFilePath = (diffPath.length == 0) ? std::nullopt : std::optional<std::string>(diffPath.C_Str());
-	subsetData.normalFilePath = (norPath.length == 0) ? std::nullopt : std::optional<std::string>(norPath.C_Str());
-	subsetData.opacityFilePath = (opacityPath.length == 0) ? std::nullopt : std::optional<std::string>(opacityPath.C_Str());
-
-	subsetData.vertexStart = s_meshVertexCount;
-	s_meshVertexCount += mesh->mNumVertices;
-
-	subsetData.indexCount = indicesThisMesh;
-	subsetData.indextStart = s_meshIndexCount;
-	s_meshIndexCount += indicesThisMesh;
-
-	subsets.push_back(subsetData);
-}
-
-void processNode(aiNode* node, const aiScene* scene, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, std::vector<AssimpMeshSubset>& subsets)
-{
-	for (unsigned int i = 0; i < node->mNumMeshes; ++i)
-	{
-		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-		processMesh(mesh, scene, vertices, indices, subsets);
-	}
-
-	for (unsigned int i = 0; i < node->mNumChildren; ++i)
-		processNode(node->mChildren[i], scene, vertices, indices, subsets);
-}
 
 void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 {
 	auto dev = m_gfxCon.getDevice();
-
-
 	std::string directory = filePath.parent_path().string() + "/";
 
-	std::vector<Vertex> vertices;
-	std::vector<uint32_t> indices;
-	std::vector<AssimpMeshSubset> subsets;
+	auto loader = AssimpLoader(filePath);
+	auto& vertices = loader.getVertices();
+	auto& indices = loader.getIndices();
+	auto& subsets = loader.getSubsets();
 
-	Assimp::Importer importer;
-
-	const aiScene* scene = importer.ReadFile(
-		filePath.relative_path().string().c_str(),
-		aiProcess_Triangulate |
-		aiProcess_FlipUVs |			// Vulkan screen space is 0,0 on top left
-		aiProcess_GenNormals
-	);
-
-	if (scene == nullptr)
-		throw std::runtime_error(std::string("Assimp: File not found! : ") + filePath.filename().string());
-
-	// Pre-allocate memory for resources
-	unsigned int totalVertexCount = 0;
-	unsigned int totalSubsetCount = 0;
-	for (unsigned int i = 0; i < scene->mNumMeshes; ++i)
-		totalVertexCount += scene->mMeshes[i]->mNumVertices;
-
-	vertices.reserve(totalVertexCount);
-	indices.reserve(totalVertexCount);
-	subsets.reserve(scene->mNumMeshes);
-
-	processNode(scene->mRootNode, scene, vertices, indices, subsets);
-
-	s_meshVertexCount = 0;
-	s_meshIndexCount = 0;
 
 	// ============== Assimp loading done
 	// Now load data to Vulkan =============
 
-	auto vb = Buffer::loadImmutable(m_gfxCon, vertices, vk::BufferUsageFlagBits::eVertexBuffer);
+	// ======== Handle VB/IB
+	// Pack data
+	std::vector<Vertex> finalVerts;
+	finalVerts.reserve(vertices.size());
+	for (const auto& vert : vertices)
+	{
+		Vertex vertex;
+		vertex.pos.x = vert.position.x;
+		vertex.pos.y = vert.position.y;
+		vertex.pos.z = vert.position.z;
+		vertex.uv.x = vert.uv.x;
+		vertex.uv.y = vert.uv.y;
+		finalVerts.push_back(vertex);
+	}
+
+	// Push into VB/IB pair
+	auto vb = Buffer::loadImmutable(m_gfxCon, finalVerts, vk::BufferUsageFlagBits::eVertexBuffer);
 	auto ib = Buffer::loadImmutable(m_gfxCon, indices, vk::BufferUsageFlagBits::eIndexBuffer);
 
+
+	// ======== Handle Subsets
 	std::vector<RenderUnit> renderUnits;
 	renderUnits.reserve(subsets.size());
 	for (const auto& subset : subsets)
 	{
-		auto mesh = Mesh(subset.indextStart, subset.indexCount, subset.vertexStart);
+		auto mesh = Mesh(subset.indexStart, subset.indexCount, subset.vertexStart);
 
-		// Get final albedo path
-		std::string albedoPath(directory);
+		// Get final diffuse path
+		std::string diffusePath(directory);
 		if (subset.diffuseFilePath.has_value())
-			albedoPath += subset.diffuseFilePath.value();
+			diffusePath += subset.diffuseFilePath.value();
 		else
-			albedoPath = "Resources/Textures/defaulttexture.jpg";
+			diffusePath = "Resources/Textures/defaulttexture.jpg";
 
 		// Get final opacity path
 		std::string opacityPath(directory);
@@ -708,18 +612,18 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 			opacityPath = "Resources/Textures/defaultopacity.jpg";
 
 		// Insert texture data and create material
-		auto lb = m_mappedTextures.lower_bound(albedoPath);
-		if (lb != m_mappedTextures.end() && !(m_mappedTextures.key_comp()(albedoPath, lb->first)))
+		auto lb = m_mappedTextures.lower_bound(diffusePath);
+		if (lb != m_mappedTextures.end() && !(m_mappedTextures.key_comp()(diffusePath, lb->first)))
 		{
 			// Combine to mesh and material into a render unit
-			renderUnits.push_back(RenderUnit(mesh, *m_mappedMaterials[albedoPath].get()));
+			renderUnits.push_back(RenderUnit(mesh, *m_mappedMaterials[diffusePath].get()));
 		}
 		else
 		{
-			// Handle albedo
+			// Handle diffuse
 			{
 
-				m_mappedTextures.insert(lb, { albedoPath, std::move(Texture::fromFile(m_gfxCon, albedoPath, true)) });
+				m_mappedTextures.insert(lb, { diffusePath, std::move(Texture::fromFile(m_gfxCon, diffusePath, true)) });
 
 
 				// Create descriptor set with new material
@@ -727,7 +631,7 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 				auto newMatDescSet = m_gfxCon.getDevice().allocateDescriptorSets(texAllocInfo).front();
 
 				// Write to it (bind image and sampler)
-				vk::DescriptorImageInfo imageInfo(m_commonSampler.get(), m_mappedTextures[albedoPath]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
+				vk::DescriptorImageInfo imageInfo(m_commonSampler.get(), m_mappedTextures[diffusePath]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
 				vk::WriteDescriptorSet imageSetWrite(newMatDescSet, 0, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo, {}, {});
 				dev.updateDescriptorSets(imageSetWrite, {});
 
@@ -735,26 +639,27 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 
 				// Create material
 				//m_loadedMaterials.push_back(std::make_unique<Material>(m_mainGfxPipeline.get(), m_mainGfxPipelineLayout.get(), newMatDescSet));
-				m_mappedMaterials.insert({ albedoPath, std::make_unique<Material>(m_mainGfxPipeline.get(), m_mainGfxPipelineLayout.get(), newMatDescSet) });
+				m_mappedMaterials.insert({ diffusePath, std::make_unique<Material>(m_mainGfxPipeline.get(), m_mainGfxPipelineLayout.get(), newMatDescSet) });
 			}
 
-			// Handle opacity (implicit that if albedo was not found, the opacity must be new)
+			// Handle opacity (implicit that if diffuse was not found, the opacity must be new)
 			{
 				// WARNING::::: Std move calls destructor if there is an existing element in the map!!! (why??)
 				if (m_mappedTextures.find(opacityPath) == m_mappedTextures.cend())
 					m_mappedTextures.insert({ opacityPath, std::move(Texture::fromFile(m_gfxCon, opacityPath)) });
 
-				// Write to existing descriptor set (existing material that was made from Albedo) (bind image and sampler)
+				// Write to existing descriptor set (existing material that was made from diffuse) (bind image and sampler)
 				vk::DescriptorImageInfo imageInfo(m_commonSampler.get(), m_mappedTextures[opacityPath]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
-				vk::WriteDescriptorSet imageSetWrite(m_mappedMaterials[albedoPath]->getDescriptorSet(), 1, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo, {}, {});	// Binding 1
+				vk::WriteDescriptorSet imageSetWrite(m_mappedMaterials[diffusePath]->getDescriptorSet(), 1, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo, {}, {});	// Binding 1
 				dev.updateDescriptorSets(imageSetWrite, {});
 
 			}
 
 			// Combine to mesh and material into a render unit
-			renderUnits.push_back(RenderUnit(mesh, *m_mappedMaterials[albedoPath].get()));
+			renderUnits.push_back(RenderUnit(mesh, *m_mappedMaterials[diffusePath].get()));
 		}
 	}
+
 
 	m_loadedModels.push_back(std::make_unique<RenderModel>(std::move(vb), std::move(ib), renderUnits));
 }

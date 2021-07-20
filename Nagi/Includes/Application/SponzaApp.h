@@ -68,7 +68,7 @@ struct ObjectFrameData
 class SponzaApp : public Application
 {
 public:
-	SponzaApp(Window& window, VulkanContext& gfxCon, KeyHandler* keyHandler, MouseHandler* mouseHandler);
+	SponzaApp(Window& window, VulkanContext& gfxCon);
 	~SponzaApp();
 
 	SponzaApp() = delete;
@@ -114,12 +114,8 @@ private:
 
 	std::map<std::string, std::unique_ptr<Texture>> m_mappedTextures;
 	std::map<std::string, std::unique_ptr<Material>> m_mappedMaterials;
-
-
-	//std::vector<std::unique_ptr<Texture>> m_loadedTextures;		// Image/View lives here
-	//std::vector<std::unique_ptr<Material>> m_loadedMaterials;	// Has a non-owning reference to pipeline and pipeline layout
-	std::vector<std::unique_ptr<RenderModel>> m_loadedModels;	// Buffer lives here
-
+	
+	std::vector<std::unique_ptr<RenderModel>> m_loadedModels;
 };
 
 }

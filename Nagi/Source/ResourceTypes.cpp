@@ -313,7 +313,7 @@ namespace Nagi
 		return texture;
 	}
 
-	Material::Material(const vk::Pipeline& pipeline, const vk::PipelineLayout& pipelineLayout, vk::DescriptorSet descriptorSet) :
+	Material::Material(vk::Pipeline pipeline, vk::PipelineLayout pipelineLayout, vk::DescriptorSet descriptorSet) :
 		m_pipeline(pipeline), m_pipelineLayout(pipelineLayout), m_descriptorSet(descriptorSet)
 	{
 	}
@@ -404,6 +404,38 @@ namespace Nagi
 	const std::vector<RenderUnit>& RenderModel::getRenderUnits() const
 	{
 		return m_renderUnits;
+	}
+
+	bool operator==(const Buffer& a, const Buffer& b)
+	{
+		return a.getBuffer() == b.getBuffer();
+	}
+
+	bool operator!=(const Buffer& a, const Buffer& b)
+	{
+		return !(a==b);
+	}
+
+	bool operator==(const Texture& a, const Texture& b)
+	{
+		return a.getImage() == b.getImage() && a.getImageView() == b.getImageView();
+	}
+
+	bool operator!=(const Texture& a, const Texture& b)
+	{
+		return !(a==b);
+	}
+
+	bool operator==(const Material& a, const Material& b)
+	{
+		return a.getPipeline() == b.getPipeline() &&
+			a.getPipelineLayout() == b.getPipelineLayout() &&
+			a.getDescriptorSet() == b.getDescriptorSet();
+	}
+
+	bool operator!=(const Material& a, const Material& b)
+	{
+		return !(a==b);
 	}
 
 }

@@ -68,6 +68,9 @@ namespace Nagi
 
 	};
 
+	bool operator==(const Buffer& a, const Buffer& b);
+	bool operator!=(const Buffer& a, const Buffer& b);
+
 	class Texture
 	{
 	public:
@@ -94,23 +97,29 @@ namespace Nagi
 
 	};
 
+	bool operator==(const Texture& a, const Texture& b);
+	bool operator!=(const Texture& a, const Texture& b);
+
 	class Material
 	{
 	public:
-		Material(const vk::Pipeline& pipeline, const vk::PipelineLayout& pipelineLayout, vk::DescriptorSet descriptorSet);
+		Material() = default;
+		Material(vk::Pipeline pipeline, vk::PipelineLayout pipelineLayout, vk::DescriptorSet descriptorSet);
+		~Material() = default;
 
 		const vk::Pipeline& getPipeline() const;
 		const vk::PipelineLayout& getPipelineLayout() const;
 		const vk::DescriptorSet& getDescriptorSet() const;
 
 	private:
-		// Non owning
-		const vk::Pipeline& m_pipeline;						// actual pipeline (e.g full graphics pipeline states)
-		const vk::PipelineLayout& m_pipelineLayout;			// has descriptor set layout and push range info (needed for setting descriptor sets and pushing data for push constants)
+		vk::Pipeline m_pipeline;						// actual pipeline (e.g full graphics pipeline states)
+		vk::PipelineLayout m_pipelineLayout;			// has descriptor set layout and push range info (needed for setting descriptor sets and pushing data for push constants)
 
-		// Non owning too (Pool is responsible internals for this)
 		vk::DescriptorSet m_descriptorSet;					// has the resource bindings
 	};
+
+	bool operator==(const Material& a, const Material& b);
+	bool operator!=(const Material& a, const Material& b);
 
 	class Mesh
 	{
@@ -124,9 +133,9 @@ namespace Nagi
 		uint32_t getVertexBufferOffset() const;
 
 	private:
-		const uint32_t m_ibFirstIndex;
-		const uint32_t m_numIndices;
-		const uint32_t m_vbOffset;
+		uint32_t m_ibFirstIndex;
+		uint32_t m_numIndices;
+		uint32_t m_vbOffset;
 	};
 
 	class RenderUnit
@@ -140,7 +149,7 @@ namespace Nagi
 		const Material& getMaterial() const;
 
 	private:
-		const Mesh m_mesh;				// POD
+		Mesh m_mesh;				// POD
 
 		// Non-owning
 		const Material& m_material;
@@ -159,7 +168,6 @@ namespace Nagi
 
 		// Temporary way of rendering (For each RenderObject, traverse this RenderUnit list
 		const std::vector<RenderUnit>& getRenderUnits() const;
-
 
 		RenderModel(const RenderModel&) = delete;
 		RenderModel& operator=(const RenderModel&) = delete;

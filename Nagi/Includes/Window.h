@@ -32,6 +32,8 @@ public:
 
 	void setKeyHandler(KeyHandler* handler);
 	void setMouseHandler(MouseHandler* handler);
+	KeyHandler* getKeyHandler() const;
+	MouseHandler* getMouseHandler() const;
 
 	void setResizeCallback(std::function<void(GLFWwindow*, int, int)> function);
 

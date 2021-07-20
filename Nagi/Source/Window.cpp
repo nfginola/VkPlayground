@@ -83,6 +83,16 @@ void Window::setMouseHandler(MouseHandler* handler)
 	m_mouseHandler = handler;
 }
 
+KeyHandler* Window::getKeyHandler() const
+{
+	return m_keyHandler;
+}
+
+MouseHandler* Window::getMouseHandler() const
+{
+	return m_mouseHandler;
+}
+
 void Window::setResizeCallback(std::function<void(GLFWwindow*, int, int)> function)
 {
 	m_resizeCallback = function;
