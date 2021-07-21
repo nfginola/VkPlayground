@@ -126,22 +126,22 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			// Light data
 			SceneData sceneData{};
 			sceneData.directionalLightColor = glm::vec4(1.f);
-			//sceneData.lightDirection = glm::vec4(cosf(timeElapsed) * 0.5f - 0.5f, -1.f, -1.f, 0.f);
-			//sceneData.lightDirection = glm::normalize(glm::vec4(cosf(timeElapsed), -1.f, -1.f, 0.f));
-			//sceneData.lightDirection = glm::normalize(glm::vec4(0.f, 0.f, -1.f, 0.f));
-			sceneData.directionalLightDirection = glm::normalize(glm::vec4(-0.35f, -1.f, -1.f, 0.f));
+			//sceneData.directionalLightDirection = glm::vec4(cosf(timeElapsed) * 0.5f - 0.5f, -1.f, -1.f, 0.f);
+			//sceneData.directionalLightDirection = glm::normalize(glm::vec4(cosf(timeElapsed), -1.f, -1.f, 0.f));
+			sceneData.directionalLightDirection = glm::normalize(glm::vec4(0.f, 0.f, -1.f, 0.f));
+			//sceneData.directionalLightDirection = glm::normalize(glm::vec4(-0.35f, -1.f, -1.f, 0.f));
 
 			sceneData.spotlightPositionAndStrength = glm::vec4(fpsCam.getPosition(), spotlightStrength);
 			auto tmp = fpsCam.getLookDirection();
 			sceneData.spotlightDirectionAndCutoff = glm::vec4(fpsCam.getLookDirection(), glm::cos(glm::radians(21.f)));
 
-			sceneData.pointLightPosition[0] = glm::vec4(-10.f, 4.f, 0.f, 1.f);
+			sceneData.pointLightPosition[0] = glm::vec4(-15.f, 6.f, 0.f, 1.f);
 			sceneData.pointLightColor[0] = glm::vec4(0.f, 1.f, 0.f, 0.f);
-			sceneData.pointLightAttenuation[0] = glm::vec4(1.f, 0.09f, 0.032f, 0.f);
+			sceneData.pointLightAttenuation[0] = glm::vec4(1.f, 0.09f, 0.016f, 0.f);
 
-			sceneData.pointLightPosition[1] = glm::vec4(10.f, 4.f, 0.f, 1.f);
+			sceneData.pointLightPosition[1] = glm::vec4(15.f, 6.f, 0.f, 1.f);
 			sceneData.pointLightColor[1] = glm::vec4(1.f, 0.f, 0.f, 0.f);
-			sceneData.pointLightAttenuation[1] = glm::vec4(1.f, 0.09f, 0.032f, 0.f);
+			sceneData.pointLightAttenuation[1] = glm::vec4(1.f, 0.09f, 0.016f, 0.f);
 
 			// ================================================ BEGIN GPU FRAME
 			auto frameRes = gfxCon.beginFrame();
@@ -170,7 +170,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineFrameData[frameRes.frameIdx].descriptorSet, {});
 
 			cmd.beginRenderPass(rpInfo, {});
-			drawObjects(cmd);
+			drawObjects(cmd, timeElapsed);
 			cmd.endRenderPass();
 
 			cmd.end();
@@ -276,7 +276,7 @@ void SponzaApp::loadTextures()
 	m_mappedTextures.insert({ "defaultspecular", Texture::fromFile(m_gfxCon, "Resources/Textures/defaultspecular.jpg") });
 }
 
-void SponzaApp::drawObjects(vk::CommandBuffer& cmd)
+void SponzaApp::drawObjects(vk::CommandBuffer& cmd, float timeElapsed)
 {	
 	PushConstantData perObjectData{};
 
@@ -304,13 +304,19 @@ void SponzaApp::drawObjects(vk::CommandBuffer& cmd)
 		// Nanosuit
 		else if (tmpId == 1)
 		{
-			auto newMatModel = glm::translate(glm::mat4(1.f), glm::vec3(9.f, 0.f, -9.f)) * glm::scale(glm::mat4(1.f), glm::vec3(1.f));
+			auto newMatModel = 
+				glm::translate(glm::mat4(1.f), glm::vec3(9.f, 0.f, -9.f)) * 
+				glm::rotate(glm::mat4(1.f), glm::radians(timeElapsed * 45.f), glm::vec3(0.f, 1.f, 0.f)) * 
+				glm::scale(glm::mat4(1.f), glm::vec3(1.f));
 			perObjectData.modelMat = newMatModel;
 		}
 		// Backpack
 		else if (tmpId == 3)
 		{
-			auto newMatModel = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 7.f, 0.f)) * glm::scale(glm::mat4(1.f), glm::vec3(1.f));
+			auto newMatModel = 
+				glm::translate(glm::mat4(1.f), glm::vec3(0.f, 10.f + 2.f * cosf(timeElapsed), 0.f)) * 
+				glm::rotate(glm::mat4(1.f), glm::radians(timeElapsed * 21.f), glm::vec3(0.f, 1.f, 0.f)) *
+				glm::scale(glm::mat4(1.f), glm::vec3(1.f));
 			perObjectData.modelMat = newMatModel;
 		}
 		// Quad

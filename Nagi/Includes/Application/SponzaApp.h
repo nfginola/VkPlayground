@@ -90,7 +90,7 @@ public:
 
 private:
 
-	void drawObjects(vk::CommandBuffer& cmd);
+	void drawObjects(vk::CommandBuffer& cmd, float timeElapsed);
 
 	void createDescriptorPool();
 

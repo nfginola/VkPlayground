@@ -11,14 +11,35 @@ namespace Nagi
 
 	void KeyHandler::handleKeyEvent(GLFWwindow* win, int key, int scancode, int action, int mods)
 	{
-		if (key == GLFW_KEY_A)			handleKeyAction(KeyName::A, action);
-		if (key == GLFW_KEY_D)			handleKeyAction(KeyName::D, action);
-		if (key == GLFW_KEY_W)			handleKeyAction(KeyName::W, action);
-		if (key == GLFW_KEY_S)			handleKeyAction(KeyName::S, action);
-		if (key == GLFW_KEY_E)			handleKeyAction(KeyName::E, action);
 		if (key == GLFW_KEY_Q)			handleKeyAction(KeyName::Q, action);
+		if (key == GLFW_KEY_W)			handleKeyAction(KeyName::W, action);
+		if (key == GLFW_KEY_E)			handleKeyAction(KeyName::E, action);
+		if (key == GLFW_KEY_R)			handleKeyAction(KeyName::R, action);
+		if (key == GLFW_KEY_T)			handleKeyAction(KeyName::T, action);
+		if (key == GLFW_KEY_Y)			handleKeyAction(KeyName::Y, action);
+		if (key == GLFW_KEY_U)			handleKeyAction(KeyName::U, action);
+		if (key == GLFW_KEY_I)			handleKeyAction(KeyName::I, action);
+		if (key == GLFW_KEY_O)			handleKeyAction(KeyName::O, action);
+		if (key == GLFW_KEY_P)			handleKeyAction(KeyName::P, action);
+
+		if (key == GLFW_KEY_A)			handleKeyAction(KeyName::A, action);
+		if (key == GLFW_KEY_S)			handleKeyAction(KeyName::S, action);
+		if (key == GLFW_KEY_D)			handleKeyAction(KeyName::D, action);
 		if (key == GLFW_KEY_F)			handleKeyAction(KeyName::F, action);
 		if (key == GLFW_KEY_G)			handleKeyAction(KeyName::G, action);
+		if (key == GLFW_KEY_H)			handleKeyAction(KeyName::H, action);
+		if (key == GLFW_KEY_J)			handleKeyAction(KeyName::J, action);
+		if (key == GLFW_KEY_K)			handleKeyAction(KeyName::K, action);
+		if (key == GLFW_KEY_L)			handleKeyAction(KeyName::L, action);
+
+		if (key == GLFW_KEY_Z)			handleKeyAction(KeyName::Z, action);
+		if (key == GLFW_KEY_X)			handleKeyAction(KeyName::X, action);
+		if (key == GLFW_KEY_C)			handleKeyAction(KeyName::C, action);
+		if (key == GLFW_KEY_V)			handleKeyAction(KeyName::V, action);
+		if (key == GLFW_KEY_B)			handleKeyAction(KeyName::B, action);
+		if (key == GLFW_KEY_N)			handleKeyAction(KeyName::N, action);
+		if (key == GLFW_KEY_M)			handleKeyAction(KeyName::M, action);
+
 		if (key == GLFW_KEY_SPACE)		handleKeyAction(KeyName::Space, action);
 		if (key == GLFW_KEY_LEFT_SHIFT) handleKeyAction(KeyName::LShift, action);
 	}
