@@ -98,6 +98,16 @@ namespace Nagi
 		return getProjectionMatrix() * getViewMatrix();
 	}
 
+	const glm::vec3& Camera::getPosition() const
+	{
+		return m_worldPosition;
+	}
+
+	const glm::vec3& Camera::getLookDirection() const
+	{
+		return m_localForward;
+	}
+
 	void Camera::update(float dt)
 	{
 		if (!(glm::length(m_frameMoveDir) <= glm::epsilon<float>()))
@@ -119,6 +129,9 @@ namespace Nagi
 
 		// Change our local up vector
 		// ...
+
+		m_localForward = glm::normalize(m_localForward);
+		m_localRight = glm::normalize(m_localRight);
 
 		m_updateCount++;
 	}

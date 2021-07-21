@@ -17,6 +17,8 @@ namespace Nagi
 		if (key == GLFW_KEY_S)			handleKeyAction(KeyName::S, action);
 		if (key == GLFW_KEY_E)			handleKeyAction(KeyName::E, action);
 		if (key == GLFW_KEY_Q)			handleKeyAction(KeyName::Q, action);
+		if (key == GLFW_KEY_F)			handleKeyAction(KeyName::F, action);
+		if (key == GLFW_KEY_G)			handleKeyAction(KeyName::G, action);
 		if (key == GLFW_KEY_SPACE)		handleKeyAction(KeyName::Space, action);
 		if (key == GLFW_KEY_LEFT_SHIFT) handleKeyAction(KeyName::LShift, action);
 	}

@@ -25,6 +25,9 @@ public:
 	glm::mat4 getProjectionMatrix() const;
 	glm::mat4 getViewProjectionMatrix() const;
 
+	const glm::vec3& getPosition() const;
+	const glm::vec3& getLookDirection() const;
+
 	void update(float dt);
 
 	// Temporary count to check update frequency of each

@@ -79,6 +79,8 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 		float dt = 0.f;
 		float timeElapsed = 0.f;
+		float spotlightStrength = 0.2f;
+
 		while (m_window.isRunning())
 		{
 			timeElapsed += dt;
@@ -100,6 +102,12 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 				std::cout << "Update count: " << fpsCam.m_updateCount<< "\n\n";
 			}
 
+			if (keyHandler->isKeyPressed(KeyName::G))
+				spotlightStrength = 0.f;
+			else if (keyHandler->isKeyPressed(KeyName::F))
+				spotlightStrength = 0.2f;
+
+
 
 			// ========== UPDATE SHADER DATA
 			GPUCameraData cameraData{};
@@ -117,11 +125,15 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 			// Light data
 			SceneData sceneData{};
-			sceneData.lightColor = glm::vec4(1.f);
+			sceneData.directionalLightColor = glm::vec4(1.f);
 			//sceneData.lightDirection = glm::vec4(cosf(timeElapsed) * 0.5f - 0.5f, -1.f, -1.f, 0.f);
 			//sceneData.lightDirection = glm::normalize(glm::vec4(cosf(timeElapsed), -1.f, -1.f, 0.f));
 			//sceneData.lightDirection = glm::normalize(glm::vec4(0.f, 0.f, -1.f, 0.f));
-			sceneData.lightDirection = glm::normalize(glm::vec4(-0.35f, -1.f, -1.f, 0.f));
+			sceneData.directionalLightDirection = glm::normalize(glm::vec4(-0.35f, -1.f, -1.f, 0.f));
+
+			sceneData.spotlightPositionAndStrength = glm::vec4(fpsCam.getPosition(), spotlightStrength);
+			auto tmp = fpsCam.getLookDirection();
+			sceneData.spotlightDirectionAndCutoff = glm::vec4(fpsCam.getLookDirection(), glm::cos(glm::radians(21.f)));
 
 			sceneData.pointLightPosition[0] = glm::vec4(-10.f, 4.f, 0.f, 1.f);
 			sceneData.pointLightColor[0] = glm::vec4(0.f, 1.f, 0.f, 0.f);

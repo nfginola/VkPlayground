@@ -50,8 +50,11 @@ struct GPUCameraData
 
 struct SceneData
 {
-	glm::vec4 lightDirection;
-	glm::vec4 lightColor;
+	glm::vec4 directionalLightDirection;
+	glm::vec4 directionalLightColor;
+
+	glm::vec4 spotlightPositionAndStrength;
+	glm::vec4 spotlightDirectionAndCutoff;
 
 	glm::vec4 pointLightPosition[2];
 	glm::vec4 pointLightColor[2];
