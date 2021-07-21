@@ -52,6 +52,10 @@ struct SceneData
 {
 	glm::vec4 lightDirection;
 	glm::vec4 lightColor;
+
+	glm::vec4 pointLightPosition[2];
+	glm::vec4 pointLightColor[2];
+	glm::vec4 pointLightAttenuation[2];
 };
 
 struct EngineFrameData
@@ -82,6 +86,8 @@ public:
 	SponzaApp& operator=(const Application&) = delete;
 
 private:
+
+	void drawObjects(vk::CommandBuffer& cmd);
 
 	void createDescriptorPool();
 

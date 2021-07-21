@@ -68,9 +68,6 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 		loadExternalModel("Resources/Objs/survival_backpack/backpack.obj");
 
 
-
-		float dt = 0.f;
-
 		// We can hook to cursor function instead to subscribe to the callback which updates more frequently (but fixed timestep?) for smoother mouse!
 		// I assume that the "fixed timestep" effect comes from the fact that Window Events do not occur more frequently or less frequently if we have more/less FPS!
 		// This is why the below function has the "same sensitivity" regardless of application FPS!
@@ -80,15 +77,13 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 				fpsCam.rotateCamera(deltaX, deltaY, 0.07f);
 			});
 
+		float dt = 0.f;
 		float timeElapsed = 0.f;
 		while (m_window.isRunning())
 		{
 			timeElapsed += dt;
 			auto timeStart = std::chrono::system_clock::now();			
 			m_window.processEvents();
-
-			// Update camera
-			//fpsCam.rotateCamera(mouseHandler->getDeltaX(), mouseHandler->getDeltaY(), dt);
 
 			if (keyHandler->isKeyDown(KeyName::A))		fpsCam.move(MoveDirection::Left);
 			if (keyHandler->isKeyDown(KeyName::D))		fpsCam.move(MoveDirection::Right);
@@ -106,7 +101,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			}
 
 
-			// Update data for shader
+			// ========== UPDATE SHADER DATA
 			GPUCameraData cameraData{};
 			cameraData.viewMat = fpsCam.getViewMatrix();
 			cameraData.projectionMat = fpsCam.getProjectionMatrix();
@@ -120,6 +115,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 			perObjectData.modelMat = matModel;
 
+			// Light data
 			SceneData sceneData{};
 			sceneData.lightColor = glm::vec4(1.f);
 			//sceneData.lightDirection = glm::vec4(cosf(timeElapsed) * 0.5f - 0.5f, -1.f, -1.f, 0.f);
@@ -127,7 +123,15 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			//sceneData.lightDirection = glm::normalize(glm::vec4(0.f, 0.f, -1.f, 0.f));
 			sceneData.lightDirection = glm::normalize(glm::vec4(-0.35f, -1.f, -1.f, 0.f));
 
-			// GPU BELOW
+			sceneData.pointLightPosition[0] = glm::vec4(-10.f, 4.f, 0.f, 1.f);
+			sceneData.pointLightColor[0] = glm::vec4(0.f, 1.f, 0.f, 0.f);
+			sceneData.pointLightAttenuation[0] = glm::vec4(1.f, 0.09f, 0.032f, 0.f);
+
+			sceneData.pointLightPosition[1] = glm::vec4(10.f, 4.f, 0.f, 1.f);
+			sceneData.pointLightColor[1] = glm::vec4(1.f, 0.f, 0.f, 0.f);
+			sceneData.pointLightAttenuation[1] = glm::vec4(1.f, 0.09f, 0.032f, 0.f);
+
+			// ================================================ BEGIN GPU FRAME
 			auto frameRes = gfxCon.beginFrame();
 			auto& cmd = frameRes.gfxCmdBuffer;
 
@@ -147,79 +151,23 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 
 
-			// Record command buffer
+			// Record
 			cmd.begin(vk::CommandBufferBeginInfo());
-
 
 			// Bind engine wide resources (Camera, Scene, Set 0)
 			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineFrameData[frameRes.frameIdx].descriptorSet, {});
 
 			cmd.beginRenderPass(rpInfo, {});
-
-			// Render Objects
-			int tmpId = 0;
-			Material lastMaterial;
-			for (const auto& model : m_loadedModels)
-			{
-				const auto& renderUnits = model->getRenderUnits();
-				const auto& vb = model->getVertexBuffer();
-				const auto& ib = model->getIndexBuffer();
-
-				// Bind VB/IB - Lets not mind rebinding here even if next model might have same VB/IB
-				std::array<vk::Buffer, 1> vbs{ vb };
-				std::array<vk::DeviceSize, 1> offsets{ 0 };
-				cmd.bindVertexBuffers(0, vbs, offsets);
-				cmd.bindIndexBuffer(ib, 0, vk::IndexType::eUint32);
-				
-				// Sponza
-				if (tmpId == 2)
-				{
-					auto newMatModel = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, 0.f)) * glm::scale(glm::mat4(1.f), glm::vec3(0.07f));
-					perObjectData.modelMat = newMatModel;
-				}
-				// Nanosuit
-				else if (tmpId == 1)
-				{
-					auto newMatModel = glm::translate(glm::mat4(1.f), glm::vec3(9.f, 0.f, -9.f)) * glm::scale(glm::mat4(1.f), glm::vec3(1.f));
-					perObjectData.modelMat = newMatModel;
-				}
-				else if (tmpId == 3)
-				{
-					auto newMatModel = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 7.f, 0.f)) * glm::scale(glm::mat4(1.f), glm::vec3(1.f));
-					perObjectData.modelMat = newMatModel;
-				}
-
-				for (const auto& renderUnit : renderUnits)
-				{
-					const auto& mesh = renderUnit.getMesh();
-					const auto& mat = renderUnit.getMaterial();
-
-					if (mat != lastMaterial)
-					{
-						cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, mat.getPipeline());
-						lastMaterial = mat;
-					}
-
-					// Bind per material resources (Textures, Set 2)
-					cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mat.getPipelineLayout(), 2, mat.getDescriptorSet(), {});
-
-					// Bind model matrix (Buffer style, disabled_
-					//perObjectFrameData.modelMatBuffer->putData(&perObjectData, sizeof(ObjectData));
-					//cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mat.getPipelineLayout(), 3, perObjectFrameData.descriptorSet, {});
-
-					// Bind model matrix
-					// Push constants - We will be using push constants
-					cmd.pushConstants<PushConstantData>(mat.getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, { perObjectData });
-
-					cmd.drawIndexed(mesh.getNumIndices(), 1, mesh.getFirstIndex(), mesh.getVertexBufferOffset(), mesh.getVertexBufferOffset());
-				}
-				
-				++tmpId;
-			}
+			drawObjects(cmd);
 			cmd.endRenderPass();
 
 			cmd.end();
 
+
+
+
+
+			// =================== END FRAME
 			// Setup submit info
 			std::array<vk::PipelineStageFlags, 1> waitStages{ vk::PipelineStageFlagBits::eColorAttachmentOutput };
 			// Queue waits at just before this stage executes for the sem signal with a full mem barrier
@@ -314,6 +262,82 @@ void SponzaApp::loadTextures()
 	m_mappedTextures.insert({ "rimuru2", Texture::fromFile(m_gfxCon, "Resources/Textures/rimuru2.jpg", true) });
 	m_mappedTextures.insert({ "defaultopacity", Texture::fromFile(m_gfxCon, "Resources/Textures/defaultopacity.jpg") });
 	m_mappedTextures.insert({ "defaultspecular", Texture::fromFile(m_gfxCon, "Resources/Textures/defaultspecular.jpg") });
+}
+
+void SponzaApp::drawObjects(vk::CommandBuffer& cmd)
+{	
+	PushConstantData perObjectData{};
+
+	// Render Objects
+	int tmpId = 0;
+	Material lastMaterial;
+	for (const auto& model : m_loadedModels)
+	{
+		const auto& renderUnits = model->getRenderUnits();
+		const auto& vb = model->getVertexBuffer();
+		const auto& ib = model->getIndexBuffer();
+
+		// Bind VB/IB - Lets not mind rebinding here even if next model might have same VB/IB
+		std::array<vk::Buffer, 1> vbs{ vb };
+		std::array<vk::DeviceSize, 1> offsets{ 0 };
+		cmd.bindVertexBuffers(0, vbs, offsets);
+		cmd.bindIndexBuffer(ib, 0, vk::IndexType::eUint32);
+
+		// Sponza
+		if (tmpId == 2)
+		{
+			auto newMatModel = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, 0.f)) * glm::scale(glm::mat4(1.f), glm::vec3(0.07f));
+			perObjectData.modelMat = newMatModel;
+		}
+		// Nanosuit
+		else if (tmpId == 1)
+		{
+			auto newMatModel = glm::translate(glm::mat4(1.f), glm::vec3(9.f, 0.f, -9.f)) * glm::scale(glm::mat4(1.f), glm::vec3(1.f));
+			perObjectData.modelMat = newMatModel;
+		}
+		// Backpack
+		else if (tmpId == 3)
+		{
+			auto newMatModel = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 7.f, 0.f)) * glm::scale(glm::mat4(1.f), glm::vec3(1.f));
+			perObjectData.modelMat = newMatModel;
+		}
+		// Quad
+		else if (tmpId == 0)
+		{
+			auto newMatModel =
+				glm::translate(glm::mat4(1.f), glm::vec3(0.f, 2.5f, 0.f)) *
+				glm::rotate(glm::mat4(1.f), glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f)) *
+				glm::scale(glm::mat4(1.f), glm::vec3(8.f, 5.f, 8.f));
+			perObjectData.modelMat = newMatModel;
+		}
+
+		for (const auto& renderUnit : renderUnits)
+		{
+			const auto& mesh = renderUnit.getMesh();
+			const auto& mat = renderUnit.getMaterial();
+
+			if (mat != lastMaterial)
+			{
+				cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, mat.getPipeline());
+				lastMaterial = mat;
+			}
+
+			// Bind per material resources (Textures, Set 2)
+			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mat.getPipelineLayout(), 2, mat.getDescriptorSet(), {});
+
+			// Bind model matrix (Buffer style, disabled_
+			//perObjectFrameData.modelMatBuffer->putData(&perObjectData, sizeof(ObjectData));
+			//cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mat.getPipelineLayout(), 3, perObjectFrameData.descriptorSet, {});
+
+			// Bind model matrix
+			// Push constants - We will be using push constants
+			cmd.pushConstants<PushConstantData>(mat.getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, { perObjectData });
+
+			cmd.drawIndexed(mesh.getNumIndices(), 1, mesh.getFirstIndex(), mesh.getVertexBufferOffset(), mesh.getVertexBufferOffset());
+		}
+
+		++tmpId;
+	}
 }
 
 void SponzaApp::createDescriptorPool()
@@ -704,7 +728,6 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 			renderUnits.push_back(RenderUnit(mesh, *m_mappedMaterials[diffusePath].get()));
 		}
 	}
-
 
 	m_loadedModels.push_back(std::make_unique<RenderModel>(std::move(vb), std::move(ib), renderUnits));
 }
