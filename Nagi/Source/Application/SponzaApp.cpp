@@ -3,6 +3,7 @@
 
 #include "AssimpLoader.h"
 #include "Camera.h"
+#include "VulkanImGuiContext.h"
 
 namespace Nagi
 {
@@ -18,6 +19,8 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 	auto scExtent = m_gfxCon.getSwapchainExtent();
 	Camera fpsCam((float)scExtent.width / scExtent.height, 77.f);
 
+
+
 	try
 	{
 		m_defRenderPass = ezTmp::createDefaultRenderPass(m_gfxCon);
@@ -32,6 +35,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 		// Set up Texture
 		loadTextures();
 
+		// Setup global sampler
 		vk::SamplerCreateInfo sCI({},
 			vk::Filter::eLinear, vk::Filter::eLinear,	// min/mag filter
 			vk::SamplerMipmapMode::eLinear,				// mipmapMode
@@ -42,7 +46,6 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			0.f, VK_LOD_CLAMP_NONE
 		);
 		m_commonSampler = m_gfxCon.getDevice().createSamplerUnique(sCI);
-
 
 		// ============ Setup the layout for our 4 sets and possible push constants (for PipelineLayout)
 		setupDescriptorSetLayouts();
@@ -67,13 +70,15 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 		loadExternalModel("Resources/Objs/sponza/sponza.obj");
 		loadExternalModel("Resources/Objs/survival_backpack/backpack.obj");
 
+		// Initialize ImGui
+		// Give a suitable render pass to draw with
+		auto imGuiContext = std::make_unique<VulkanImGuiContext>(m_gfxCon, m_window, m_defRenderPass.get());
 
-		// We can hook to cursor function instead to subscribe to the callback which updates more frequently (but fixed timestep?) for smoother mouse!
-		// I assume that the "fixed timestep" effect comes from the fact that Window Events do not occur more frequently or less frequently if we have more/less FPS!
-		// This is why the below function has the "same sensitivity" regardless of application FPS!
+		// We can hook to cursor function instead to subscribe to the callback which updates consistently regardless of FPS for smoother mouse!
+		// This is why the below function has the "same sensitivity" regardless of application FPS.
 		mouseHandler->hookFunctionToCursor([&fpsCam](float deltaX, float deltaY)
 			{
-				// 0.07 --> Arbitrary dt
+				// 0.07 --> Arbitrary dt (temp)
 				fpsCam.rotateCamera(deltaX, deltaY, 0.07f);
 			});
 
@@ -81,12 +86,28 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 		float timeElapsed = 0.f;
 		float spotlightStrength = 0.2f;
 
+		bool showDemo = true;
+
 		while (m_window.isRunning())
 		{
+			// ============================================= FRAME START
 			timeElapsed += dt;
 			auto timeStart = std::chrono::system_clock::now();			
 			m_window.processEvents();
 
+			// ============================================= IMGUI
+			ImGui_ImplVulkan_NewFrame();
+			ImGui_ImplGlfw_NewFrame();
+			ImGui::NewFrame();
+
+			ImGui::ShowDemoWindow(&showDemo);
+
+			// ImGUI Rendering
+			ImGui::Render();
+			ImDrawData* draw_data = ImGui::GetDrawData();
+
+
+			// ============================================= HANDLE INPUT RESPONSE
 			if (keyHandler->isKeyDown(KeyName::A))		fpsCam.move(MoveDirection::Left);
 			if (keyHandler->isKeyDown(KeyName::D))		fpsCam.move(MoveDirection::Right);
 			if (keyHandler->isKeyDown(KeyName::W))		fpsCam.move(MoveDirection::Forward);
@@ -109,30 +130,21 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 
 
-			// ========== UPDATE SHADER DATA
+			// ============================================== UPDATE ENGINE WIDE DATA
 			GPUCameraData cameraData{};
 			cameraData.viewMat = fpsCam.getViewMatrix();
 			cameraData.projectionMat = fpsCam.getProjectionMatrix();
 			cameraData.viewProjectionMat = fpsCam.getProjectionMatrix() * fpsCam.getViewMatrix();
 
-			PushConstantData perObjectData{};
-			auto matModel = 
-				glm::translate(glm::mat4(1.f), glm::vec3(0.f, 2.5f, 0.f)) * 
-				glm::rotate(glm::mat4(1.f), glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f)) * 
-				glm::scale(glm::mat4(1.f), glm::vec3(8.f, 5.f, 8.f));
-
-			perObjectData.modelMat = matModel;
-
-			// Light data
+			// =============================================== UPDATE SCENE DATA
 			SceneData sceneData{};
 			sceneData.directionalLightColor = glm::vec4(1.f);
 			//sceneData.directionalLightDirection = glm::vec4(cosf(timeElapsed) * 0.5f - 0.5f, -1.f, -1.f, 0.f);
 			//sceneData.directionalLightDirection = glm::normalize(glm::vec4(cosf(timeElapsed), -1.f, -1.f, 0.f));
-			sceneData.directionalLightDirection = glm::normalize(glm::vec4(0.f, 0.f, -1.f, 0.f));
-			//sceneData.directionalLightDirection = glm::normalize(glm::vec4(-0.35f, -1.f, -1.f, 0.f));
+			//sceneData.directionalLightDirection = glm::normalize(glm::vec4(0.f, 0.f, -1.f, 0.f));
+			sceneData.directionalLightDirection = glm::normalize(glm::vec4(-0.35f, -1.f, -1.f, 0.f));
 
 			sceneData.spotlightPositionAndStrength = glm::vec4(fpsCam.getPosition(), spotlightStrength);
-			auto tmp = fpsCam.getLookDirection();
 			sceneData.spotlightDirectionAndCutoff = glm::vec4(fpsCam.getLookDirection(), glm::cos(glm::radians(21.f)));
 
 			sceneData.pointLightPosition[0] = glm::vec4(-15.f, 6.f, 0.f, 1.f);
@@ -143,43 +155,42 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			sceneData.pointLightColor[1] = glm::vec4(1.f, 0.f, 0.f, 0.f);
 			sceneData.pointLightAttenuation[1] = glm::vec4(1.f, 0.09f, 0.016f, 0.f);
 
+
 			// ================================================ BEGIN GPU FRAME
 			auto frameRes = gfxCon.beginFrame();
 			auto& cmd = frameRes.gfxCmdBuffer;
 
 
-			// ================================================ Update UBO
+			// ================================================ UPDATE FRAME UBOS
 			m_engineFrameData[frameRes.frameIdx].cameraBuffer->putData(&cameraData, sizeof(GPUCameraData));
 			m_engineFrameData[frameRes.frameIdx].sceneBuffer->putData(&sceneData, sizeof(SceneData));
 
+
+			// ================================================ RECORD COMMANDS
+			cmd.begin(vk::CommandBufferBeginInfo());
+
+			// Bind engine wide resources (Camera, Scene, Set 0)
+			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineFrameData[frameRes.frameIdx].descriptorSet, {});
 
 			// Setup render pass info
 			std::array<vk::ClearValue, 2> clearValues = {
 				vk::ClearColorValue(std::array<float, 4>({0.529f, 0.808f, 0.922f, 1.f})),
 				vk::ClearDepthStencilValue( /*depth*/ 1.f, /*stencil*/ 0)
 			};
-
 			vk::RenderPassBeginInfo rpInfo(m_defRenderPass.get(), m_defFramebuffers[frameRes.imageIdx].get(), vk::Rect2D({ 0, 0 }, scExtent), clearValues);
-
-
-
-			// Record
-			cmd.begin(vk::CommandBufferBeginInfo());
-
-			// Bind engine wide resources (Camera, Scene, Set 0)
-			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineFrameData[frameRes.frameIdx].descriptorSet, {});
 
 			cmd.beginRenderPass(rpInfo, {});
 			drawObjects(cmd, timeElapsed);
+
+			// ================================================ DRAW IMGUI
+			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
+
 			cmd.endRenderPass();
 
 			cmd.end();
 
 
-
-
-
-			// =================== END FRAME
+			// ================================================ END GPU FRAME
 			// Setup submit info
 			std::array<vk::PipelineStageFlags, 1> waitStages{ vk::PipelineStageFlagBits::eColorAttachmentOutput };
 			// Queue waits at just before this stage executes for the sem signal with a full mem barrier
@@ -194,6 +205,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			gfxCon.submitQueue(submitInfo);
 			gfxCon.endFrame();
 
+			// ================================================ FRAME TIMER STOP
 			auto timeEnd = std::chrono::system_clock::now();
 			std::chrono::duration<float> diff = timeEnd - timeStart;
 			dt = diff.count();
@@ -280,7 +292,6 @@ void SponzaApp::drawObjects(vk::CommandBuffer& cmd, float timeElapsed)
 {	
 	PushConstantData perObjectData{};
 
-	// Render Objects
 	int tmpId = 0;
 	Material lastMaterial;
 	for (const auto& model : m_loadedModels)

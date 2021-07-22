@@ -3,13 +3,24 @@
 #include "vk_mem_alloc.h"
 #include "SingleInstance.h"
 
+
 namespace Nagi
 {
 
 class Window;
 class UploadContext;
 
-struct QueueFamilies;
+struct QueueFamilies
+{
+	std::optional<uint32_t> gphIdx;
+	std::optional<uint32_t> presentIdx;
+
+	bool isComplete()
+	{
+		return gphIdx.has_value() &&
+			presentIdx.has_value();
+	}
+};
 
 struct PerFrameSyncResource
 {
@@ -95,9 +106,11 @@ private:
 		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 		void* pUserData);
 
+	friend class VulkanImGuiContext;
 private:
 	vk::Instance m_instance;
 	vk::PhysicalDevice m_physicalDevice;
+	QueueFamilies m_queueFamilies;
 	vk::PhysicalDeviceProperties m_physicalDeviceProperties;
 	vk::Device m_device;
 	vk::Queue m_gfxQueue;
@@ -158,6 +171,7 @@ private:
 	vk::UniqueCommandPool m_pool;
 
 };
+
 
 
 }

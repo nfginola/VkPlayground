@@ -67,11 +67,10 @@ vec3 calculateSpecularColor(vec3 normal, vec3 lightDirection, vec3 lightColor)
 
 vec3 calculateDirectionalLight(vec3 direction, vec3 lightColor, vec3 normal)
 {
-    vec3 ambient = 0.01f * texture(diffuseTexture, fragUV).xyz;
     vec3 diffuse = clamp(dot(-direction, normal), 0.f, 1.f) * lightColor * texture(diffuseTexture, fragUV).xyz;
     vec3 specular = calculateSpecularColor(normal, direction, lightColor);
 
-    return ambient + diffuse + specular;
+    return diffuse + specular;
 }
 
 vec3 calculatePointLight(vec3 normal, vec3 attenuation, vec3 color, vec3 position)
@@ -135,6 +134,9 @@ void main()
     
     //vec3 co = calculateDirectionalLight(sceneData.directionalLightDirection.xyz, sceneData.directionalLightColor.xyz, normal);
     vec3 co = vec3(0.f);
+
+    vec3 ambient = 0.007f * texture(diffuseTexture, fragUV).xyz;
+    co += ambient;
     for (uint i = 0; i < POINT_LIGHT_COUNT; ++i)
     {
 		co += calculatePointLight(normal, sceneData.pointLightAttenuation[i].xyz, sceneData.pointLightColor[i].xyz, sceneData.pointLightPosition[i].xyz);

@@ -134,14 +134,14 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)Dependencies\AssimpBin\include;$(ProjectDir)Dependencies\assimp-4.1.0\include;C:\VulkanSDK\1.2.182.0\Include;$(ProjectDir)Dependencies\glm-master;$(ProjectDir)Dependencies\stb-master;$(ProjectDir)Dependencies\glfw-3.3.4.bin.WIN64\include;$(ProjectDir)Dependencies\VulkanMemoryAllocator-master\include;$(ProjectDir)Includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Includes\ImGui;$(ProjectDir)Dependencies\AssimpBin\include;$(ProjectDir)Dependencies\assimp-4.1.0\include;C:\VulkanSDK\1.2.182.0\Include;$(ProjectDir)Dependencies\glm-master;$(ProjectDir)Dependencies\stb-master;$(ProjectDir)Dependencies\glfw-3.3.4.bin.WIN64\include;$(ProjectDir)Dependencies\VulkanMemoryAllocator-master\include;$(ProjectDir)Includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;assimp-vc140-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>D:\Github\Nagi\Nagi\Dependencies\AssimpBin\code\Release;C:\VulkanSDK\1.2.182.0\Lib;$(ProjectDir)Dependencies\glfw-3.3.4.bin.WIN64\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)Dependencies\AssimpBin\code\Release;C:\VulkanSDK\1.2.182.0\Lib;$(ProjectDir)Dependencies\glfw-3.3.4.bin.WIN64\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -154,7 +154,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)Dependencies\AssimpBin\include;$(ProjectDir)Dependencies\assimp-4.1.0\include;C:\VulkanSDK\1.2.182.0\Include;$(ProjectDir)Dependencies\glm-master;$(ProjectDir)Dependencies\stb-master;$(ProjectDir)Dependencies\glfw-3.3.4.bin.WIN64\include;$(ProjectDir)Dependencies\VulkanMemoryAllocator-master\include;$(ProjectDir)Includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Includes\ImGui;$(ProjectDir)Dependencies\AssimpBin\include;$(ProjectDir)Dependencies\assimp-4.1.0\include;C:\VulkanSDK\1.2.182.0\Include;$(ProjectDir)Dependencies\glm-master;$(ProjectDir)Dependencies\stb-master;$(ProjectDir)Dependencies\glfw-3.3.4.bin.WIN64\include;$(ProjectDir)Dependencies\VulkanMemoryAllocator-master\include;$(ProjectDir)Includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -163,11 +163,39 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;assimp-vc140-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>D:\Github\Nagi\Nagi\Dependencies\AssimpBin\code\Release;C:\VulkanSDK\1.2.182.0\Lib;$(ProjectDir)Dependencies\glfw-3.3.4.bin.WIN64\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)Dependencies\AssimpBin\code\Release;C:\VulkanSDK\1.2.182.0\Lib;$(ProjectDir)Dependencies\glfw-3.3.4.bin.WIN64\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Source\AssimpLoader.cpp" />
+    <ClCompile Include="Source\ImGui\imgui.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\ImGui\imgui_demo.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\ImGui\imgui_draw.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\ImGui\imgui_impl_glfw.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\ImGui\imgui_impl_vulkan.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\ImGui\imgui_tables.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\ImGui\imgui_widgets.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="Source\KeyHandler.cpp" />
     <ClCompile Include="Source\Camera.cpp" />
     <ClCompile Include="Source\Application\Application.cpp" />
@@ -185,12 +213,21 @@
     <ClCompile Include="Source\Window.cpp" />
     <ClCompile Include="Source\VulkanUtilities.cpp" />
     <ClCompile Include="Source\Application\SponzaApp.cpp" />
+    <ClCompile Include="Source\VulkanImGuiContext.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Includes\AssimpLoader.h" />
     <ClInclude Include="Includes\Camera.h" />
     <ClInclude Include="Includes\Application\AppDefines.h" />
     <ClInclude Include="Includes\Application\Application.h" />
+    <ClInclude Include="Includes\ImGui\imconfig.h" />
+    <ClInclude Include="Includes\ImGui\imgui.h" />
+    <ClInclude Include="Includes\ImGui\imgui_impl_glfw.h" />
+    <ClInclude Include="Includes\ImGui\imgui_impl_vulkan.h" />
+    <ClInclude Include="Includes\ImGui\imgui_internal.h" />
+    <ClInclude Include="Includes\ImGui\imstb_rectpack.h" />
+    <ClInclude Include="Includes\ImGui\imstb_textedit.h" />
+    <ClInclude Include="Includes\ImGui\imstb_truetype.h" />
     <ClInclude Include="Includes\MouseHandler.h" />
     <ClInclude Include="Includes\ResourceTypes.h" />
     <ClInclude Include="Includes\VulkanContext.h" />
@@ -201,6 +238,7 @@
     <ClInclude Include="Includes\VulkanUtilities.h" />
     <ClInclude Include="Includes\Application\SponzaApp.h" />
     <ClInclude Include="Includes\KeyHandler.h" />
+    <ClInclude Include="Includes\VulkanImGuiContext.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

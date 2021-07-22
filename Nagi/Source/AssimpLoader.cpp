@@ -17,7 +17,8 @@ namespace Nagi
 			filePath.relative_path().string().c_str(),
 			aiProcess_Triangulate |
 			aiProcess_FlipUVs |			// Vulkan screen space is 0,0 on top left
-			aiProcess_GenNormals
+			//aiProcess_GenNormals
+			aiProcess_GenSmoothNormals
 		);
 
 		if (scene == nullptr)

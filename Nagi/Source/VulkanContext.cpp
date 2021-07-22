@@ -10,17 +10,7 @@ namespace Nagi
 {
 
 
-struct QueueFamilies
-{
-	std::optional<uint32_t> gphIdx;
-	std::optional<uint32_t> presentIdx;
 
-	bool isComplete()
-	{
-		return gphIdx.has_value() &&
-			presentIdx.has_value();
-	}
-};
 
 VulkanContext::VulkanContext(const Window& win, bool debugLayer) :
 	m_currFrame(0)
@@ -40,11 +30,10 @@ VulkanContext::VulkanContext(const Window& win, bool debugLayer) :
 
 		getPhysicalDevice(m_instance);
 
-		QueueFamilies qfs =
-			findQueueFamilies(m_physicalDevice, m_surface);
-		createLogicalDevice(m_physicalDevice, qfs, m_surface, debugLayer);
+		m_queueFamilies = findQueueFamilies(m_physicalDevice, m_surface);
+		createLogicalDevice(m_physicalDevice, m_queueFamilies, m_surface, debugLayer);
 
-		createCommandPools(m_device, qfs);
+		createCommandPools(m_device, m_queueFamilies);
 
 		// Initialize VMA
 		// We will use later, stick with normal Buffer/Image creation for now for learning purposes
@@ -68,7 +57,7 @@ VulkanContext::VulkanContext(const Window& win, bool debugLayer) :
 		}
 
 		// Create an upload context to send data to GPU (We are using the graphics queue)
-		m_uploadContext = std::make_unique<UploadContext>(m_device, m_gfxQueue, qfs.gphIdx.value());
+		m_uploadContext = std::make_unique<UploadContext>(m_device, m_gfxQueue, m_queueFamilies.gphIdx.value());
 
 	}
 	catch (vk::SystemError& err)

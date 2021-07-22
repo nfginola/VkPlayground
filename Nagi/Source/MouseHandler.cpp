@@ -36,8 +36,8 @@ namespace Nagi
 			m_deltaHelper.prevY = yPos;
 		}
 
-		m_framePosX = xPos;
-		m_framePosY = yPos;
+		m_framePosX = static_cast<float>(xPos);
+		m_framePosY = static_cast<float>(yPos);
 
 	}
 

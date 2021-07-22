@@ -25,6 +25,7 @@ public:
 	Window(const Window&) = delete;
 	Window& operator=(const Window&) = delete;
 
+
 	uint32_t getClientWidth() const;
 	uint32_t getClientHeight() const;
 	bool isRunning() const;
@@ -47,6 +48,7 @@ public:
 	static void mouseCursorCallback(GLFWwindow* window, double xpos, double ypos);
 	static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 
+
 private:
 	GLFWwindow* m_window;
 	std::pair<int, int> m_clientDimensions;
@@ -56,6 +58,8 @@ private:
 	MouseHandler* m_mouseHandler;
 
 	std::vector<const char*> m_reqExtensions;
+
+	friend class VulkanImGuiContext;
 };
 
 

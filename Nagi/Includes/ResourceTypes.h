@@ -115,7 +115,7 @@ namespace Nagi
 		vk::Pipeline m_pipeline;						// actual pipeline (e.g full graphics pipeline states)
 		vk::PipelineLayout m_pipelineLayout;			// has descriptor set layout and push range info (needed for setting descriptor sets and pushing data for push constants)
 
-		vk::DescriptorSet m_descriptorSet;					// has the resource bindings
+		vk::DescriptorSet m_descriptorSet;				// has the resource bindings
 	};
 
 	bool operator==(const Material& a, const Material& b);
@@ -166,7 +166,6 @@ namespace Nagi
 		const vk::Buffer& getVertexBuffer() const;
 		const vk::Buffer& getIndexBuffer() const;
 
-		// Temporary way of rendering (For each RenderObject, traverse this RenderUnit list
 		const std::vector<RenderUnit>& getRenderUnits() const;
 
 		RenderModel(const RenderModel&) = delete;
