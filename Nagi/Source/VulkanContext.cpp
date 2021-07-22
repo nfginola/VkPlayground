@@ -262,6 +262,7 @@ vk::Format VulkanContext::getDepthFormat() const
 	return m_depthFormat;
 }
 
+
 const vk::Extent2D& VulkanContext::getSwapchainExtent() const
 {
 	return m_swapchainExtent;

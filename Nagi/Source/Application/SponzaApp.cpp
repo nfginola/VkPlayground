@@ -74,8 +74,6 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			else if (keyHandler->isKeyPressed(KeyName::F))
 				spotlightStrength = 0.2f;
 
-
-
 			// =============================================== UPDATE ENGINE WIDE DATA
 			GPUCameraData cameraData{};
 			cameraData.viewMat = fpsCam.getViewMatrix();
@@ -192,7 +190,7 @@ void SponzaApp::createUBOs()
 	VmaAllocationCreateInfo engineUBOAllocCI{};
 	engineUBOAllocCI.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 
-	for (int i = 0; i < VulkanContext::s_maxFramesInFlight; ++i)
+	for (auto i = 0ul; i < VulkanContext::getMaxFramesInFlight(); ++i)
 	{
 		EngineFrameData dat{};
 		dat.cameraBuffer = std::make_unique<Buffer>(m_gfxCon.getAllocator(), engineUBOCI, engineUBOAllocCI);
@@ -214,7 +212,7 @@ void SponzaApp::createUBOs()
 	VmaAllocationCreateInfo objectUBOAllocCI{};
 	objectUBOAllocCI.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 
-	for (int i = 0; i < VulkanContext::s_maxFramesInFlight; ++i)
+	for (auto i = 0ul; i < VulkanContext::getMaxFramesInFlight(); ++i)
 	{
 		ObjectFrameData dat{};
 		dat.modelMatBuffer = std::make_unique<Buffer>(m_gfxCon.getAllocator(), objectUBOCI, objectUBOAllocCI);
@@ -435,7 +433,7 @@ void SponzaApp::allocateDescriptorSets()
 	vk::DescriptorSetAllocateInfo engineSetAllocInfo(m_descriptorPool.get(), m_engineDescriptorSetLayout.get());
 	
 	// We need to allocate 'frame in flight' number of sets since they need to be updated while the other set may still be in flight
-	for (auto i = 0ul; i < VulkanContext::s_maxFramesInFlight; ++i)
+	for (auto i = 0ul; i < VulkanContext::getMaxFramesInFlight(); ++i)
 	{
 		m_engineFrameData[i].descriptorSet = dev.allocateDescriptorSets(engineSetAllocInfo).front();
 
@@ -463,7 +461,7 @@ void SponzaApp::allocateDescriptorSets()
 	vk::DescriptorSetAllocateInfo objectSetAllocInfo(m_descriptorPool.get(), m_objectDescriptorSetLayout.get());
 
 	// We need to allocate 'frame in flight' number of sets since they need to be updated while the other set may still be in flight
-	for (auto i = 0ul; i < VulkanContext::s_maxFramesInFlight; ++i)
+	for (auto i = 0ul; i < VulkanContext::getMaxFramesInFlight(); ++i)
 	{
 		m_objectFrameData[i].descriptorSet = dev.allocateDescriptorSets(objectSetAllocInfo).front();
 

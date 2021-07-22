@@ -67,7 +67,8 @@ vec3 calculateSpecularColor(vec3 normal, vec3 lightDirection, vec3 lightColor)
 
 vec3 calculateDirectionalLight(vec3 direction, vec3 lightColor, vec3 normal)
 {
-    vec3 diffuse = clamp(dot(-direction, normal), 0.f, 1.f) * lightColor * texture(diffuseTexture, fragUV).xyz;
+    //vec3 diffuse = clamp(dot(-direction, normal), 0.f, 1.f) * lightColor * texture(diffuseTexture, fragUV).xyz;
+    vec3 diffuse = max(dot(-direction, normal), 0.f) * lightColor * texture(diffuseTexture, fragUV).xyz;
     vec3 specular = calculateSpecularColor(normal, direction, lightColor);
 
     return diffuse + specular;
@@ -144,6 +145,7 @@ void main()
 
     co += calculateSpotlight();
 
-    outColor = vec4(clamp(co, vec3(0.f), vec3(1.f)), texture(opacityTexture, fragUV).r);
+    //outColor = vec4(clamp(co, vec3(0.f), vec3(1.f)), texture(opacityTexture, fragUV).r);
+    outColor = vec4(max(co, vec3(0.f)), texture(opacityTexture, fragUV).r);
 
 }

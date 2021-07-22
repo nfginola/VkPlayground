@@ -42,6 +42,9 @@ struct FrameResource
 
 class VulkanContext : private SingleInstance<VulkanContext>
 {
+private:
+	static constexpr uint32_t s_maxFramesInFlight = 2;
+
 public:
 	VulkanContext(const Window& win, bool debugLayer = true);
 	~VulkanContext();
@@ -67,11 +70,8 @@ public:
 
 	const vk::ImageView& getDepthView() const;
 	vk::Format getDepthFormat() const;
-
-	static constexpr uint32_t s_maxFramesInFlight = 2;
-
-
-
+	
+	static constexpr uint32_t getMaxFramesInFlight() { return s_maxFramesInFlight; };
 
 	VulkanContext() = delete;
 	VulkanContext(const VulkanContext&) = delete;
