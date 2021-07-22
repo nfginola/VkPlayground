@@ -20,71 +20,25 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 	auto scExtent = m_gfxCon.getSwapchainExtent();
 	Camera fpsCam((float)scExtent.width / scExtent.height, 77.f);
 
+	// We can hook to cursor function to subscribe to the callback which updates consistently regardless of FPS for smoother mouse!
+	// This is why the below function has the "same sensitivity" regardless of application FPS.
+	mouseHandler->hookFunctionToCursor([&fpsCam](float deltaX, float deltaY)
+		{
+			// 0.07 --> sensitivity
+			fpsCam.rotateCamera(deltaX, deltaY, 0.07f);
+		});
+
 	try
 	{
-		m_defRenderPass = ezTmp::createDefaultRenderPass(m_gfxCon);
-		m_defFramebuffers = ezTmp::createDefaultFramebuffers(m_gfxCon, m_defRenderPass.get());
+		setupResources();
 
-		// Allocate pool for descriptors
-		createDescriptorPool();
-
-		// Create UBOs that will be used in this App
-		createUBOs();
-
-		// Set up Texture
-		loadTextures();
-
-		// Setup global sampler
-		vk::SamplerCreateInfo sCI({},
-			vk::Filter::eLinear, vk::Filter::eLinear,	// min/mag filter
-			vk::SamplerMipmapMode::eLinear,				// mipmapMode
-			vk::SamplerAddressMode::eRepeat, vk::SamplerAddressMode::eRepeat, vk::SamplerAddressMode::eRepeat,
-			0.f,							// mipLodBias
-			true, m_gfxCon.getPhysicalDeviceProperties().limits.maxSamplerAnisotropy,		// anisotropy enabled / max anisotropy (max clamp value) (we are just maxing out here (16))
-			false, vk::CompareOp::eNever,	// compare enabled/op
-			0.f, VK_LOD_CLAMP_NONE
-		);
-		m_commonSampler = m_gfxCon.getDevice().createSamplerUnique(sCI);
-
-		// ============ Setup the layout for our 4 sets and possible push constants (for PipelineLayout)
-		setupDescriptorSetLayouts();
-		configurePushConstantRange();
-
-		// Setup descriptor sets
-		// Engine Global (Set 0) (e.g Camera)
-		// Per Pass (Set 1)
-		// Per Material (Set 2)
-		// Per Object (Set 3)
-		allocateDescriptorSets();
-
-		// ============
-		createGraphicsPipeline();
-
-		// ======== Load scene data
-		// Create custom render model
-		createRenderModels();
-
-		// Load with assimp
-		loadExternalModel("Resources/Objs/nanosuit/nanosuit.obj");
-		loadExternalModel("Resources/Objs/sponza/sponza.obj");
-		loadExternalModel("Resources/Objs/survival_backpack/backpack.obj");
-
-		// Initialize ImGui (After application resources --> Defined render passes)
+		// Initialize ImGui (After application resources --> Defined render pass)
 		// Give a suitable render pass to draw with
 		auto imGuiContext = std::make_unique<VulkanImGuiContext>(m_gfxCon, m_window, m_defRenderPass.get());
-
-		// We can hook to cursor function instead to subscribe to the callback which updates consistently regardless of FPS for smoother mouse!
-		// This is why the below function has the "same sensitivity" regardless of application FPS.
-		mouseHandler->hookFunctionToCursor([&fpsCam](float deltaX, float deltaY)
-			{
-				// 0.07 --> Arbitrary dt (temp)
-				fpsCam.rotateCamera(deltaX, deltaY, 0.07f);
-			});
 
 		float dt = 0.f;
 		float timeElapsed = 0.f;
 		float spotlightStrength = 0.2f;
-
 		bool showDemo = true;
 
 		while (m_window.isRunning())
@@ -98,7 +52,6 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 			// ============================================= IMGUI WINDOWS
 			ImGui::ShowDemoWindow(&showDemo);
-
 
 			// ============================================= HANDLE INPUT RESPONSE
 			if (keyHandler->isKeyDown(KeyName::A))		fpsCam.move(MoveDirection::Left);
@@ -165,7 +118,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			// Bind engine wide resources (Camera, Scene, Set 0)
 			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineFrameData[frameRes.frameIdx].descriptorSet, {});
 
-			// ================================================ SETUP AND RECORD RENDER PASS
+			// ================================================ SETUP AND RECORD RENDER PASS (***)
 			{
 				std::array<vk::ClearValue, 2> clearValues = {
 					vk::ClearColorValue(std::array<float, 4>({0.529f, 0.808f, 0.922f, 1.f})),
@@ -175,9 +128,9 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 				cmd.beginRenderPass(rpInfo, {});
 
-				// ================================================ DRAW OBJECTS
+				// ================================================ RECORD DRAW OBJECTS CMDS
 				drawObjects(cmd, timeElapsed);
-				// ================================================ DRAW IMGUI
+				// ================================================ RECORD DRAW IMGUI CMDS
 				imGuiContext->render(cmd);
 				cmd.endRenderPass();
 
@@ -625,6 +578,55 @@ void SponzaApp::createGraphicsPipeline()
 	).value;
 }
 
+void SponzaApp::setupResources()
+{
+	m_defRenderPass = ezTmp::createDefaultRenderPass(m_gfxCon);
+	m_defFramebuffers = ezTmp::createDefaultFramebuffers(m_gfxCon, m_defRenderPass.get());
+
+	// Allocate pool for descriptors
+	createDescriptorPool();
+
+	// Create UBOs that will be used in this App
+	createUBOs();
+
+	// Set up Texture
+	loadTextures();
+
+	// Setup global sampler
+	vk::SamplerCreateInfo sCI({},
+		vk::Filter::eLinear, vk::Filter::eLinear,	// min/mag filter
+		vk::SamplerMipmapMode::eLinear,				// mipmapMode
+		vk::SamplerAddressMode::eRepeat, vk::SamplerAddressMode::eRepeat, vk::SamplerAddressMode::eRepeat,
+		0.f,							// mipLodBias
+		true, m_gfxCon.getPhysicalDeviceProperties().limits.maxSamplerAnisotropy,		// anisotropy enabled / max anisotropy (max clamp value) (we are just maxing out here (16))
+		false, vk::CompareOp::eNever,	// compare enabled/op
+		0.f, VK_LOD_CLAMP_NONE
+	);
+	m_commonSampler = m_gfxCon.getDevice().createSamplerUnique(sCI);
+
+	// ============ Setup the layout for our 4 sets and possible push constants (for PipelineLayout)
+	setupDescriptorSetLayouts();
+	configurePushConstantRange();
+
+	// Setup descriptor sets
+	// Engine Global (Set 0) (e.g Camera)
+	// Per Pass (Set 1)
+	// Per Material (Set 2)
+	// Per Object (Set 3)
+	allocateDescriptorSets();
+
+	// ============
+	createGraphicsPipeline();
+
+	// ======== Load scene data
+	// Create custom render model
+	createRenderModels();
+
+	// Load with assimp
+	loadExternalModel("Resources/Objs/nanosuit/nanosuit.obj");
+	loadExternalModel("Resources/Objs/sponza/sponza.obj");
+	loadExternalModel("Resources/Objs/survival_backpack/backpack.obj");
+}
 
 void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 {

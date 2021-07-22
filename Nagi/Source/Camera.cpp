@@ -20,10 +20,10 @@ namespace Nagi
 	{
 	}
 
-	void Camera::rotateCamera(double mouseDx, double mouseDy, float dt)
+	void Camera::rotateCamera(double mouseDx, double mouseDy, float sensitivity)
 	{
-		double deltaYaw = mouseDx * m_mouseSpeed * dt;
-		double deltaPitch = mouseDy * m_mouseSpeed * dt;
+		double deltaYaw = mouseDx * m_mouseSpeed * sensitivity;
+		double deltaPitch = mouseDy * m_mouseSpeed * sensitivity;
 
 		m_camYaw += static_cast<float>(deltaYaw);
 		m_camPitch += static_cast<float>(deltaPitch);

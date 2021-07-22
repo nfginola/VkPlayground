@@ -14,7 +14,7 @@ public:
 	Camera(float aspectRatio, float fovInDegs, float nearPlane = 0.1f, float farPlane = 1000.f, float moveSpeed = 35.f, const glm::vec3& initialPosition = glm::vec3(0.f, 5.f, 0.f));
 	~Camera() = default;
 
-	void rotateCamera(double mouseDx, double mouseDy, float dt);
+	void rotateCamera(double mouseDx, double mouseDy, float sensitivity);
 	void move(MoveDirection direction);
 
 

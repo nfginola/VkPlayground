@@ -108,6 +108,8 @@ private:
 	
 	void createGraphicsPipeline();
 
+	void setupResources();
+
 
 private:
 	vk::UniqueRenderPass m_defRenderPass;
