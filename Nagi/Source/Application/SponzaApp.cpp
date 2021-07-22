@@ -4,6 +4,7 @@
 #include "AssimpLoader.h"
 #include "Camera.h"
 #include "VulkanImGuiContext.h"
+#include "Timer.h"
 
 namespace Nagi
 {
@@ -18,8 +19,6 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 	auto scExtent = m_gfxCon.getSwapchainExtent();
 	Camera fpsCam((float)scExtent.width / scExtent.height, 77.f);
-
-
 
 	try
 	{
@@ -70,7 +69,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 		loadExternalModel("Resources/Objs/sponza/sponza.obj");
 		loadExternalModel("Resources/Objs/survival_backpack/backpack.obj");
 
-		// Initialize ImGui
+		// Initialize ImGui (After application resources --> Defined render passes)
 		// Give a suitable render pass to draw with
 		auto imGuiContext = std::make_unique<VulkanImGuiContext>(m_gfxCon, m_window, m_defRenderPass.get());
 
@@ -91,20 +90,14 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 		while (m_window.isRunning())
 		{
 			// ============================================= FRAME START
-			timeElapsed += dt;
-			auto timeStart = std::chrono::system_clock::now();			
+			Timer timer;
 			m_window.processEvents();
 
-			// ============================================= IMGUI
-			ImGui_ImplVulkan_NewFrame();
-			ImGui_ImplGlfw_NewFrame();
-			ImGui::NewFrame();
+			// ============================================= IMGUI FRAME START
+			imGuiContext->beginFrame();
 
+			// ============================================= IMGUI WINDOWS
 			ImGui::ShowDemoWindow(&showDemo);
-
-			// ImGUI Rendering
-			ImGui::Render();
-			ImDrawData* draw_data = ImGui::GetDrawData();
 
 
 			// ============================================= HANDLE INPUT RESPONSE
@@ -130,7 +123,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 
 
-			// ============================================== UPDATE ENGINE WIDE DATA
+			// =============================================== UPDATE ENGINE WIDE DATA
 			GPUCameraData cameraData{};
 			cameraData.viewMat = fpsCam.getViewMatrix();
 			cameraData.projectionMat = fpsCam.getProjectionMatrix();
@@ -172,22 +165,24 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			// Bind engine wide resources (Camera, Scene, Set 0)
 			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineFrameData[frameRes.frameIdx].descriptorSet, {});
 
-			// Setup render pass info
-			std::array<vk::ClearValue, 2> clearValues = {
-				vk::ClearColorValue(std::array<float, 4>({0.529f, 0.808f, 0.922f, 1.f})),
-				vk::ClearDepthStencilValue( /*depth*/ 1.f, /*stencil*/ 0)
-			};
-			vk::RenderPassBeginInfo rpInfo(m_defRenderPass.get(), m_defFramebuffers[frameRes.imageIdx].get(), vk::Rect2D({ 0, 0 }, scExtent), clearValues);
+			// ================================================ SETUP AND RECORD RENDER PASS
+			{
+				std::array<vk::ClearValue, 2> clearValues = {
+					vk::ClearColorValue(std::array<float, 4>({0.529f, 0.808f, 0.922f, 1.f})),
+					vk::ClearDepthStencilValue( /*depth*/ 1.f, /*stencil*/ 0)
+				};
+				vk::RenderPassBeginInfo rpInfo(m_defRenderPass.get(), m_defFramebuffers[frameRes.imageIdx].get(), vk::Rect2D({ 0, 0 }, scExtent), clearValues);
 
-			cmd.beginRenderPass(rpInfo, {});
-			drawObjects(cmd, timeElapsed);
+				cmd.beginRenderPass(rpInfo, {});
 
-			// ================================================ DRAW IMGUI
-			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
+				// ================================================ DRAW OBJECTS
+				drawObjects(cmd, timeElapsed);
+				// ================================================ DRAW IMGUI
+				imGuiContext->render(cmd);
+				cmd.endRenderPass();
 
-			cmd.endRenderPass();
-
-			cmd.end();
+				cmd.end();
+			}
 
 
 			// ================================================ END GPU FRAME
@@ -205,10 +200,8 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			gfxCon.submitQueue(submitInfo);
 			gfxCon.endFrame();
 
-			// ================================================ FRAME TIMER STOP
-			auto timeEnd = std::chrono::system_clock::now();
-			std::chrono::duration<float> diff = timeEnd - timeStart;
-			dt = diff.count();
+			dt = timer.time();
+			timeElapsed += dt;
 		}
 
 		// Idle to wait for GPU resources to stop being used before resource destruction

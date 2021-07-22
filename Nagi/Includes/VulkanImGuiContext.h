@@ -14,6 +14,8 @@ namespace Nagi
 		VulkanImGuiContext() = delete;
 		~VulkanImGuiContext();
 
+		void beginFrame();
+		void render(vk::CommandBuffer& cmd);
 
 	private:
 		VulkanContext& m_vkContext;

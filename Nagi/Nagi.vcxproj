@@ -214,6 +214,7 @@
     <ClCompile Include="Source\VulkanUtilities.cpp" />
     <ClCompile Include="Source\Application\SponzaApp.cpp" />
     <ClCompile Include="Source\VulkanImGuiContext.cpp" />
+    <ClCompile Include="Source\Timer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Includes\AssimpLoader.h" />
@@ -239,6 +240,7 @@
     <ClInclude Include="Includes\Application\SponzaApp.h" />
     <ClInclude Include="Includes\KeyHandler.h" />
     <ClInclude Include="Includes\VulkanImGuiContext.h" />
+    <ClInclude Include="Includes\Timer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

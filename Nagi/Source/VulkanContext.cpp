@@ -306,12 +306,12 @@ void VulkanContext::createInstance(std::vector<const char*> requiredExtensions, 
 		static_cast<uint32_t>(validationLayers.size()), validationLayers.data(),
 		static_cast<uint32_t>(requiredExtensions.size()), requiredExtensions.data());
 
-	// Enable Best Practices Feature
-	auto enabled = vk::ValidationFeatureEnableEXT::eBestPractices;
-	vk::ValidationFeaturesEXT features;
-	features.enabledValidationFeatureCount = 1;
-	features.pEnabledValidationFeatures = &enabled;
-	instCreateInfo.pNext = &features;
+	//// Enable Best Practices Feature
+	//auto enabled = vk::ValidationFeatureEnableEXT::eBestPractices;
+	//vk::ValidationFeaturesEXT features;
+	//features.enabledValidationFeatureCount = 1;
+	//features.pEnabledValidationFeatures = &enabled;
+	//instCreateInfo.pNext = &features;
 
 	m_instance = vk::createInstance(instCreateInfo);
 
@@ -405,12 +405,19 @@ QueueFamilies VulkanContext::findQueueFamilies(const vk::PhysicalDevice& physica
 
 vk::SurfaceFormatKHR VulkanContext::selectSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& surfaceFormats) const
 {
+	//auto selectedFormatIt = std::find_if(surfaceFormats.cbegin(), surfaceFormats.cend(),
+	//	[](const vk::SurfaceFormatKHR& surfaceFormat)
+	//	{
+	//		return surfaceFormat.format == vk::Format::eB8G8R8A8Srgb &&
+	//			surfaceFormat.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
+	//	});
 	auto selectedFormatIt = std::find_if(surfaceFormats.cbegin(), surfaceFormats.cend(),
 		[](const vk::SurfaceFormatKHR& surfaceFormat)
 		{
 			return surfaceFormat.format == vk::Format::eB8G8R8A8Srgb &&
 				surfaceFormat.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
 		});
+
 	if (selectedFormatIt == surfaceFormats.cend())
 		throw std::runtime_error("Couldn't find selected surface format!");
 

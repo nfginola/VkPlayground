@@ -6,6 +6,9 @@ namespace Nagi
 {
 	void MouseHandler::handleCursor(GLFWwindow* win, double xPos, double yPos)
 	{
+		// We should refactor so that we have some general mouse states
+		// Left click, left hold, right click, right hold, mouse wheel click, mouse wheel hold(?), mouse up, mouse down
+		// And enable a hook-function to the hold functionality (e.g for mouse)
 		if (glfwGetInputMode(win, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
 		{
 			if (m_deltaHelper.firstTime)
@@ -20,9 +23,6 @@ namespace Nagi
 
 			m_frameDeltaX = static_cast<float>(dx);
 			m_frameDeltaY = static_cast<float>(dy);
-
-			//std::cout << "deltaX: " << m_frameDeltaX << "\n";
-			//std::cout << "deltaY: " << m_frameDeltaY << "\n";
 
 			if (m_cursorHook)
 				m_cursorHook(m_frameDeltaX, m_frameDeltaY);

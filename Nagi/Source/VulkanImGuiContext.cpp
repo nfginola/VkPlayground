@@ -68,4 +68,18 @@ namespace Nagi
         ImGui::DestroyContext();
     }
 
+    void VulkanImGuiContext::beginFrame()
+    {
+        ImGui_ImplVulkan_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+    }
+
+    void VulkanImGuiContext::render(vk::CommandBuffer& cmd)
+    {
+        ImGui::Render();
+        ImDrawData* draw_data = ImGui::GetDrawData();
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
+    }
+
 }
