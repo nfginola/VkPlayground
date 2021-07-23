@@ -162,8 +162,8 @@ void main()
 //    return;
 
 
-    //vec3 co = calculateDirectionalLight(sceneData.directionalLightDirection.xyz, sceneData.directionalLightColor.xyz, normal);
-    vec3 co = vec3(0.f);
+    vec3 co = calculateDirectionalLight(sceneData.directionalLightDirection.xyz, sceneData.directionalLightColor.xyz, normal);
+    //vec3 co = vec3(0.f);
 
     vec3 ambient = 0.007f * texture(diffuseTexture, fragUV).xyz;
     co += ambient;

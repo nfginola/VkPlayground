@@ -2,8 +2,8 @@
 #include "Window.h"
 #include <vulkan/vulkan.hpp>
 
-#include "KeyHandler.h"
-#include "MouseHandler.h"
+#include "Input/KeyHandler.h"
+#include "Input/MouseHandler.h"
 
 namespace Nagi
 {
