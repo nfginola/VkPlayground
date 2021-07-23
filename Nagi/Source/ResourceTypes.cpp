@@ -67,7 +67,7 @@ namespace Nagi
 		return m_view;
 	}
 
-	std::unique_ptr<Texture> Texture::fromFile(VulkanContext& context, const std::string& filePath, bool generateMips)
+	std::unique_ptr<Texture> Texture::fromFile(VulkanContext& context, const std::string& filePath, bool generateMips, bool srgb)
 	{
 		// ========================== Load image data
 		int texWidth, texHeight, texChannels;
@@ -101,6 +101,8 @@ namespace Nagi
 		// =========================== Create texture
 		auto texExtent = vk::Extent3D(texWidth, texHeight, 1);
 		vk::Format imageFormat = vk::Format::eR8G8B8A8Srgb;
+		if (!srgb)
+			imageFormat = vk::Format::eR8G8B8A8Unorm;
 
 		auto imageUsageBits = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
 		if (generateMips)

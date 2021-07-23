@@ -30,11 +30,9 @@ namespace Nagi
 		aiVector3D position;
 		aiVector3D normal;
 		aiVector2D uv;
+		aiVector3D tangent;
+		aiVector3D bitangent;
 
-		//float position[3];
-		//float normal[3];
-		//float uv[2];
-		// Others can be added
 	};
 
 	struct AssimpMaterialPaths

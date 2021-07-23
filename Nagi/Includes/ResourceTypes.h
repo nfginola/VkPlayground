@@ -87,7 +87,7 @@ namespace Nagi
 		const vk::Image& getImage() const;
 		const vk::ImageView& getImageView() const;
 
-		static std::unique_ptr<Texture> fromFile(VulkanContext& context, const std::string& filePath, bool generateMips = false);
+		static std::unique_ptr<Texture> fromFile(VulkanContext& context, const std::string& filePath, bool generateMips = false, bool srgb = true);
 
 	private:
 		// Non owning

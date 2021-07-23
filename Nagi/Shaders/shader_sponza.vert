@@ -5,10 +5,14 @@
 layout(location = 0) in vec3 inPos;
 layout(location = 1) in vec2 inUV;
 layout(location = 2) in vec3 inNormal;
+layout(location = 3) in vec3 inTangent;
+layout(location = 4) in vec3 inBitangent;
 
 layout(location = 0) out vec3 fragNormal;
 layout(location = 1) out vec2 fragUV;
 layout(location = 2) out vec3 fragPos;
+layout(location = 3) out vec3 fragTangent;
+layout(location = 4) out vec3 fragBitangent;
 
 layout(push_constant) uniform Constants
 {
@@ -35,5 +39,12 @@ void main()
 	fragPos = worldPos.xyz;
 	fragUV = inUV;
 	fragNormal = normalize((pushConstants.modelMat * vec4(inNormal, 0.f)).xyz);
+
+	//vec3 tangent = normalize((pushConstants.modelMat * vec4(inTangent, 0.f)).xyz);
+	fragTangent = normalize((pushConstants.modelMat * vec4(normalize(inTangent), 0.f)).xyz);
+	//vec3 bitangent = normalize((pushConstants.modelMat * vec4(inBitangent, 0.f)).xyz);
+	fragBitangent = normalize((pushConstants.modelMat * vec4(normalize(inBitangent), 0.f)).xyz);
+
+	//fragTBN = mat3(tangent, bitangent, fragNormal);
 
 }

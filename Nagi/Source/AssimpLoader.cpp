@@ -17,8 +17,8 @@ namespace Nagi
 			filePath.relative_path().string().c_str(),
 			aiProcess_Triangulate |
 			aiProcess_FlipUVs |			// Vulkan screen space is 0,0 on top left
-			//aiProcess_GenNormals
-			aiProcess_GenSmoothNormals
+			aiProcess_GenSmoothNormals |
+			aiProcess_CalcTangentSpace
 		);
 
 		if (scene == nullptr)
@@ -39,11 +39,12 @@ namespace Nagi
 		for (unsigned int i = 0; i < scene->mNumMaterials; ++i)
 		{
 			auto mtl = scene->mMaterials[i];
-			aiString diffPath, norPath, opacityPath, specularPath;
+			aiString diffPath, norPath, opacityPath, specularPath, bruh;
 			mtl->GetTexture(aiTextureType_DIFFUSE, 0, &diffPath);
 			mtl->GetTexture(aiTextureType_HEIGHT, 0, &norPath);
 			mtl->GetTexture(aiTextureType_OPACITY, 0, &opacityPath);
 			mtl->GetTexture(aiTextureType_SPECULAR, 0, &specularPath);
+			mtl->GetTexture(aiTextureType_UNKNOWN, 0, &bruh);
 
 			AssimpMaterialPaths matPaths;
 			matPaths.diffuseFilePath = (diffPath.length == 0) ? std::nullopt : std::optional<std::string>(diffPath.C_Str());
@@ -99,6 +100,11 @@ namespace Nagi
 				vert.uv.y = mesh->mTextureCoords[0][i].y;
 			}
 
+			if (mesh->mTangents)
+				vert.tangent = mesh->mTangents[i];
+			if (mesh->mBitangents)
+				vert.bitangent = mesh->mBitangents[i];
+
 			m_vertices.push_back(vert);
 		}
 
@@ -119,7 +125,11 @@ namespace Nagi
 		auto mtl = scene->mMaterials[mesh->mMaterialIndex];
 		aiString diffPath, norPath, opacityPath, specularPath;
 		mtl->GetTexture(aiTextureType_DIFFUSE, 0, &diffPath);
-		mtl->GetTexture(aiTextureType_HEIGHT, 0, &norPath);
+
+		aiReturn norRet = mtl->GetTexture(aiTextureType_NORMALS, 0, &norPath);
+		if (norRet != aiReturn_SUCCESS)
+			mtl->GetTexture(aiTextureType_HEIGHT, 0, &norPath);
+		
 		mtl->GetTexture(aiTextureType_OPACITY, 0, &opacityPath);
 		mtl->GetTexture(aiTextureType_SPECULAR, 0, &specularPath);
 

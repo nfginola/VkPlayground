@@ -9,6 +9,8 @@ struct Vertex
 	glm::vec3 pos;
 	glm::vec2 uv;
 	glm::vec3 normal;
+	glm::vec3 tangent;
+	glm::vec3 bitangent;
 
 	constexpr static int s_bindingSlot = 0;
 
@@ -18,14 +20,14 @@ struct Vertex
 		return 	vk::VertexInputBindingDescription{ s_bindingSlot, sizeof(Vertex) };
 	}
 
-	static std::array<vk::VertexInputAttributeDescription, 3> getAttributeDescriptions()
+	static std::array<vk::VertexInputAttributeDescription, 5> getAttributeDescriptions()
 	{
-		std::array<vk::VertexInputAttributeDescription, 3> dscs;
-		// 1st arg is the shader input location
-		// 2nd arg is 0 because thats the bindinng number from where we take the data from! We hardcoded it to 0 as above
+		std::array<vk::VertexInputAttributeDescription, 5> dscs;
 		dscs[0] = vk::VertexInputAttributeDescription(0, s_bindingSlot, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, pos));
 		dscs[1] = vk::VertexInputAttributeDescription(1, s_bindingSlot, vk::Format::eR32G32Sfloat, offsetof(Vertex, uv));
 		dscs[2] = vk::VertexInputAttributeDescription(2, s_bindingSlot, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, normal));
+		dscs[3] = vk::VertexInputAttributeDescription(3, s_bindingSlot, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, tangent));
+		dscs[4] = vk::VertexInputAttributeDescription(4, s_bindingSlot, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, bitangent));
 		return dscs;
 	}
 };

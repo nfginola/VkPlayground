@@ -5,6 +5,8 @@
 layout(location = 0) in vec3 fragNormal;
 layout(location = 1) in vec2 fragUV;
 layout(location = 2) in vec3 fragPos;
+layout(location = 3) in vec3 fragTangent;
+layout(location = 4) in vec3 fragBitangent;
 
 const uint POINT_LIGHT_COUNT = 2;
 const float SPOTLIGHT_DISTANCE = 77;
@@ -34,6 +36,7 @@ layout(set = 0, binding = 1) uniform SceneUBO
 layout(set = 2, binding = 0) uniform sampler2D diffuseTexture;
 layout(set = 2, binding = 1) uniform sampler2D opacityTexture;
 layout(set = 2, binding = 2) uniform sampler2D specularTexture;
+layout(set = 2, binding = 3) uniform sampler2D normalTexture;
 
 
 layout(location = 0) out vec4 outColor; 
@@ -132,7 +135,33 @@ void main()
 {
     vec3 normal = normalize(fragNormal);
     vec3 diffuseColor = texture(diffuseTexture, fragUV).xyz;
-    
+
+//    outColor = vec4(normal, 1.f);
+//    return;
+
+    // If normal map, we will use the normals from the normal map
+    if (!(texture(normalTexture, fragUV).xyz == vec3(0.f)))
+    {
+        mat3 tbn = mat3(fragTangent, fragBitangent, normal);
+
+        // Normal map is in [0, 1] space so we need to transform it to [-1, 1] space
+        vec3 mapNorTangent = texture(normalTexture, fragUV).xyz * 2.f - 1.f;
+
+        // Orient the tangent space correctly in world space
+        // The TBN matrix defines the transformation required to transform an input from tangent space TO world space.
+        vec3 mapNorWorld = normalize(tbn * mapNorTangent);
+
+        normal = mapNorWorld;
+
+//        outColor = vec4(normal, 1.f);
+//        return;
+    }
+ 
+//
+//    outColor = vec4(0.f, 0.f, 0.f, 1.f);
+//    return;
+
+
     //vec3 co = calculateDirectionalLight(sceneData.directionalLightDirection.xyz, sceneData.directionalLightColor.xyz, normal);
     vec3 co = vec3(0.f);
 

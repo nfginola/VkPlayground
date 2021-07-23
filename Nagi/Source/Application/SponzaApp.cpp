@@ -231,6 +231,7 @@ void SponzaApp::loadTextures()
 	m_mappedTextures.insert({ "rimuru2", Texture::fromFile(m_gfxCon, "Resources/Textures/rimuru2.jpg", true) });
 	m_mappedTextures.insert({ "defaultopacity", Texture::fromFile(m_gfxCon, "Resources/Textures/defaultopacity.jpg") });
 	m_mappedTextures.insert({ "defaultspecular", Texture::fromFile(m_gfxCon, "Resources/Textures/defaultspecular.jpg") });
+	m_mappedTextures.insert({ "defaultnormal", Texture::fromFile(m_gfxCon, "Resources/Textures/defaultnormal.jpg") });
 }
 
 void SponzaApp::drawObjects(vk::CommandBuffer& cmd, float timeElapsed)
@@ -319,7 +320,7 @@ void SponzaApp::createDescriptorPool()
 	// Make pool large enough for our needs
 	std::vector<vk::DescriptorPoolSize> descriptorPoolSizes{
 		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 10),
-		vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 100)
+		vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 500)
 	};
 
 	vk::DescriptorPoolCreateInfo poolCI({}, 
@@ -363,7 +364,9 @@ void SponzaApp::createRenderModels()
 	vk::WriteDescriptorSet opacityImageSetWrite(newMatDescSet, 1, 0, vk::DescriptorType::eCombinedImageSampler, opacityImageInfo, {}, {});
 	vk::DescriptorImageInfo specularImageInfo(m_commonSampler.get(), m_mappedTextures["defaultspecular"]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
 	vk::WriteDescriptorSet specularImageSetWrite(newMatDescSet, 2, 0, vk::DescriptorType::eCombinedImageSampler, specularImageInfo, {}, {});
-	dev.updateDescriptorSets({ imageSetWrite, opacityImageSetWrite, specularImageSetWrite}, {});
+	vk::DescriptorImageInfo normalImageInfo(m_commonSampler.get(), m_mappedTextures["defaultnormal"]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
+	vk::WriteDescriptorSet normalImageSetWrite(newMatDescSet, 3, 0, vk::DescriptorType::eCombinedImageSampler, normalImageInfo, {}, {});
+	dev.updateDescriptorSets({ imageSetWrite, opacityImageSetWrite, specularImageSetWrite, normalImageSetWrite}, {});
 
 
 	// ==== Create render unit(s)
@@ -399,9 +402,10 @@ void SponzaApp::setupDescriptorSetLayouts()
 
 	// Per material layout
 	std::vector<vk::DescriptorSetLayoutBinding> materialBindings{
-		vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment),	// diffuse 
+		vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment),	// Diffuse 
 		vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment),	// Opacity
-		vk::DescriptorSetLayoutBinding(2, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment)		// Specular
+		vk::DescriptorSetLayoutBinding(2, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment),	// Specular
+		vk::DescriptorSetLayoutBinding(3, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment)		// Normal
 	};
 	vk::DescriptorSetLayoutCreateInfo materialSetLayoutCI({}, materialBindings);
 
@@ -622,8 +626,8 @@ void SponzaApp::setupResources()
 	createRenderModels();
 
 	// Load with assimp
-	loadExternalModel("Resources/Objs/nanosuit/nanosuit.obj");
-	loadExternalModel("Resources/Objs/sponza/sponza.obj");
+	loadExternalModel("Resources/Objs/nanosuit_gunnar/nanosuit.obj");
+	loadExternalModel("Resources/Objs/sponza_new/Sponza.obj");
 	loadExternalModel("Resources/Objs/survival_backpack/backpack.obj");
 }
 
@@ -656,6 +660,12 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 		vertex.normal.x = vert.normal.x;
 		vertex.normal.y = vert.normal.y;
 		vertex.normal.z = vert.normal.z;
+		vertex.tangent.x = vert.tangent.x;
+		vertex.tangent.y = vert.tangent.y;
+		vertex.tangent.z = vert.tangent.z;
+		vertex.bitangent.x = vert.bitangent.x;
+		vertex.bitangent.y = vert.bitangent.y;
+		vertex.bitangent.z = vert.bitangent.z;
 		finalVerts.push_back(vertex);
 	}
 
@@ -692,6 +702,13 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 		else
 			specularPath = "Resources/Textures/defaultspecular.jpg";
 
+		// Get final normal path
+		std::string normalPath(directory);
+		if (subset.normalFilePath.has_value())
+			normalPath += subset.normalFilePath.value();
+		else
+			normalPath = "Resources/Textures/defaultnormal.jpg";
+
 
 		// Insert texture data and create material
 		auto lb = m_mappedTextures.lower_bound(diffusePath);
@@ -727,7 +744,7 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 			{
 				// WARNING::::: Std move calls destructor if there is an existing element in the map!!! (why??)
 				if (m_mappedTextures.find(opacityPath) == m_mappedTextures.cend())
-					m_mappedTextures.insert({ opacityPath, std::move(Texture::fromFile(m_gfxCon, opacityPath)) });
+					m_mappedTextures.insert({ opacityPath, std::move(Texture::fromFile(m_gfxCon, opacityPath, true, false)) });
 
 				// Write to existing descriptor set (existing material that was made from diffuse) (bind image and sampler)
 				vk::DescriptorImageInfo imageInfo(m_commonSampler.get(), m_mappedTextures[opacityPath]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
@@ -738,11 +755,23 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 			// Handle specular
 			{
 				if (m_mappedTextures.find(specularPath) == m_mappedTextures.cend())
-					m_mappedTextures.insert({ specularPath, std::move(Texture::fromFile(m_gfxCon, specularPath)) });
+					m_mappedTextures.insert({ specularPath, std::move(Texture::fromFile(m_gfxCon, specularPath, true, false)) });
 
 				// Write to existing descriptor set (existing material that was made from diffuse) (bind image and sampler)
 				vk::DescriptorImageInfo imageInfo(m_commonSampler.get(), m_mappedTextures[specularPath]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
 				vk::WriteDescriptorSet imageSetWrite(m_mappedMaterials[diffusePath]->getDescriptorSet(), 2, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo, {}, {});	// Binding 2
+				dev.updateDescriptorSets(imageSetWrite, {});
+
+			}
+
+			// Handle normal
+			{
+				if (m_mappedTextures.find(normalPath) == m_mappedTextures.cend())
+					m_mappedTextures.insert({ normalPath, std::move(Texture::fromFile(m_gfxCon, normalPath, true, false)) });
+
+				// Write to existing descriptor set (existing material that was made from diffuse) (bind image and sampler)
+				vk::DescriptorImageInfo imageInfo(m_commonSampler.get(), m_mappedTextures[normalPath]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
+				vk::WriteDescriptorSet imageSetWrite(m_mappedMaterials[diffusePath]->getDescriptorSet(), 3, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo, {}, {});	// Binding 3
 				dev.updateDescriptorSets(imageSetWrite, {});
 
 			}
