@@ -196,10 +196,10 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Source\KeyHandler.cpp" />
+    <ClCompile Include="Source\Input\KeyHandler.cpp" />
     <ClCompile Include="Source\Camera.cpp" />
     <ClCompile Include="Source\Application\Application.cpp" />
-    <ClCompile Include="Source\MouseHandler.cpp" />
+    <ClCompile Include="Source\Input\MouseHandler.cpp" />
     <ClCompile Include="Source\ResourceTypes.cpp" />
     <ClCompile Include="Source\VulkanContext.cpp" />
     <ClCompile Include="Source\main.cpp" />
@@ -229,7 +229,7 @@
     <ClInclude Include="Includes\ImGui\imstb_rectpack.h" />
     <ClInclude Include="Includes\ImGui\imstb_textedit.h" />
     <ClInclude Include="Includes\ImGui\imstb_truetype.h" />
-    <ClInclude Include="Includes\MouseHandler.h" />
+    <ClInclude Include="Includes\Input\MouseHandler.h" />
     <ClInclude Include="Includes\ResourceTypes.h" />
     <ClInclude Include="Includes\VulkanContext.h" />
     <ClInclude Include="Includes\pch.h" />
@@ -238,7 +238,7 @@
     <ClInclude Include="Includes\Window.h" />
     <ClInclude Include="Includes\VulkanUtilities.h" />
     <ClInclude Include="Includes\Application\SponzaApp.h" />
-    <ClInclude Include="Includes\KeyHandler.h" />
+    <ClInclude Include="Includes\Input\KeyHandler.h" />
     <ClInclude Include="Includes\VulkanImGuiContext.h" />
     <ClInclude Include="Includes\Timer.h" />
   </ItemGroup>

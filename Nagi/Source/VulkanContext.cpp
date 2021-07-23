@@ -277,7 +277,7 @@ vk::Format VulkanContext::getSwapchainImageFormat() const
 
 VKAPI_ATTR VkBool32 VKAPI_CALL VulkanContext::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
-	std::cerr << "Validation Layer: " << pCallbackData->pMessage << std::endl;
+	std::cerr << "Validation Layer: " << pCallbackData->pMessage << std::endl << std::endl;
 	return VK_FALSE;
 }
 
@@ -440,6 +440,7 @@ vk::PresentModeKHR VulkanContext::selectPresentMode(const std::vector<vk::Presen
 	// FIFO: Show on next vertical blank (vsync)
 	// Immediate: May cause tearing (No vsync)
 	vk::PresentModeKHR fallbackPresentMode = vk::PresentModeKHR::eFifo;
+	//vk::PresentModeKHR fallbackPresentMode = vk::PresentModeKHR::eImmediate;
 
 	if (selectedPresentModeIt == presentModes.cend())
 		return fallbackPresentMode;
@@ -527,8 +528,8 @@ vk::SurfaceFormatKHR VulkanContext::createSwapchain(const vk::PhysicalDevice& ph
 	// We make sure that doesn't exceed maximum
 	//m_swapchainImageCount = std::clamp(surfaceCapabilities.minImageCount + 1, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount);
 
-	uint32_t chosenCount = 3;		// FIFO best practice
-	m_swapchainImageCount = std::clamp(chosenCount, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount);
+	uint32_t chosenImageCount = 3;		// FIFO best practice
+	m_swapchainImageCount = std::clamp(chosenImageCount, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount);
 
 
 	// --------------------------------------------------------

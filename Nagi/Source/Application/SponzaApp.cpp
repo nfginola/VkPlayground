@@ -6,6 +6,7 @@
 #include "VulkanImGuiContext.h"
 #include "Timer.h"
 
+
 namespace Nagi
 {
 
@@ -18,7 +19,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 	assert(keyHandler != nullptr && mouseHandler != nullptr);
 
 	auto scExtent = m_gfxCon.getSwapchainExtent();
-	Camera fpsCam((float)scExtent.width / scExtent.height, 77.f);
+	Camera fpsCam((float)scExtent.width / scExtent.height, 90.f);
 
 	// We can hook to cursor function to subscribe to the callback which updates consistently regardless of FPS for smoother mouse!
 	// This is why the below function has the "same sensitivity" regardless of application FPS.

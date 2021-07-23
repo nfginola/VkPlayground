@@ -4,6 +4,8 @@
 
 namespace Nagi
 {
+
+	// RAII Buffer (Vma destroy on dtor)
 	class Buffer
 	{
 	public:
@@ -14,6 +16,7 @@ namespace Nagi
 		void putData(const void* inData, size_t dataSize);
 		const vk::Buffer& getBuffer() const;
 
+		// Helper designed for VB/IB
 		template <typename T>
 		static std::unique_ptr<Buffer> loadImmutable(const VulkanContext& context, const std::vector<T>& inData, vk::BufferUsageFlagBits usage)
 		{
@@ -71,6 +74,7 @@ namespace Nagi
 	bool operator==(const Buffer& a, const Buffer& b);
 	bool operator!=(const Buffer& a, const Buffer& b);
 
+	// RAII texture (Vma destroy on dtor)
 	class Texture
 	{
 	public:
@@ -114,7 +118,6 @@ namespace Nagi
 	private:
 		vk::Pipeline m_pipeline;						// actual pipeline (e.g full graphics pipeline states)
 		vk::PipelineLayout m_pipelineLayout;			// has descriptor set layout and push range info (needed for setting descriptor sets and pushing data for push constants)
-
 		vk::DescriptorSet m_descriptorSet;				// has the resource bindings
 	};
 

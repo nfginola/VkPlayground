@@ -7,8 +7,8 @@
 #include "ResourceTypes.h"
 #include "SingleInstance.h"
 
-#include "KeyHandler.h"
-#include "MouseHandler.h"
+#include "Input/KeyHandler.h"
+#include "Input/MouseHandler.h"
 
 
 

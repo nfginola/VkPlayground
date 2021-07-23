@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "KeyHandler.h"
+#include "Input/KeyHandler.h"
 #include <GLFW/glfw3.h>
 
 
@@ -11,6 +11,10 @@ namespace Nagi
 
 	void KeyHandler::handleKeyEvent(GLFWwindow* win, int key, int scancode, int action, int mods)
 	{
+		// Perhaps we can add an intermediary between GLFW and KeyHandler. 
+		// This way, only the intermediary knows about GLFW and KeyHandler while KeyHandler doesn't have to know about GLFW
+		// but it will add complexity since we would have to maintain the intermediary in the case of added functionality
+		// Save it for sometime later maybe
 		if (key == GLFW_KEY_Q)			handleKeyAction(KeyName::Q, action);
 		if (key == GLFW_KEY_W)			handleKeyAction(KeyName::W, action);
 		if (key == GLFW_KEY_E)			handleKeyAction(KeyName::E, action);

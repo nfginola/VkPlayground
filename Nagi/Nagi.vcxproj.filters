@@ -42,10 +42,10 @@
     <ClCompile Include="Source\Camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\KeyHandler.cpp">
+    <ClCompile Include="Source\Input\KeyHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\MouseHandler.cpp">
+    <ClCompile Include="Source\Input\MouseHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\ResourceTypes.cpp">
@@ -113,10 +113,10 @@
     <ClInclude Include="Includes\Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Includes\KeyHandler.h">
+    <ClInclude Include="Includes\Input\KeyHandler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Includes\MouseHandler.h">
+    <ClInclude Include="Includes\Input\MouseHandler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Includes\ResourceTypes.h">

@@ -10,7 +10,7 @@ namespace Nagi
 	class VulkanImGuiContext : private SingleInstance<VulkanImGuiContext>
 	{
 	public:
-		VulkanImGuiContext(VulkanContext& context, Window& window, vk::RenderPass compatibleRenderPass);
+		VulkanImGuiContext(VulkanContext& context, Window& window, vk::RenderPass compatibleRenderPass, uint32_t subpass = 0);
 		VulkanImGuiContext() = delete;
 		~VulkanImGuiContext();
 
@@ -18,7 +18,16 @@ namespace Nagi
 		void render(vk::CommandBuffer& cmd);
 
 	private:
+		void createPipeline(VulkanContext& context, vk::RenderPass compatibleRenderPass, uint32_t subpass);
+
+	private:
 		VulkanContext& m_vkContext;
+		vk::UniquePipeline m_correctedGammaPipeline;
+		vk::UniquePipelineLayout m_correctedGammaPipelineLayout;
 		vk::UniqueDescriptorPool m_descriptorPool;
+
+		vk::UniqueSampler m_sampler;
+		vk::UniqueDescriptorSetLayout m_dsl;
+		vk::UniqueDescriptorSet m_descriptorSet;
 	};
 }

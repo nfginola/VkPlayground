@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "MouseHandler.h"
+#include "Input/MouseHandler.h"
 #include <GLFW/glfw3.h>
 
 namespace Nagi
