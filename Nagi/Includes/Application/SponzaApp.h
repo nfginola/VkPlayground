@@ -118,6 +118,9 @@ private:
 	std::vector<vk::UniqueFramebuffer> m_defFramebuffers;
 
 	std::vector<EngineFrameData> m_engineFrameData;
+
+	std::unique_ptr<Buffer> m_sceneBufferDynamicSplit;
+
 	std::vector<ObjectFrameData> m_objectFrameData;
 	vk::UniqueDescriptorPool m_descriptorPool;
 

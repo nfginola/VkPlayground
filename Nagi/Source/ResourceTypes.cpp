@@ -19,11 +19,11 @@ namespace Nagi
 			throw std::runtime_error("Could not create buffer");
 	}
 
-	void Buffer::putData(const void* inData, size_t dataSize)
+	void Buffer::putData(const void* inData, size_t dataSize, size_t offset)
 	{
-		void* mappedData = nullptr;
-		vmaMapMemory(m_allocator, alloc, &mappedData);
-		memcpy(mappedData, inData, dataSize);
+		char* mappedData = nullptr;
+		vmaMapMemory(m_allocator, alloc, (void**)&mappedData);
+		memcpy(mappedData + offset, inData, dataSize);
 		vmaUnmapMemory(m_allocator, alloc);
 	}
 

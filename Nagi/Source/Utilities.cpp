@@ -21,6 +21,13 @@ std::vector<char> readFile(const std::string& filePath)
 	return buffer;
 }
 
+uint32_t getAlignedSize(uint32_t size, uint32_t toAlignWith)
+{
+	return size % toAlignWith == 0 ?
+		size :
+		size + (toAlignWith - (size % toAlignWith));
+}
+
 
 }
 

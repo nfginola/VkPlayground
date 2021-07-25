@@ -31,7 +31,27 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 	try
 	{
+		// check for minimum buffer alignment for dynamic buffer implementation (one buffer, multiple offset binds)
+		auto& prop = gfxCon.getPhysicalDeviceProperties();
+		auto minBufferAlignment = prop.limits.minUniformBufferOffsetAlignment;
+		std::cout << "min buffer alignment: " << minBufferAlignment << std::endl;
+
+		uint32_t sizeAligned = getAlignedSize(VulkanContext::getMaxFramesInFlight() * sizeof(SceneData), minBufferAlignment);
+
+		vk::BufferCreateInfo bufCI({}, sizeAligned, vk::BufferUsageFlagBits::eUniformBuffer);
+		VmaAllocationCreateInfo bufAllocCI{};
+		bufAllocCI.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+
+		m_sceneBufferDynamicSplit = std::make_unique<Buffer>(gfxCon.getAllocator(), bufCI, bufAllocCI);
+
+		// Link the buffer to the descriptor set. We will do this in "allocateDescriptorSets" in the loop for frame resources
+
+
 		setupResources();
+
+
+
+
 
 		// Initialize ImGui (After application resources --> Defined render pass)
 		// Give a suitable render pass to draw with
@@ -109,7 +129,8 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 			// ================================================ UPDATE FRAME UBOS
 			m_engineFrameData[frameRes.frameIdx].cameraBuffer->putData(&cameraData, sizeof(GPUCameraData));
-			m_engineFrameData[frameRes.frameIdx].sceneBuffer->putData(&sceneData, sizeof(SceneData));
+			//m_engineFrameData[frameRes.frameIdx].sceneBuffer->putData(&sceneData, sizeof(SceneData));
+			m_sceneBufferDynamicSplit->putData(&sceneData, sizeof(SceneData), frameRes.frameIdx * sizeof(SceneData));
 
 
 			// ================================================ RECORD COMMANDS
@@ -446,11 +467,16 @@ void SponzaApp::allocateDescriptorSets()
 		vk::DescriptorBufferInfo binfo(m_engineFrameData[i].cameraBuffer->getBuffer(), 0, sizeof(GPUCameraData));
 		vk::WriteDescriptorSet writeInfo(m_engineFrameData[i].descriptorSet, 0, 0, vk::DescriptorType::eUniformBuffer, {}, binfo);
 
-		vk::DescriptorBufferInfo binfoScene(m_engineFrameData[i].sceneBuffer->getBuffer(), 0, sizeof(SceneData));
-		vk::WriteDescriptorSet writeInfoScene(m_engineFrameData[i].descriptorSet, 0, 1, vk::DescriptorType::eUniformBuffer, {}, binfoScene);
+	/*	vk::DescriptorBufferInfo binfoScene(m_engineFrameData[i].sceneBuffer->getBuffer(), 0, sizeof(SceneData));
+		vk::WriteDescriptorSet writeInfoScene(m_engineFrameData[i].descriptorSet, 1, 0, vk::DescriptorType::eUniformBuffer, {}, binfoScene);*/
+
+		// Write to dynamic offset buffer 
+		vk::DescriptorBufferInfo binfoScene2(m_sceneBufferDynamicSplit->getBuffer(), sizeof(SceneData) * i, sizeof(SceneData));		// we need to explicitly give range if we use offset! (?)
+		vk::WriteDescriptorSet writeInfoScene2(m_engineFrameData[i].descriptorSet, 1, 0, vk::DescriptorType::eUniformBuffer, {}, binfoScene2);
 
 		dev.updateDescriptorSets({ writeInfo }, {});
-		dev.updateDescriptorSets({ writeInfoScene }, {});
+		//dev.updateDescriptorSets({ writeInfoScene }, {});
+		dev.updateDescriptorSets({ writeInfoScene2 }, {});
 	}
 
 	// NOTE: We wont be using them yet, but soon.

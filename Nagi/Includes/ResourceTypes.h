@@ -13,7 +13,7 @@ namespace Nagi
 		~Buffer();
 		Buffer(VmaAllocator allocator, const vk::BufferCreateInfo& bufCI, const VmaAllocationCreateInfo& allocCI);
 
-		void putData(const void* inData, size_t dataSize);
+		void putData(const void* inData, size_t dataSize, size_t offset = 0);
 		const vk::Buffer& getBuffer() const;
 
 		// Helper designed for VB/IB
