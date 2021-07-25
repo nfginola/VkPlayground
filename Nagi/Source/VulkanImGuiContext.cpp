@@ -8,6 +8,8 @@ namespace Nagi
 {
     // From imgui_impl_vulkan.cpp
     // Used to access the Renderbackend, specifically to get the PipelineLayout so we can use our custom Pipeline (gamma corrected)
+    // This is technically looking at implementation details, but this "hack" works well enough to solve the gamma problem while still retaining
+    // the simple API for rendering
     struct ImGui_ImplVulkan_Data
     {
         ImGui_ImplVulkan_InitInfo   VulkanInitInfo;

@@ -87,7 +87,8 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			//sceneData.directionalLightDirection = glm::vec4(cosf(timeElapsed) * 0.5f - 0.5f, -1.f, -1.f, 0.f);
 			//sceneData.directionalLightDirection = glm::normalize(glm::vec4(cosf(timeElapsed), -1.f, -1.f, 0.f));
 			//sceneData.directionalLightDirection = glm::normalize(glm::vec4(0.f, 0.f, -1.f, 0.f));
-			sceneData.directionalLightDirection = glm::normalize(glm::vec4(-0.35f, -1.f, -1.f, 0.f));
+			//sceneData.directionalLightDirection = glm::normalize(glm::vec4(-0.35f, -1.f, -1.f, 0.f));
+			sceneData.directionalLightDirection = glm::normalize(glm::vec4(cosf(timeElapsed / 2.f) * 0.5f, -0.5f, sinf(timeElapsed / 2.f) * 0.5f, 0.f));
 
 			sceneData.spotlightPositionAndStrength = glm::vec4(fpsCam.getPosition(), spotlightStrength);
 			sceneData.spotlightDirectionAndCutoff = glm::vec4(fpsCam.getLookDirection(), glm::cos(glm::radians(21.f)));
@@ -114,7 +115,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			// ================================================ RECORD COMMANDS
 			cmd.begin(vk::CommandBufferBeginInfo());
 
-			// Bind engine wide resources (Camera, Scene, Set 0)
+			// Bind engine wide resources (per frame resources) (Camera, Scene, Set 0)
 			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineFrameData[frameRes.frameIdx].descriptorSet, {});
 
 			// ================================================ SETUP AND RECORD RENDER PASS (***)
@@ -127,15 +128,14 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 				cmd.beginRenderPass(rpInfo, {});
 
-				// ================================================ RECORD DRAW OBJECTS CMDS
+				// ================================================ RECORD OBJECTS DRAW CMDS
 				drawObjects(cmd, timeElapsed);
-				// ================================================ RECORD DRAW IMGUI CMDS
+				// ================================================ RECORD IMGUI DRAW CMDS
 				imGuiContext->render(cmd);
 				cmd.endRenderPass();
-
-				cmd.end();
 			}
 
+			cmd.end();
 
 			// ================================================ END GPU FRAME
 			// Setup submit info
@@ -595,7 +595,7 @@ void SponzaApp::setupResources()
 	// Set up Texture
 	loadTextures();
 
-	// Setup global sampler
+	// Setup global sampler that will be used for all images
 	vk::SamplerCreateInfo sCI({},
 		vk::Filter::eLinear, vk::Filter::eLinear,	// min/mag filter
 		vk::SamplerMipmapMode::eLinear,				// mipmapMode
@@ -642,9 +642,7 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 	auto& subsets = loader.getSubsets();
 
 
-	// ============== Assimp loading done
-	// Now load data to Vulkan =============
-
+	// PACK DATA FOR VULKAN
 	// ======== Handle VB/IB
 	// Pack data
 	std::vector<Vertex> finalVerts;

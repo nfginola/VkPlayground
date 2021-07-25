@@ -77,7 +77,7 @@ vec3 calculateDirectionalLight(vec3 direction, vec3 lightColor, vec3 normal)
     return diffuse + specular;
 }
 
-vec3 calculatePointLight(vec3 normal, vec3 attenuation, vec3 color, vec3 position)
+vec3 calculatePointLight(vec3 normal, vec3 attenuation, vec3 color, vec3 position, float isActive)
 {
     // No ambient
     
@@ -93,12 +93,15 @@ vec3 calculatePointLight(vec3 normal, vec3 attenuation, vec3 color, vec3 positio
 //    if (pointLightDot <= 0.f) 
 //        pointLightContrib = 0.f;
     
+    //float cullDot = ceil(dot(dirToLight, normal)); // if above 0, always ceil to 1, if below 0 --> 0
+    //float cullDot = max(dot(dirToLight, normal), 0.f);
+
     vec3 diffuse = pointLightContrib * color * texture(diffuseTexture, fragUV).xyz;
 
     // Specular
     vec3 specular = pointLightContrib * calculateSpecularColor(normal, -dirToLight, color);
 
-    return diffuse + specular;
+    return (diffuse + specular) * isActive;
 }
 
 vec3 calculateSpotlight()
@@ -120,12 +123,6 @@ vec3 calculateSpotlight()
     if (factorFromView > sceneData.spotlightDirectionAndCutoff.w)
         return vec3(spotlightStrength) * texture(diffuseTexture, fragUV).xyz * distanceFallOffFactor * edgeIntensity;
 
-//    vec3 fragToLight = normalize(sceneData.spotlightPosition.xyz - fragPos);
-//    float theta = dot(fragToLight, normalize(-sceneData.spotlightDirectionAndCutoff.xyz));
-//    
-//    if(theta > sceneData.spotlightDirectionAndCutoff.w) 
-//        return vec3(0.1f, 0.1f, 0.1f);
-
     return vec3(0.f);
 }
 
@@ -136,19 +133,16 @@ void main()
     vec3 normal = normalize(fragNormal);
     vec3 diffuseColor = texture(diffuseTexture, fragUV).xyz;
 
-//    outColor = vec4(normal, 1.f);
-//    return;
-
-    // If normal map, we will use the normals from the normal map
-    if (!(texture(normalTexture, fragUV).xyz == vec3(0.f)))
+    vec3 mapNorTangent = texture(normalTexture, fragUV).xyz;
+    if (!(mapNorTangent == vec3(0.f)))  // If valid normal exists
     {
         mat3 tbn = mat3(fragTangent, fragBitangent, normal);
 
         // Normal map is in [0, 1] space so we need to transform it to [-1, 1] space
-        vec3 mapNorTangent = texture(normalTexture, fragUV).xyz * 2.f - 1.f;
+        vec3 mapNorTangent = mapNorTangent * 2.f - 1.f;
 
         // Orient the tangent space correctly in world space
-        // The TBN matrix defines the transformation required to transform an input from tangent space TO world space.
+        // Transform the tanget space TO world space.
         vec3 mapNorWorld = normalize(tbn * mapNorTangent);
 
         normal = mapNorWorld;
@@ -157,24 +151,19 @@ void main()
 //        return;
     }
  
-//
-//    outColor = vec4(0.f, 0.f, 0.f, 1.f);
-//    return;
+    //vec3 finalColor = calculateDirectionalLight(sceneData.directionalLightDirection.xyz, sceneData.directionalLightColor.xyz, normal);
+    vec3 finalColor = vec3(0.f);
 
-
-    vec3 co = calculateDirectionalLight(sceneData.directionalLightDirection.xyz, sceneData.directionalLightColor.xyz, normal);
-    //vec3 co = vec3(0.f);
-
-    vec3 ambient = 0.007f * texture(diffuseTexture, fragUV).xyz;
-    co += ambient;
+    vec3 ambient = 0.007f * diffuseColor;
+    finalColor += ambient;
     for (uint i = 0; i < POINT_LIGHT_COUNT; ++i)
     {
-		co += calculatePointLight(normal, sceneData.pointLightAttenuation[i].xyz, sceneData.pointLightColor[i].xyz, sceneData.pointLightPosition[i].xyz);
+        // We are using light pos w to enable/disable the point light contribution
+        // 0 for off (vector representing a direction) and 1 for on (vector representing a position)
+		finalColor += calculatePointLight(normal, sceneData.pointLightAttenuation[i].xyz, sceneData.pointLightColor[i].xyz, sceneData.pointLightPosition[i].xyz, sceneData.pointLightPosition[i].w);
     }
 
-    co += calculateSpotlight();
+    finalColor += calculateSpotlight();
 
-    //outColor = vec4(clamp(co, vec3(0.f), vec3(1.f)), texture(opacityTexture, fragUV).r);
-    outColor = vec4(max(co, vec3(0.f)), texture(opacityTexture, fragUV).r);
-
+    outColor = vec4(max(finalColor, vec3(0.f)), texture(opacityTexture, fragUV).r);
 }
