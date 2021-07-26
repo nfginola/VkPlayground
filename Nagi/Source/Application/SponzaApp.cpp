@@ -31,6 +31,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 	try
 	{
+		// to:do - change to dynamic uniform buffer instead of normal uniform buffer
 		// check for minimum buffer alignment for dynamic buffer implementation (one buffer, multiple offset binds)
 		auto& prop = gfxCon.getPhysicalDeviceProperties();
 		auto minBufferAlignment = prop.limits.minUniformBufferOffsetAlignment;
