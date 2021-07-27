@@ -46,6 +46,12 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 		m_sceneBufferDynamicSplit = std::make_unique<Buffer>(gfxCon.getAllocator(), bufCI, bufAllocCI);
 
 		// Link the buffer to the descriptor set. We will do this in "allocateDescriptorSets" in the loop for frame resources
+		
+
+
+		// Create dynamic uniform buffer
+		m_sceneBufferDynamicUB = std::make_unique<Buffer>(gfxCon.getAllocator(), bufCI, bufAllocCI);
+
 
 
 		setupResources();
@@ -131,14 +137,22 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			// ================================================ UPDATE FRAME UBOS
 			m_engineFrameData[frameRes.frameIdx].cameraBuffer->putData(&cameraData, sizeof(GPUCameraData));
 			//m_engineFrameData[frameRes.frameIdx].sceneBuffer->putData(&sceneData, sizeof(SceneData));
-			m_sceneBufferDynamicSplit->putData(&sceneData, sizeof(SceneData), frameRes.frameIdx * sizeof(SceneData));
+
+			// here we write to the offset! 
+			// Note that this is safe to do because we have safeguarded this frames resources (fence is signaled only when all commands submitted that frame has finished)
+			// Meaning that modifying this "frameIdx" part of the buffer is safe because the previous occurence of frameIdx has already finished reading from it
+			// m_sceneBufferDynamicSplit->putData(&sceneData, sizeof(SceneData), frameRes.frameIdx * sizeof(SceneData));
+
+			m_sceneBufferDynamicUB->putData(&sceneData, sizeof(SceneData), frameRes.frameIdx * sizeof(SceneData));
+			uint32_t offset = frameRes.frameIdx * sizeof(SceneData);
 
 
 			// ================================================ RECORD COMMANDS
 			cmd.begin(vk::CommandBufferBeginInfo());
 
 			// Bind engine wide resources (per frame resources) (Camera, Scene, Set 0)
-			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineFrameData[frameRes.frameIdx].descriptorSet, {});
+			//cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineFrameData[frameRes.frameIdx].descriptorSet, {});
+			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineFrameData[frameRes.frameIdx].descriptorSet, { offset });
 
 			// ================================================ SETUP AND RECORD RENDER PASS (***)
 			{
@@ -342,7 +356,8 @@ void SponzaApp::createDescriptorPool()
 	// Make pool large enough for our needs
 	std::vector<vk::DescriptorPoolSize> descriptorPoolSizes{
 		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 10),
-		vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 500)
+		vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 500),
+		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBufferDynamic, 10)		// Testing Dynamic Uniform Buffer (we can bind offset in BindDescriptor!)
 	};
 
 	vk::DescriptorPoolCreateInfo poolCI({}, 
@@ -412,7 +427,8 @@ void SponzaApp::setupDescriptorSetLayouts()
 	// Engine set layout
 	std::vector<vk::DescriptorSetLayoutBinding> engineSetBindings{
 		vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment),			// Camera
-		vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)		// Scene Lighting
+		//vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)			// Scene Lighting
+		vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eUniformBufferDynamic, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)		// Scene Lighting (Dynamic buffer test)
 	};
 	vk::DescriptorSetLayoutCreateInfo engineSetLayoutCI({}, engineSetBindings);
 	
@@ -475,9 +491,14 @@ void SponzaApp::allocateDescriptorSets()
 		vk::DescriptorBufferInfo binfoScene2(m_sceneBufferDynamicSplit->getBuffer(), sizeof(SceneData) * i, sizeof(SceneData));		// we need to explicitly give range if we use offset! (?)
 		vk::WriteDescriptorSet writeInfoScene2(m_engineFrameData[i].descriptorSet, 1, 0, vk::DescriptorType::eUniformBuffer, {}, binfoScene2);
 
+		// 
+		vk::DescriptorBufferInfo binfoScene3(m_sceneBufferDynamicUB->getBuffer(), 0, sizeof(SceneData));	// no offset needed (offset is bound on bind)
+		vk::WriteDescriptorSet writeInfoScene3(m_engineFrameData[i].descriptorSet, 1, 0, vk::DescriptorType::eUniformBufferDynamic, {}, binfoScene3);
+
 		dev.updateDescriptorSets({ writeInfo }, {});
 		//dev.updateDescriptorSets({ writeInfoScene }, {});
-		dev.updateDescriptorSets({ writeInfoScene2 }, {});
+		//dev.updateDescriptorSets({ writeInfoScene2 }, {});
+		dev.updateDescriptorSets({ writeInfoScene3 }, {});
 	}
 
 	// NOTE: We wont be using them yet, but soon.
