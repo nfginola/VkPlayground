@@ -31,40 +31,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 	try
 	{
-		// to:do - change to dynamic uniform buffer instead of normal uniform buffer
-		// check for minimum buffer alignment for dynamic buffer implementation (one buffer, multiple offset binds)
-		auto& prop = gfxCon.getPhysicalDeviceProperties();
-		auto minBufferAlignment = prop.limits.minUniformBufferOffsetAlignment;
-		std::cout << "min buffer alignment: " << minBufferAlignment << std::endl;
-
-		uint32_t sizeAligned = getAlignedSize(VulkanContext::getMaxFramesInFlight() * sizeof(SceneData), minBufferAlignment);
-
-		vk::BufferCreateInfo bufCI({}, sizeAligned, vk::BufferUsageFlagBits::eUniformBuffer);
-		VmaAllocationCreateInfo bufAllocCI{};
-		bufAllocCI.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-
-		m_sceneBufferDynamicSplit = std::make_unique<Buffer>(gfxCon.getAllocator(), bufCI, bufAllocCI);
-
-		// Link the buffer to the descriptor set. We will do this in "allocateDescriptorSets" in the loop for frame resources
-		
-
-
-		// Create dynamic uniform buffer
-		m_sceneBufferDynamicUB = std::make_unique<Buffer>(gfxCon.getAllocator(), bufCI, bufAllocCI);
-
-
-
-		// Create engine data buffer
-		sizeAligned = getAlignedSize(VulkanContext::getMaxFramesInFlight() * (sizeof(SceneData) + sizeof(GPUCameraData)), minBufferAlignment);
-		bufCI = vk::BufferCreateInfo({}, sizeAligned, vk::BufferUsageFlagBits::eUniformBuffer);
-		m_engineFrameBuffer = std::make_unique<Buffer>(gfxCon.getAllocator(), bufCI, bufAllocCI);
-
-
 		setupResources();
-
-
-
-
 
 		// Initialize ImGui (After application resources --> Defined render pass)
 		// Give a suitable render pass to draw with
@@ -73,7 +40,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 		float dt = 0.f;
 		float timeElapsed = 0.f;
 		float spotlightStrength = 0.2f;
-		bool showDemo = true;
+		bool showImGuiDemo = true;
 
 		while (m_window.isRunning())
 		{
@@ -85,7 +52,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			imGuiContext->beginFrame();
 
 			// ============================================= IMGUI WINDOWS
-			ImGui::ShowDemoWindow(&showDemo);
+			ImGui::ShowDemoWindow(&showImGuiDemo);
 
 			// ============================================= HANDLE INPUT RESPONSE
 			if (keyHandler->isKeyDown(KeyName::A))		fpsCam.move(MoveDirection::Left);
@@ -141,19 +108,11 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 
 			// ================================================ UPDATE FRAME UBOS
-			m_engineFrameData[frameRes.frameIdx].cameraBuffer->putData(&cameraData, sizeof(GPUCameraData));
-			//m_engineFrameData[frameRes.frameIdx].sceneBuffer->putData(&sceneData, sizeof(SceneData));
 
 			// here we write to the offset! 
 			// Note that this is safe to do because we have safeguarded this frames resources (fence is signaled only when all commands submitted that frame has finished)
 			// Meaning that modifying this "frameIdx" part of the buffer is safe because the previous occurence of frameIdx has already finished reading from it
-			// m_sceneBufferDynamicSplit->putData(&sceneData, sizeof(SceneData), frameRes.frameIdx * sizeof(SceneData));
 
-			m_sceneBufferDynamicUB->putData(&sceneData, sizeof(SceneData), frameRes.frameIdx * sizeof(SceneData));
-			uint32_t offset = frameRes.frameIdx * sizeof(SceneData);
-
-
-			// ==============================================================
 			// New engine frame data in one buffer with dynamic offsets
 			uint32_t perFrameDataSize = sizeof(GPUCameraData) + sizeof(SceneData);
 			uint32_t thisFrameOffset = perFrameDataSize * frameRes.frameIdx;
@@ -162,18 +121,16 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			m_engineFrameBuffer->putData(&cameraData, sizeof(GPUCameraData), thisFrameOffset);
 			m_engineFrameBuffer->putData(&sceneData, sizeof(SceneData), thisFrameOffset + sizeof(GPUCameraData));
 
+			// Offsets into the 1st dynamic UB and 2nd dynamic UB
 			std::array<uint32_t, 2> engineBufferOffsets = { thisFrameOffset, thisFrameOffset + sizeof(GPUCameraData) };
-
 
 
 
 			// ================================================ RECORD COMMANDS
 			cmd.begin(vk::CommandBufferBeginInfo());
 
-			// Bind engine wide resources (per frame resources) (Camera, Scene, Set 0)
-			//cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineFrameData[frameRes.frameIdx].descriptorSet, {});
-			//cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineFrameData[frameRes.frameIdx].descriptorSet, { offset });
-			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineDescSet, engineBufferOffsets);
+			// Bind engine wide resources with offsets into Dynamic UB (per frame resources) (Camera, Scene, Set 0)
+			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineDescriptorSet, engineBufferOffsets);
 
 			// ================================================ SETUP AND RECORD RENDER PASS (***)
 			{
@@ -242,19 +199,21 @@ SponzaApp::~SponzaApp()
 
 void SponzaApp::createUBOs()
 {
-	// Create UBO for engine set (Camera data)
-	vk::BufferCreateInfo engineUBOCI({}, sizeof(GPUCameraData), vk::BufferUsageFlagBits::eUniformBuffer);
-	VmaAllocationCreateInfo engineUBOAllocCI{};
-	engineUBOAllocCI.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+	// Create UBO for engine set (Camera and scene)
+	// check for minimum buffer alignment for dynamic buffer implementation (one buffer, multiple offset binds)
+	auto& prop = m_gfxCon.getPhysicalDeviceProperties();
+	auto minBufferAlignment = prop.limits.minUniformBufferOffsetAlignment;
+	std::cout << "min buffer alignment: " << minBufferAlignment << std::endl;
 
-	for (auto i = 0ul; i < VulkanContext::getMaxFramesInFlight(); ++i)
-	{
-		EngineFrameData dat{};
-		dat.cameraBuffer = std::make_unique<Buffer>(m_gfxCon.getAllocator(), engineUBOCI, engineUBOAllocCI);
-		dat.sceneBuffer = std::make_unique<Buffer>(m_gfxCon.getAllocator(), vk::BufferCreateInfo({}, sizeof(SceneData), vk::BufferUsageFlagBits::eUniformBuffer), engineUBOAllocCI);
+	VmaAllocationCreateInfo engineBufAllocCI{};
+	engineBufAllocCI.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 
-		m_engineFrameData.push_back(std::move(dat));
-	}
+	// Create engine data buffer
+	uint32_t sizeAligned = getAlignedSize(VulkanContext::getMaxFramesInFlight() * (sizeof(SceneData) + sizeof(GPUCameraData)), minBufferAlignment);
+	auto engineBufCI = vk::BufferCreateInfo({}, sizeAligned, vk::BufferUsageFlagBits::eUniformBuffer);
+	m_engineFrameBuffer = std::make_unique<Buffer>(m_gfxCon.getAllocator(), engineBufCI, engineBufAllocCI);
+
+
 
 	// Create UBO for per pass ... ( ? )
 
@@ -444,20 +403,12 @@ void SponzaApp::createRenderModels()
 
 void SponzaApp::setupDescriptorSetLayouts()
 {
-	// Engine set layout
+	// Engine set layout v
 	std::vector<vk::DescriptorSetLayoutBinding> engineSetBindings{
-		vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment),			// Camera
-		//vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)			// Scene Lighting
-		vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eUniformBufferDynamic, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)		// Scene Lighting (Dynamic buffer test)
-	};
-	vk::DescriptorSetLayoutCreateInfo engineSetLayoutCI({}, engineSetBindings);
-
-	// Engine set layout v2
-	std::vector<vk::DescriptorSetLayoutBinding> engineSetBindings2{
 		vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBufferDynamic, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment),
 		vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eUniformBufferDynamic, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
 	};
-	vk::DescriptorSetLayoutCreateInfo engineSetLayoutCI2({}, engineSetBindings2);
+	vk::DescriptorSetLayoutCreateInfo engineSetLayoutCI({}, engineSetBindings);
 
 
 	
@@ -485,7 +436,6 @@ void SponzaApp::setupDescriptorSetLayouts()
 	// Create layouts
 	auto dev = m_gfxCon.getDevice();
 	m_engineDescriptorSetLayout = dev.createDescriptorSetLayoutUnique(engineSetLayoutCI);
-	m_engineDescriptorSetLayout2 = dev.createDescriptorSetLayoutUnique(engineSetLayoutCI2);
 	m_passDescriptorSetLayout = dev.createDescriptorSetLayoutUnique(passSetLayoutCI);
 	m_materialDescriptorSetLayout = dev.createDescriptorSetLayoutUnique(materialSetLayoutCI);
 	m_objectDescriptorSetLayout = dev.createDescriptorSetLayoutUnique(objectSetLayoutCI);
@@ -505,41 +455,16 @@ void SponzaApp::allocateDescriptorSets()
 	// Allocate Set 0 and bind resources to it
 	vk::DescriptorSetAllocateInfo engineSetAllocInfo(m_descriptorPool.get(), m_engineDescriptorSetLayout.get());
 	
-	// We need to allocate 'frame in flight' number of sets since they need to be updated while the other set may still be in flight
-	for (auto i = 0ul; i < VulkanContext::getMaxFramesInFlight(); ++i)
-	{
-		m_engineFrameData[i].descriptorSet = dev.allocateDescriptorSets(engineSetAllocInfo).front();
-
-		// Write to the set (bind actual resource)
-		vk::DescriptorBufferInfo binfo(m_engineFrameData[i].cameraBuffer->getBuffer(), 0, sizeof(GPUCameraData));
-		vk::WriteDescriptorSet writeInfo(m_engineFrameData[i].descriptorSet, 0, 0, vk::DescriptorType::eUniformBuffer, {}, binfo);
-
-	/*	vk::DescriptorBufferInfo binfoScene(m_engineFrameData[i].sceneBuffer->getBuffer(), 0, sizeof(SceneData));
-		vk::WriteDescriptorSet writeInfoScene(m_engineFrameData[i].descriptorSet, 1, 0, vk::DescriptorType::eUniformBuffer, {}, binfoScene);*/
-
-		// Write to dynamic offset buffer 
-		vk::DescriptorBufferInfo binfoScene2(m_sceneBufferDynamicSplit->getBuffer(), sizeof(SceneData) * i, sizeof(SceneData));		// we need to explicitly give range if we use offset! (?)
-		vk::WriteDescriptorSet writeInfoScene2(m_engineFrameData[i].descriptorSet, 1, 0, vk::DescriptorType::eUniformBuffer, {}, binfoScene2);
-
-		//  
-		vk::DescriptorBufferInfo binfoScene3(m_sceneBufferDynamicUB->getBuffer(), 0, sizeof(SceneData));	// no offset needed (offset is bound on bind)
-		vk::WriteDescriptorSet writeInfoScene3(m_engineFrameData[i].descriptorSet, 1, 0, vk::DescriptorType::eUniformBufferDynamic, {}, binfoScene3);
-
-		dev.updateDescriptorSets({ writeInfo }, {});
-		//dev.updateDescriptorSets({ writeInfoScene }, {});
-		//dev.updateDescriptorSets({ writeInfoScene2 }, {});
-		dev.updateDescriptorSets({ writeInfoScene3 }, {});
-	}
-
 	// Engine descriptor set (single)
-	vk::DescriptorSetAllocateInfo engineSetAllocInfo2(m_descriptorPool.get(), m_engineDescriptorSetLayout2.get());
-	m_engineDescSet = std::move(dev.allocateDescriptorSets(engineSetAllocInfo2).front());
+	vk::DescriptorSetAllocateInfo engineSetAllocInfo2(m_descriptorPool.get(), m_engineDescriptorSetLayout.get());
+	m_engineDescriptorSet = std::move(dev.allocateDescriptorSets(engineSetAllocInfo2).front());
+
 	// offsets into the buffer are bound on set bind time
 	vk::DescriptorBufferInfo binfo(m_engineFrameBuffer->getBuffer(), 0, sizeof(GPUCameraData));
 	vk::DescriptorBufferInfo binfo2(m_engineFrameBuffer->getBuffer(), 0, sizeof(SceneData));
 
-	vk::WriteDescriptorSet writeInfo(m_engineDescSet, 0, 0, vk::DescriptorType::eUniformBufferDynamic, {}, binfo);
-	vk::WriteDescriptorSet writeInfo2(m_engineDescSet, 1, 0, vk::DescriptorType::eUniformBufferDynamic, {}, binfo2);
+	vk::WriteDescriptorSet writeInfo(m_engineDescriptorSet, 0, 0, vk::DescriptorType::eUniformBufferDynamic, {}, binfo);
+	vk::WriteDescriptorSet writeInfo2(m_engineDescriptorSet, 1, 0, vk::DescriptorType::eUniformBufferDynamic, {}, binfo2);
 	dev.updateDescriptorSets({ writeInfo, writeInfo2 }, {});
 
 
@@ -647,8 +572,7 @@ void SponzaApp::createGraphicsPipeline()
 	
 	// Order matters here
 	std::vector<vk::DescriptorSetLayout> compatibleLayouts{
-		//m_engineDescriptorSetLayout.get(),		// Set 0
-		m_engineDescriptorSetLayout2.get(),		// Set 0
+		m_engineDescriptorSetLayout.get(),		// Set 0
 		m_passDescriptorSetLayout.get(),		// Set 1
 		m_materialDescriptorSetLayout.get(),	// Set 2
 		m_objectDescriptorSetLayout.get()		// Set 3

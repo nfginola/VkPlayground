@@ -118,22 +118,17 @@ private:
 	vk::UniqueRenderPass m_defRenderPass;
 	std::vector<vk::UniqueFramebuffer> m_defFramebuffers;
 
-	std::vector<EngineFrameData> m_engineFrameData;
 
 	// set cleaned up automatically when pool is destroyed
-	vk::DescriptorSet m_engineDescSet;		// we will be using a single descriptor set for engine data (resources with offsets!) --> One buffer for all
+	vk::DescriptorSet m_engineDescriptorSet;		// we will be using a single descriptor set for engine data (resources with offsets!) --> One buffer for all
 	std::unique_ptr<Buffer> m_engineFrameBuffer;
 
 
-
-	std::unique_ptr<Buffer> m_sceneBufferDynamicSplit;
-	std::unique_ptr<Buffer> m_sceneBufferDynamicUB;		
 
 	std::vector<ObjectFrameData> m_objectFrameData;
 	vk::UniqueDescriptorPool m_descriptorPool;
 
 	vk::UniqueDescriptorSetLayout m_engineDescriptorSetLayout;
-	vk::UniqueDescriptorSetLayout m_engineDescriptorSetLayout2;
 	vk::UniqueDescriptorSetLayout m_passDescriptorSetLayout;
 	vk::UniqueDescriptorSetLayout m_materialDescriptorSetLayout;
 	vk::UniqueDescriptorSetLayout m_objectDescriptorSetLayout;
@@ -144,9 +139,9 @@ private:
 
 	vk::UniqueSampler m_commonSampler;
 
+
 	std::map<std::string, std::unique_ptr<Texture>> m_mappedTextures;
 	std::map<std::string, std::unique_ptr<Material>> m_mappedMaterials;
-	
 	std::vector<std::unique_ptr<RenderModel>> m_loadedModels;
 };
 
