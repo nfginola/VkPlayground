@@ -74,6 +74,7 @@ struct EngineFrameData
 	// Let the pool destruction take care of descriptor set deallocation
 };
 
+
 struct ObjectFrameData
 {
 	std::unique_ptr<Buffer> modelMatBuffer;
@@ -119,6 +120,12 @@ private:
 
 	std::vector<EngineFrameData> m_engineFrameData;
 
+	// set cleaned up automatically when pool is destroyed
+	vk::DescriptorSet m_engineDescSet;		// we will be using a single descriptor set for engine data (resources with offsets!) --> One buffer for all
+	std::unique_ptr<Buffer> m_engineFrameBuffer;
+
+
+
 	std::unique_ptr<Buffer> m_sceneBufferDynamicSplit;
 	std::unique_ptr<Buffer> m_sceneBufferDynamicUB;		
 
@@ -126,6 +133,7 @@ private:
 	vk::UniqueDescriptorPool m_descriptorPool;
 
 	vk::UniqueDescriptorSetLayout m_engineDescriptorSetLayout;
+	vk::UniqueDescriptorSetLayout m_engineDescriptorSetLayout2;
 	vk::UniqueDescriptorSetLayout m_passDescriptorSetLayout;
 	vk::UniqueDescriptorSetLayout m_materialDescriptorSetLayout;
 	vk::UniqueDescriptorSetLayout m_objectDescriptorSetLayout;

@@ -54,6 +54,12 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 
 
+		// Create engine data buffer
+		sizeAligned = getAlignedSize(VulkanContext::getMaxFramesInFlight() * (sizeof(SceneData) + sizeof(GPUCameraData)), minBufferAlignment);
+		bufCI = vk::BufferCreateInfo({}, sizeAligned, vk::BufferUsageFlagBits::eUniformBuffer);
+		m_engineFrameBuffer = std::make_unique<Buffer>(gfxCon.getAllocator(), bufCI, bufAllocCI);
+
+
 		setupResources();
 
 
@@ -94,7 +100,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			if (keyHandler->isKeyPressed(KeyName::E))
 			{
 				std::cout << "Rotate count: " << fpsCam.m_rotateCount << "\n";
-				std::cout << "Update count: " << fpsCam.m_updateCount<< "\n\n";
+				std::cout << "Update count: " << fpsCam.m_updateCount << "\n\n";
 			}
 
 			if (keyHandler->isKeyPressed(KeyName::G))
@@ -147,12 +153,27 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			uint32_t offset = frameRes.frameIdx * sizeof(SceneData);
 
 
+			// ==============================================================
+			// New engine frame data in one buffer with dynamic offsets
+			uint32_t perFrameDataSize = sizeof(GPUCameraData) + sizeof(SceneData);
+			uint32_t thisFrameOffset = perFrameDataSize * frameRes.frameIdx;
+
+			// packing : [camera, scene, camera, scene, camera, scene]
+			m_engineFrameBuffer->putData(&cameraData, sizeof(GPUCameraData), thisFrameOffset);
+			m_engineFrameBuffer->putData(&sceneData, sizeof(SceneData), thisFrameOffset + sizeof(GPUCameraData));
+
+			std::array<uint32_t, 2> engineBufferOffsets = { thisFrameOffset, thisFrameOffset + sizeof(GPUCameraData) };
+
+
+
+
 			// ================================================ RECORD COMMANDS
 			cmd.begin(vk::CommandBufferBeginInfo());
 
 			// Bind engine wide resources (per frame resources) (Camera, Scene, Set 0)
 			//cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineFrameData[frameRes.frameIdx].descriptorSet, {});
-			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineFrameData[frameRes.frameIdx].descriptorSet, { offset });
+			//cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineFrameData[frameRes.frameIdx].descriptorSet, { offset });
+			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineDescSet, engineBufferOffsets);
 
 			// ================================================ SETUP AND RECORD RENDER PASS (***)
 			{
@@ -216,8 +237,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 SponzaApp::~SponzaApp()
 {
-
-
+	
 }
 
 void SponzaApp::createUBOs()
@@ -431,6 +451,15 @@ void SponzaApp::setupDescriptorSetLayouts()
 		vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eUniformBufferDynamic, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)		// Scene Lighting (Dynamic buffer test)
 	};
 	vk::DescriptorSetLayoutCreateInfo engineSetLayoutCI({}, engineSetBindings);
+
+	// Engine set layout v2
+	std::vector<vk::DescriptorSetLayoutBinding> engineSetBindings2{
+		vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBufferDynamic, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment),
+		vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eUniformBufferDynamic, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
+	};
+	vk::DescriptorSetLayoutCreateInfo engineSetLayoutCI2({}, engineSetBindings2);
+
+
 	
 	// Per pass layout (we are not using currently)
 	std::vector<vk::DescriptorSetLayoutBinding> passBindings{
@@ -456,6 +485,7 @@ void SponzaApp::setupDescriptorSetLayouts()
 	// Create layouts
 	auto dev = m_gfxCon.getDevice();
 	m_engineDescriptorSetLayout = dev.createDescriptorSetLayoutUnique(engineSetLayoutCI);
+	m_engineDescriptorSetLayout2 = dev.createDescriptorSetLayoutUnique(engineSetLayoutCI2);
 	m_passDescriptorSetLayout = dev.createDescriptorSetLayoutUnique(passSetLayoutCI);
 	m_materialDescriptorSetLayout = dev.createDescriptorSetLayoutUnique(materialSetLayoutCI);
 	m_objectDescriptorSetLayout = dev.createDescriptorSetLayoutUnique(objectSetLayoutCI);
@@ -491,7 +521,7 @@ void SponzaApp::allocateDescriptorSets()
 		vk::DescriptorBufferInfo binfoScene2(m_sceneBufferDynamicSplit->getBuffer(), sizeof(SceneData) * i, sizeof(SceneData));		// we need to explicitly give range if we use offset! (?)
 		vk::WriteDescriptorSet writeInfoScene2(m_engineFrameData[i].descriptorSet, 1, 0, vk::DescriptorType::eUniformBuffer, {}, binfoScene2);
 
-		// 
+		//  
 		vk::DescriptorBufferInfo binfoScene3(m_sceneBufferDynamicUB->getBuffer(), 0, sizeof(SceneData));	// no offset needed (offset is bound on bind)
 		vk::WriteDescriptorSet writeInfoScene3(m_engineFrameData[i].descriptorSet, 1, 0, vk::DescriptorType::eUniformBufferDynamic, {}, binfoScene3);
 
@@ -500,6 +530,22 @@ void SponzaApp::allocateDescriptorSets()
 		//dev.updateDescriptorSets({ writeInfoScene2 }, {});
 		dev.updateDescriptorSets({ writeInfoScene3 }, {});
 	}
+
+	// Engine descriptor set (single)
+	vk::DescriptorSetAllocateInfo engineSetAllocInfo2(m_descriptorPool.get(), m_engineDescriptorSetLayout2.get());
+	m_engineDescSet = std::move(dev.allocateDescriptorSets(engineSetAllocInfo2).front());
+	// offsets into the buffer are bound on set bind time
+	vk::DescriptorBufferInfo binfo(m_engineFrameBuffer->getBuffer(), 0, sizeof(GPUCameraData));
+	vk::DescriptorBufferInfo binfo2(m_engineFrameBuffer->getBuffer(), 0, sizeof(SceneData));
+
+	vk::WriteDescriptorSet writeInfo(m_engineDescSet, 0, 0, vk::DescriptorType::eUniformBufferDynamic, {}, binfo);
+	vk::WriteDescriptorSet writeInfo2(m_engineDescSet, 1, 0, vk::DescriptorType::eUniformBufferDynamic, {}, binfo2);
+	dev.updateDescriptorSets({ writeInfo, writeInfo2 }, {});
+
+
+
+
+
 
 	// NOTE: We wont be using them yet, but soon.
 	// Allocate Sets 1 and bind resources to it..
@@ -601,7 +647,8 @@ void SponzaApp::createGraphicsPipeline()
 	
 	// Order matters here
 	std::vector<vk::DescriptorSetLayout> compatibleLayouts{
-		m_engineDescriptorSetLayout.get(),		// Set 0
+		//m_engineDescriptorSetLayout.get(),		// Set 0
+		m_engineDescriptorSetLayout2.get(),		// Set 0
 		m_passDescriptorSetLayout.get(),		// Set 1
 		m_materialDescriptorSetLayout.get(),	// Set 2
 		m_objectDescriptorSetLayout.get()		// Set 3
