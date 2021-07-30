@@ -43,26 +43,12 @@ layout(location = 0) out vec4 outColor;
 
 vec3 calculateSpecularColor(vec3 normal, vec3 lightDirection, vec3 lightColor)
 {
-    // Disable specular if no diffuse
-    float diffuseFactor = dot(-lightDirection, normal);
-    if (diffuseFactor < 0.f)
-        return vec3(0.f);
-    
-    // Regular Phong Specular
-//    vec3 camPos = -vec3(engineUBO.viewMat[3].xyz);      // Remember, world moves in relation to camera 
-//    vec3 dirToCam = normalize(camPos - fragPos);
-//    vec3 reflectionDir = reflect(lightDirection, normal);
-//
-//    vec3 specular = pow(clamp(dot(dirToCam, reflectionDir), 0.f, 1.f), 32) * texture(specularTexture, fragUV).xyz * lightColor;     
-
-
     // Blinn Phong specular
     vec3 fragToCamDir = normalize((-engineUBO.viewMat[3].xyz) - fragPos);
     vec3 fragToLightDir = normalize(-lightDirection);
     vec3 halfwayDir = normalize(fragToCamDir + fragToLightDir);
 
-    vec3 specular = pow(max(dot(normal, halfwayDir), 0.f), 32) * texture(specularTexture, fragUV).xyz * lightColor;
-
+    vec3 specular = pow(max(dot(normal, halfwayDir), 0.f), 64) * texture(specularTexture, fragUV).xyz * lightColor;
 
     return specular;
 }

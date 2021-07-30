@@ -38,15 +38,12 @@ namespace Nagi
 
 
 
-			// =========================================================
+			// Create immutable buffer (device only) and copy data to it from staging
+			vk::BufferCreateInfo immutableBufCI({}, dataSizeInBytes, usage | vk::BufferUsageFlagBits::eTransferDst);
+			VmaAllocationCreateInfo immutableBufAllocCI{};
+			immutableBufAllocCI.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-
-			// Create vertex buffer
-			vk::BufferCreateInfo vertBufCI({}, dataSizeInBytes, usage | vk::BufferUsageFlagBits::eTransferDst);
-			VmaAllocationCreateInfo vertBufAllocCI{};
-			vertBufAllocCI.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-
-			auto vertexBuffer = std::make_unique<Buffer>(allocator, vertBufCI, vertBufAllocCI);
+			auto immutableBuf = std::make_unique<Buffer>(allocator, immutableBufCI, immutableBufAllocCI);
 
 			// Copy data from staging buffer to vertex buffer
 			auto& uploadContext = context.getUploadContext();
@@ -54,11 +51,11 @@ namespace Nagi
 				[&](const vk::CommandBuffer& cmd)
 				{
 					vk::BufferCopy copyRegion(0, 0, dataSizeInBytes);
-					cmd.copyBuffer(stagingBuffer->getBuffer(), vertexBuffer->getBuffer(), copyRegion);
+					cmd.copyBuffer(stagingBuffer->getBuffer(), immutableBuf->getBuffer(), copyRegion);
 				});
 
 
-			return vertexBuffer;
+			return immutableBuf;
 		}
 
 	private:

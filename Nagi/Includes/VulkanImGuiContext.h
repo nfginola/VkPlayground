@@ -7,7 +7,7 @@
 
 namespace Nagi
 {
-	class VulkanImGuiContext : private SingleInstance<VulkanImGuiContext>
+	class VulkanImGuiContext
 	{
 	public:
 		VulkanImGuiContext(VulkanContext& context, Window& window, vk::RenderPass compatibleRenderPass, uint32_t subpass = 0);

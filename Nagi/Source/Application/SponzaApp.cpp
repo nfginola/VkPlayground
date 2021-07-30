@@ -21,15 +21,72 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 	auto scExtent = m_gfxCon.getSwapchainExtent();
 	Camera fpsCam((float)scExtent.width / scExtent.height, 90.f);
 
-	// We can hook to cursor function for callback based consistent updates for smoother mouse regardless of FPS.
+	// We can hook to cursor function for callback based consistent updates
 	mouseHandler->hookFunctionToCursor([&fpsCam](float deltaX, float deltaY)
 		{
 			fpsCam.rotateCamera(deltaX, deltaY, 0.07f);		// 0.07 --> sensitivity
 		});
 
+
 	try
 	{
 		setupResources();
+
+		// Use scene and entities
+		Scene s1;
+		auto e1 = s1.createEntity();
+		auto e2 = s1.createEntity();
+		auto e3 = s1.createEntity();
+		auto e4 = s1.createEntity();
+		auto e5 = s1.createEntity();
+
+		e1.addComponent<ModelRefComponent>(m_loadedModels["rimuru"].get());
+		e2.addComponent<ModelRefComponent>(m_loadedModels["nanosuit"].get());
+		e3.addComponent<ModelRefComponent>(m_loadedModels["sponza"].get());
+		e4.addComponent<ModelRefComponent>(m_loadedModels["backpack"].get());
+
+		for (int i = -40; i < 40; i += 8)
+		{
+			auto eT = s1.createEntity();
+
+			eT.addComponent<ModelRefComponent>(m_loadedModels["nanosuit"].get());
+
+			eT.getComponent<TransformComponent>().mat =
+				glm::translate(glm::mat4(1.f), glm::vec3(i, 0.f, 6.f)) *
+				glm::rotate(glm::mat4(1.f), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) *
+				glm::scale(glm::mat4(1.f), glm::vec3(1.f, 1.f, 1.f));
+		}
+
+
+
+
+		e1.getComponent<TransformComponent>().mat = 
+				glm::translate(glm::mat4(1.f), glm::vec3(0.f, 2.f, 0.f)) *
+				glm::rotate(glm::mat4(1.f), glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f)) *
+				glm::scale(glm::mat4(1.f), glm::vec3(8.f, 5.f, 8.f));
+
+		e3.getComponent<TransformComponent>().mat = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, 0.f)) * glm::scale(glm::mat4(1.f), glm::vec3(0.07f));
+
+
+		// Lights
+		auto p1 = s1.createEntity();
+		auto p2 = s1.createEntity();
+		auto d1 = s1.createEntity();
+		auto f1 = s1.createEntity();
+
+		p1.getComponent<TransformComponent>().mat = glm::translate(glm::mat4(1.f), glm::vec3(-15.f, 8.f, -2.f));
+		p1.addComponent<PointLightComponent>(glm::vec4(0.f, 1.f, 0.f, 0.f), glm::vec4(1.f, 0.09f, 0.016f, 0.f));
+
+		p2.getComponent<TransformComponent>().mat = glm::translate(glm::mat4(1.f), glm::vec3(15.f, 8.f, -2.f));
+		p2.addComponent<PointLightComponent>(glm::vec4(1.f, 0.f, 0.f, 0.f), glm::vec4(1.f, 0.09f, 0.016f, 0.f));
+
+		d1.addComponent<DirectionalLightComponent>(glm::vec4(1.f), glm::vec4(-0.35f, -1.f, -1.f, 0.f));
+	
+
+
+
+
+
 
 		// Initialize ImGui (After application resources --> Defined render pass)
 		// Give a suitable render pass to draw with
@@ -68,10 +125,23 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 				std::cout << "Update count: " << fpsCam.m_updateCount << "\n\n";
 			}
 
+
 			if (keyHandler->isKeyPressed(KeyName::G))
 				spotlightStrength = 0.f;
 			else if (keyHandler->isKeyPressed(KeyName::F))
 				spotlightStrength = 0.2f;
+
+			// =============================================== UPDATE OBJECTS
+
+			e4.getComponent<TransformComponent>().mat =
+				glm::translate(glm::mat4(1.f), glm::vec3(0.f, 10.f + 2.f * cosf(timeElapsed), 0.f)) *
+				glm::rotate(glm::mat4(1.f), glm::radians(timeElapsed * 21.f), glm::vec3(0.f, 1.f, 0.f)) *
+				glm::scale(glm::mat4(1.f), glm::vec3(1.f));
+
+			e2.getComponent<TransformComponent>().mat =
+				glm::translate(glm::mat4(1.f), glm::vec3(9.f, 0.f, -9.f)) *
+				glm::rotate(glm::mat4(1.f), glm::radians(timeElapsed * 45.f), glm::vec3(0.f, 1.f, 0.f)) *
+				glm::scale(glm::mat4(1.f), glm::vec3(1.f));
 
 			// =============================================== UPDATE ENGINE WIDE DATA
 			GPUCameraData cameraData{};
@@ -81,23 +151,19 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 			// =============================================== UPDATE SCENE DATA
 			SceneData sceneData{};
-			sceneData.directionalLightColor = glm::vec4(1.f);
-			//sceneData.directionalLightDirection = glm::vec4(cosf(timeElapsed) * 0.5f - 0.5f, -1.f, -1.f, 0.f);
-			//sceneData.directionalLightDirection = glm::normalize(glm::vec4(cosf(timeElapsed), -1.f, -1.f, 0.f));
-			//sceneData.directionalLightDirection = glm::normalize(glm::vec4(0.f, 0.f, -1.f, 0.f));
-			//sceneData.directionalLightDirection = glm::normalize(glm::vec4(-0.35f, -1.f, -1.f, 0.f));
-			sceneData.directionalLightDirection = glm::normalize(glm::vec4(cosf(timeElapsed / 2.f) * 0.5f, -0.5f, sinf(timeElapsed / 2.f) * 0.5f, 0.f));
+			sceneData.directionalLightColor = d1.getComponent<DirectionalLightComponent>().color;
+			sceneData.directionalLightDirection = glm::normalize(d1.getComponent<DirectionalLightComponent>().direction);
 
 			sceneData.spotlightPositionAndStrength = glm::vec4(fpsCam.getPosition(), spotlightStrength);
 			sceneData.spotlightDirectionAndCutoff = glm::vec4(fpsCam.getLookDirection(), glm::cos(glm::radians(21.f)));
 
-			sceneData.pointLightPosition[0] = glm::vec4(-15.f, 6.f, 0.f, 1.f);
-			sceneData.pointLightColor[0] = glm::vec4(0.f, 1.f, 0.f, 0.f);
-			sceneData.pointLightAttenuation[0] = glm::vec4(1.f, 0.09f, 0.016f, 0.f);
+			sceneData.pointLightPosition[0] = p1.getComponent<TransformComponent>().translation();
+			sceneData.pointLightColor[0] = p1.getComponent<PointLightComponent>().color;
+			sceneData.pointLightAttenuation[0] = p1.getComponent<PointLightComponent>().attenuation;
 
-			sceneData.pointLightPosition[1] = glm::vec4(15.f, 6.f, 0.f, 1.f);
-			sceneData.pointLightColor[1] = glm::vec4(1.f, 0.f, 0.f, 0.f);
-			sceneData.pointLightAttenuation[1] = glm::vec4(1.f, 0.09f, 0.016f, 0.f);
+			sceneData.pointLightPosition[1] = p2.getComponent<TransformComponent>().translation();
+			sceneData.pointLightColor[1] = p2.getComponent<PointLightComponent>().color;
+			sceneData.pointLightAttenuation[1] = p2.getComponent<PointLightComponent>().attenuation;
 
 
 			// ================================================ BEGIN GPU FRAME
@@ -142,7 +208,8 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 				cmd.beginRenderPass(rpInfo, {});
 
 				// ================================================ RECORD OBJECTS DRAW CMDS
-				drawObjects(cmd, timeElapsed);
+				//drawObjects(cmd, timeElapsed);
+				drawObjects(&s1, cmd);
 				// ================================================ RECORD IMGUI DRAW CMDS
 				imGuiContext->render(cmd);
 
@@ -262,7 +329,6 @@ void SponzaApp::drawObjects(vk::CommandBuffer& cmd, float timeElapsed)
 		const auto& vb = model.second->getVertexBuffer();
 		const auto& ib = model.second->getIndexBuffer();
 
-		// Bind VB/IB - Lets not mind rebinding here even if next model might have same VB/IB
 		std::array<vk::Buffer, 1> vbs{ vb };
 		std::array<vk::DeviceSize, 1> offsets{ 0 };
 		cmd.bindVertexBuffers(0, vbs, offsets);
@@ -332,6 +398,62 @@ void SponzaApp::drawObjects(vk::CommandBuffer& cmd, float timeElapsed)
 		}
 
 		++tmpId;
+	}
+
+	// use this to check the std::sort on RenderUnits to see that the material change count is lower!
+	// because we are sorting the renderunits by material, we can have less state change
+	//std::cout << "material change this frame: " << materialChangeThisFrame << '\n';
+}
+
+void SponzaApp::drawObjects(Scene* scene, vk::CommandBuffer& cmd)
+{
+	auto view = scene->getRegistry().view<TransformComponent, ModelRefComponent>();
+
+	int materialChangeThisFrame = 0;
+	Material lastMaterial;
+	for (auto e : view)
+	{
+		auto model = scene->getRegistry().get<ModelRefComponent>(e).model;
+		auto& mat = scene->getRegistry().get<TransformComponent>(e).mat;
+
+		PushConstantData perObjectData{ mat };
+
+		const auto& renderUnits = model->getRenderUnits();
+		const auto& vb = model->getVertexBuffer();
+		const auto& ib = model->getIndexBuffer();
+
+		std::array<vk::Buffer, 1> vbs{ vb };
+		std::array<vk::DeviceSize, 1> offsets{ 0 };
+		cmd.bindVertexBuffers(0, vbs, offsets);
+		cmd.bindIndexBuffer(ib, 0, vk::IndexType::eUint32);
+
+		for (const auto& renderUnit : renderUnits)
+		{
+			const auto& mesh = renderUnit.getMesh();
+			const auto& mat = renderUnit.getMaterial();
+
+			if (mat != lastMaterial)
+			{
+				// we technically dont have to check this every material change because we may still be using the same pipeline but simply different set of resources
+				// (textures). We could check the pipeline independently to avoid this state change.
+				cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, mat.getPipeline());
+
+				// Bind per material resources (Textures, Set 2)
+				cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mat.getPipelineLayout(), 2, mat.getDescriptorSet(), {});
+				lastMaterial = mat;
+				materialChangeThisFrame++;
+			}
+
+			// Bind model matrix (Buffer style, disabled)
+			//perObjectFrameData.modelMatBuffer->putData(&perObjectData, sizeof(ObjectData));
+			//cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mat.getPipelineLayout(), 3, perObjectFrameData.descriptorSet, {});
+
+			// Upload model matrix through push constant
+			cmd.pushConstants<PushConstantData>(mat.getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, { perObjectData });
+
+			cmd.drawIndexed(mesh.getNumIndices(), 1, mesh.getFirstIndex(), mesh.getVertexBufferOffset(), mesh.getVertexBufferOffset());
+		}
+
 	}
 
 	// use this to check the std::sort on RenderUnits to see that the material change count is lower!
@@ -656,6 +778,7 @@ void SponzaApp::setupResources()
 	loadExternalModel("Resources/Objs/survival_backpack/backpack.obj");
 }
 
+
 void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 {
 	auto dev = m_gfxCon.getDevice();
@@ -806,9 +929,9 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 	}
 
 	std::sort(renderUnits.begin(), renderUnits.end());
-
+	
+	// lowercase file name as id
 	auto fname = filePath.stem().string();
-
 	std::for_each(fname.begin(), fname.end(), [](char& c) { c = std::tolower(c); });
 
 	m_loadedModels.insert({ fname, std::make_unique<RenderModel>(std::move(vb), std::move(ib), renderUnits) });

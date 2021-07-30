@@ -1,5 +1,6 @@
 #pragma once
 #include "Application.h"
+#include "Scene.h"
 
 namespace Nagi
 {
@@ -94,6 +95,8 @@ public:
 private:
 
 	void drawObjects(vk::CommandBuffer& cmd, float timeElapsed);
+
+	void drawObjects(Scene* scene, vk::CommandBuffer& cmd);
 
 	void createDescriptorPool();
 

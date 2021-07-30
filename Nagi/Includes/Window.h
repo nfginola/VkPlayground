@@ -1,7 +1,6 @@
 #pragma once
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#include "SingleInstance.h"
 
 namespace vk
 {
@@ -15,7 +14,7 @@ namespace Nagi
 	class KeyHandler;
 	class MouseHandler;
 
-class Window : SingleInstance<Window>
+class Window
 {
 public:
 	Window(int width, int height, const char* title = "Nagi Engine");

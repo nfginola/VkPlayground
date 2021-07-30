@@ -1,7 +1,6 @@
 #pragma once
 #include <vulkan/vulkan.hpp>
 #include "vk_mem_alloc.h"
-#include "SingleInstance.h"
 
 
 namespace Nagi
@@ -40,7 +39,7 @@ struct FrameResource
 };
 
 
-class VulkanContext : private SingleInstance<VulkanContext>
+class VulkanContext
 {
 private:
 	static constexpr uint32_t s_maxFramesInFlight = 2;
@@ -149,7 +148,7 @@ private:
 
 };
 
-class UploadContext : private SingleInstance<UploadContext>
+class UploadContext
 {
 public:
 	UploadContext() = delete;
