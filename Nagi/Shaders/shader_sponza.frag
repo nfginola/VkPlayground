@@ -126,17 +126,13 @@ vec3 calculateSpotlight()
     return vec3(0.f);
 }
 
-
-
-void main() 
+// Get normal from normal map if it exists
+vec3 getFinalNormal(vec3 inputNormal)
 {
-    vec3 normal = normalize(fragNormal);
-    vec3 diffuseColor = texture(diffuseTexture, fragUV).xyz;
-
     vec3 mapNorTangent = texture(normalTexture, fragUV).xyz;
     if (!(mapNorTangent == vec3(0.f)))  // If valid normal exists
     {
-        mat3 tbn = mat3(fragTangent, fragBitangent, normal);
+        mat3 tbn = mat3(fragTangent, fragBitangent, inputNormal);
 
         // Normal map is in [0, 1] space so we need to transform it to [-1, 1] space
         vec3 mapNorTangent = mapNorTangent * 2.f - 1.f;
@@ -145,17 +141,25 @@ void main()
         // Transform the tanget space TO world space.
         vec3 mapNorWorld = normalize(tbn * mapNorTangent);
 
-        normal = mapNorWorld;
-
-//        outColor = vec4(normal, 1.f);
-//        return;
+        inputNormal = mapNorWorld;
     }
- 
+    return inputNormal;
+}
+
+
+void main() 
+{
+    vec3 normal = normalize(fragNormal);
+    vec3 diffuseColor = texture(diffuseTexture, fragUV).xyz;
+    
+    normal = getFinalNormal(normal);
+     
     //vec3 finalColor = calculateDirectionalLight(sceneData.directionalLightDirection.xyz, sceneData.directionalLightColor.xyz, normal);
     vec3 finalColor = vec3(0.f);
 
     vec3 ambient = 0.007f * diffuseColor;
     finalColor += ambient;
+
     for (uint i = 0; i < POINT_LIGHT_COUNT; ++i)
     {
         // We are using light pos w to enable/disable the point light contribution

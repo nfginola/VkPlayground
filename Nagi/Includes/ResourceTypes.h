@@ -64,6 +64,7 @@ namespace Nagi
 	private:
 		// Non owning 
 		VmaAllocator m_allocator;
+		char* m_mappedData = nullptr;
 
 		// Owns these resources
 		VmaAllocation alloc;
@@ -123,6 +124,7 @@ namespace Nagi
 
 	bool operator==(const Material& a, const Material& b);
 	bool operator!=(const Material& a, const Material& b);
+	bool operator<(const Material& a, const Material& b);
 
 	class Mesh
 	{
@@ -155,8 +157,10 @@ namespace Nagi
 		Mesh m_mesh;				// POD
 
 		// Non-owning
-		const Material& m_material;
+		Material m_material;
 	};
+
+	bool operator<(const RenderUnit& a, const RenderUnit& b);
 
 	// A collection of coherent meshes to be rendered
 	class RenderModel

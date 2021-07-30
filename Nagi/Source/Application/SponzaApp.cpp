@@ -21,12 +21,10 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 	auto scExtent = m_gfxCon.getSwapchainExtent();
 	Camera fpsCam((float)scExtent.width / scExtent.height, 90.f);
 
-	// We can hook to cursor function to subscribe to the callback which updates consistently regardless of FPS for smoother mouse!
-	// This is why the below function has the "same sensitivity" regardless of application FPS.
+	// We can hook to cursor function for callback based consistent updates for smoother mouse regardless of FPS.
 	mouseHandler->hookFunctionToCursor([&fpsCam](float deltaX, float deltaY)
 		{
-			// 0.07 --> sensitivity
-			fpsCam.rotateCamera(deltaX, deltaY, 0.07f);
+			fpsCam.rotateCamera(deltaX, deltaY, 0.07f);		// 0.07 --> sensitivity
 		});
 
 	try
@@ -118,8 +116,8 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			uint32_t thisFrameOffset = perFrameDataSize * frameRes.frameIdx;
 
 			// packing : [camera, scene, camera, scene, camera, scene]
-			m_engineFrameBuffer->putData(&cameraData, sizeof(GPUCameraData), thisFrameOffset);
-			m_engineFrameBuffer->putData(&sceneData, sizeof(SceneData), thisFrameOffset + sizeof(GPUCameraData));
+			m_engineFrameBuffer->putData(&cameraData, sizeof(GPUCameraData), thisFrameOffset);						// Upload camera data
+			m_engineFrameBuffer->putData(&sceneData, sizeof(SceneData), thisFrameOffset + sizeof(GPUCameraData));	// Upload scene data
 
 			// Offsets into the 1st dynamic UB and 2nd dynamic UB
 			std::array<uint32_t, 2> engineBufferOffsets = { thisFrameOffset, thisFrameOffset + sizeof(GPUCameraData) };
@@ -134,7 +132,8 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 			// ================================================ SETUP AND RECORD RENDER PASS (***)
 			{
-				std::array<vk::ClearValue, 2> clearValues = {
+				std::array<vk::ClearValue, 2> clearValues = 
+				{
 					vk::ClearColorValue(std::array<float, 4>({0.529f, 0.808f, 0.922f, 1.f})),
 					vk::ClearDepthStencilValue( /*depth*/ 1.f, /*stencil*/ 0)
 				};
@@ -146,6 +145,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 				drawObjects(cmd, timeElapsed);
 				// ================================================ RECORD IMGUI DRAW CMDS
 				imGuiContext->render(cmd);
+
 				cmd.endRenderPass();
 			}
 
@@ -223,8 +223,8 @@ void SponzaApp::createUBOs()
 
 
 
-	// Create UBO for per object data ... (e.g model matrix)
-	vk::BufferCreateInfo objectUBOCI({}, sizeof(ObjectData), vk::BufferUsageFlagBits::eUniformBuffer);
+	// Create UBO for per object data (e.g SSBO)
+	vk::BufferCreateInfo objectUBOCI({}, sizeof(ObjectData), vk::BufferUsageFlagBits::eStorageBuffer);
 	VmaAllocationCreateInfo objectUBOAllocCI{};
 	objectUBOAllocCI.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 
@@ -254,12 +254,13 @@ void SponzaApp::drawObjects(vk::CommandBuffer& cmd, float timeElapsed)
 	PushConstantData perObjectData{};
 
 	int tmpId = 0;
+	int materialChangeThisFrame = 0;
 	Material lastMaterial;
 	for (const auto& model : m_loadedModels)
 	{
-		const auto& renderUnits = model->getRenderUnits();
-		const auto& vb = model->getVertexBuffer();
-		const auto& ib = model->getIndexBuffer();
+		const auto& renderUnits = model.second->getRenderUnits();
+		const auto& vb = model.second->getVertexBuffer();
+		const auto& ib = model.second->getIndexBuffer();
 
 		// Bind VB/IB - Lets not mind rebinding here even if next model might have same VB/IB
 		std::array<vk::Buffer, 1> vbs{ vb };
@@ -308,19 +309,23 @@ void SponzaApp::drawObjects(vk::CommandBuffer& cmd, float timeElapsed)
 
 			if (mat != lastMaterial)
 			{
-				cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, mat.getPipeline());
+				// we technically dont have to check this every material change because we may still be using the same pipeline but simply different set of resources
+				// (textures). We could check the pipeline independently to avoid this state change.
+				cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, mat.getPipeline());		
+				
+				// Bind per material resources (Textures, Set 2)
+				cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mat.getPipelineLayout(), 2, mat.getDescriptorSet(), {});
 				lastMaterial = mat;
+				materialChangeThisFrame++;
 			}
 
-			// Bind per material resources (Textures, Set 2)
-			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mat.getPipelineLayout(), 2, mat.getDescriptorSet(), {});
 
-			// Bind model matrix (Buffer style, disabled_
+
+			// Bind model matrix (Buffer style, disabled)
 			//perObjectFrameData.modelMatBuffer->putData(&perObjectData, sizeof(ObjectData));
 			//cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mat.getPipelineLayout(), 3, perObjectFrameData.descriptorSet, {});
 
-			// Bind model matrix
-			// Push constants - We will be using push constants
+			// Upload model matrix through push constant
 			cmd.pushConstants<PushConstantData>(mat.getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, { perObjectData });
 
 			cmd.drawIndexed(mesh.getNumIndices(), 1, mesh.getFirstIndex(), mesh.getVertexBufferOffset(), mesh.getVertexBufferOffset());
@@ -328,6 +333,10 @@ void SponzaApp::drawObjects(vk::CommandBuffer& cmd, float timeElapsed)
 
 		++tmpId;
 	}
+
+	// use this to check the std::sort on RenderUnits to see that the material change count is lower!
+	// because we are sorting the renderunits by material, we can have less state change
+	//std::cout << "material change this frame: " << materialChangeThisFrame << '\n';
 }
 
 void SponzaApp::createDescriptorPool()
@@ -336,7 +345,8 @@ void SponzaApp::createDescriptorPool()
 	std::vector<vk::DescriptorPoolSize> descriptorPoolSizes{
 		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 10),
 		vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 500),
-		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBufferDynamic, 10)		// Testing Dynamic Uniform Buffer (we can bind offset in BindDescriptor!)
+		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBufferDynamic, 10),		// Testing Dynamic Uniform Buffer (we can bind offset in BindDescriptor!)
+		vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer, 10)				// Testing Dynamic Uniform Buffer (we can bind offset in BindDescriptor!)
 	};
 
 	vk::DescriptorPoolCreateInfo poolCI({}, 
@@ -398,7 +408,7 @@ void SponzaApp::createRenderModels()
 
 	// Create render model
 	std::vector<RenderUnit> renderUnits{ renderUnit };
-	m_loadedModels.push_back(std::make_unique<RenderModel>(std::move(vb), std::move(ib), renderUnits));
+	m_loadedModels.insert({ "rimuru", std::make_unique<RenderModel>(std::move(vb), std::move(ib), renderUnits) });
 }
 
 void SponzaApp::setupDescriptorSetLayouts()
@@ -429,7 +439,7 @@ void SponzaApp::setupDescriptorSetLayouts()
 
 	// Per object layout
 	std::vector<vk::DescriptorSetLayoutBinding> objectBindings{
-		vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex)
+		vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eVertex)	// SSBO for model matrices
 	};
 	vk::DescriptorSetLayoutCreateInfo objectSetLayoutCI({}, objectBindings);
 
@@ -452,7 +462,7 @@ void SponzaApp::allocateDescriptorSets()
 {
 	auto dev = m_gfxCon.getDevice();
 
-	// Allocate Set 0 and bind resources to it
+	// ======================================= Allocate Set 0 and bind resources to it
 	vk::DescriptorSetAllocateInfo engineSetAllocInfo(m_descriptorPool.get(), m_engineDescriptorSetLayout.get());
 	
 	// Engine descriptor set (single)
@@ -469,19 +479,15 @@ void SponzaApp::allocateDescriptorSets()
 
 
 
+	// ======================================= Allocate Sets 1 and bind resources to it (per pass)
 
 
 
-	// NOTE: We wont be using them yet, but soon.
-	// Allocate Sets 1 and bind resources to it..
-
-
-
-	// Allocate Sets 2 and bind resources to it (this is done on createRenderModels for now)
+	// ======================================= Allocate Sets 2 and bind resources to it (per material)
 	
 
 
-	// Allocate Sets 3
+	// ======================================= Allocate Sets 3 (for per-object)
 	vk::DescriptorSetAllocateInfo objectSetAllocInfo(m_descriptorPool.get(), m_objectDescriptorSetLayout.get());
 
 	// We need to allocate 'frame in flight' number of sets since they need to be updated while the other set may still be in flight
@@ -490,12 +496,12 @@ void SponzaApp::allocateDescriptorSets()
 		m_objectFrameData[i].descriptorSet = dev.allocateDescriptorSets(objectSetAllocInfo).front();
 
 		// Write to the set (bind actual resource)
+		// We use one buffer per frame because SSBOs can be read AND written to! Its not exposed the same way as normal UBs (look at shader)
+		// Its not like UBs where the shader is only exposed to the offset and range of a buffer memory.
 		vk::DescriptorBufferInfo binfo(m_objectFrameData[i].modelMatBuffer->getBuffer(), 0, sizeof(ObjectData));
-		vk::WriteDescriptorSet writeInfo(m_objectFrameData[i].descriptorSet, 0, 0, vk::DescriptorType::eUniformBuffer, {}, binfo);
+		vk::WriteDescriptorSet writeInfo(m_objectFrameData[i].descriptorSet, 0, 0, vk::DescriptorType::eStorageBuffer, {}, binfo);
 		dev.updateDescriptorSets(writeInfo, {});
 	}
-
-
 }
 
 void SponzaApp::createGraphicsPipeline()
@@ -660,6 +666,7 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 	auto& indices = loader.getIndices();
 	auto& subsets = loader.getSubsets();
 
+	
 
 	// PACK DATA FOR VULKAN
 	// ======== Handle VB/IB
@@ -798,7 +805,15 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 		}
 	}
 
-	m_loadedModels.push_back(std::make_unique<RenderModel>(std::move(vb), std::move(ib), renderUnits));
+	std::sort(renderUnits.begin(), renderUnits.end());
+
+	auto fname = filePath.stem().string();
+
+	std::for_each(fname.begin(), fname.end(), [](char& c) { c = std::tolower(c); });
+
+	m_loadedModels.insert({ fname, std::make_unique<RenderModel>(std::move(vb), std::move(ib), renderUnits) });
+
+
 }
 
 }

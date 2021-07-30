@@ -9,6 +9,8 @@ namespace Nagi
 
 	Buffer::~Buffer()
 	{
+		if (m_mappedData != nullptr)
+			vmaUnmapMemory(m_allocator, alloc);
 		vmaDestroyBuffer(m_allocator, resource, alloc);
 	}
 
@@ -21,10 +23,14 @@ namespace Nagi
 
 	void Buffer::putData(const void* inData, size_t dataSize, size_t offset)
 	{
-		char* mappedData = nullptr;
-		vmaMapMemory(m_allocator, alloc, (void**)&mappedData);
-		memcpy(mappedData + offset, inData, dataSize);
-		vmaUnmapMemory(m_allocator, alloc);
+		//char* mappedData = nullptr;
+		
+		// map once and keep it mapped
+		if (m_mappedData == nullptr)
+			vmaMapMemory(m_allocator, alloc, (void**)&m_mappedData);
+		memcpy(m_mappedData + offset, inData, dataSize);
+
+		//vmaUnmapMemory(m_allocator, alloc);
 	}
 
 	const vk::Buffer& Buffer::getBuffer() const
@@ -438,6 +444,23 @@ namespace Nagi
 	bool operator!=(const Material& a, const Material& b)
 	{
 		return !(a==b);
+	}
+
+	bool operator<(const Material& a, const Material& b)
+	{
+		// order priority: pipeline 1st and descriptor set 2nd 
+		if (a.getPipeline() < b.getPipeline())
+			return true;
+		else if (a.getDescriptorSet() < b.getDescriptorSet())
+			return true;
+		return false;
+	}
+
+	bool operator<(const RenderUnit& a, const RenderUnit& b)
+	{
+		if (a.getMaterial() < b.getMaterial())
+			return true;
+		return false;
 	}
 
 }
