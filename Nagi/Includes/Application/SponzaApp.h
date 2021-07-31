@@ -2,6 +2,8 @@
 #include "Application.h"
 #include "Scene.h"
 
+#include "AssimpLoader.h"
+
 namespace Nagi
 {
 
@@ -115,6 +117,9 @@ private:
 	void createGraphicsPipeline();
 
 	void setupResources();
+
+	void loadMaterial(std::string directory, AssimpMaterialPaths texturePaths);
+	void uploadTexture(std::string finalPathm, bool genMips, bool srgb, std::string materialParentPath, uint32_t bindingSlot);
 
 
 private:

@@ -6,7 +6,6 @@
 #include "VulkanImGuiContext.h"
 #include "Timer.h"
 
-
 namespace Nagi
 {
 
@@ -21,18 +20,17 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 	auto scExtent = m_gfxCon.getSwapchainExtent();
 	Camera fpsCam((float)scExtent.width / scExtent.height, 90.f);
 
-	// We can hook to cursor function for callback based consistent updates
-	mouseHandler->hookFunctionToCursor([&fpsCam](float deltaX, float deltaY)
-		{
-			fpsCam.rotateCamera(deltaX, deltaY, 0.07f);		// 0.07 --> sensitivity
-		});
-
+	mouseHandler->hookFunctionToCursor([&fpsCam](float deltaX, float deltaY) { fpsCam.rotateCamera(deltaX, deltaY, 0.07f); });
 
 	try
 	{
 		setupResources();
 
-		// Use scene and entities
+		// Initialize ImGui (After application resources --> Defined render pass to "hook onto")
+		// Give a suitable render pass to draw with
+		auto imGuiContext = std::make_unique<VulkanImGuiContext>(m_gfxCon, m_window, m_defRenderPass.get());
+
+		// Setup entities
 		Scene s1;
 		auto e1 = s1.createEntity();
 		auto e2 = s1.createEntity();
@@ -56,9 +54,6 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 				glm::rotate(glm::mat4(1.f), glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f)) *
 				glm::scale(glm::mat4(1.f), glm::vec3(1.f, 1.f, 1.f));
 		}
-
-
-
 
 		e1.getComponent<TransformComponent>().mat = 
 				glm::translate(glm::mat4(1.f), glm::vec3(0.f, 2.f, 0.f)) *
@@ -87,10 +82,6 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 
 
-
-		// Initialize ImGui (After application resources --> Defined render pass)
-		// Give a suitable render pass to draw with
-		auto imGuiContext = std::make_unique<VulkanImGuiContext>(m_gfxCon, m_window, m_defRenderPass.get());
 
 		float dt = 0.f;
 		float timeElapsed = 0.f;
@@ -132,7 +123,6 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 				spotlightStrength = 0.2f;
 
 			// =============================================== UPDATE OBJECTS
-
 			e4.getComponent<TransformComponent>().mat =
 				glm::translate(glm::mat4(1.f), glm::vec3(0.f, 10.f + 2.f * cosf(timeElapsed), 0.f)) *
 				glm::rotate(glm::mat4(1.f), glm::radians(timeElapsed * 21.f), glm::vec3(0.f, 1.f, 0.f)) *
@@ -181,12 +171,14 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			uint32_t perFrameDataSize = sizeof(GPUCameraData) + sizeof(SceneData);
 			uint32_t thisFrameOffset = perFrameDataSize * frameRes.frameIdx;
 
+			uint32_t cameraDataOffset = thisFrameOffset;
+			uint32_t sceneDataOffset = thisFrameOffset + sizeof(GPUCameraData);
 			// packing : [camera, scene, camera, scene, camera, scene]
-			m_engineFrameBuffer->putData(&cameraData, sizeof(GPUCameraData), thisFrameOffset);						// Upload camera data
-			m_engineFrameBuffer->putData(&sceneData, sizeof(SceneData), thisFrameOffset + sizeof(GPUCameraData));	// Upload scene data
+			m_engineFrameBuffer->putData(&cameraData, sizeof(GPUCameraData), cameraDataOffset);						// Upload camera data
+			m_engineFrameBuffer->putData(&sceneData, sizeof(SceneData), sceneDataOffset);	// Upload scene data
 
 			// Offsets into the 1st dynamic UB and 2nd dynamic UB
-			std::array<uint32_t, 2> engineBufferOffsets = { thisFrameOffset, thisFrameOffset + sizeof(GPUCameraData) };
+			std::array<uint32_t, 2> engineBufferOffsets = { cameraDataOffset, sceneDataOffset };
 
 
 
@@ -209,7 +201,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 				// ================================================ RECORD OBJECTS DRAW CMDS
 				//drawObjects(cmd, timeElapsed);
-				drawObjects(&s1, cmd);
+				drawObjects(&s1, cmd);		// Submitting entities from scene which have a render model ref
 				// ================================================ RECORD IMGUI DRAW CMDS
 				imGuiContext->render(cmd);
 
@@ -444,11 +436,8 @@ void SponzaApp::drawObjects(Scene* scene, vk::CommandBuffer& cmd)
 				materialChangeThisFrame++;
 			}
 
-			// Bind model matrix (Buffer style, disabled)
-			//perObjectFrameData.modelMatBuffer->putData(&perObjectData, sizeof(ObjectData));
-			//cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mat.getPipelineLayout(), 3, perObjectFrameData.descriptorSet, {});
-
 			// Upload model matrix through push constant
+			// This is easiest as each Draw call in our current case is one instance of some model
 			cmd.pushConstants<PushConstantData>(mat.getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, { perObjectData });
 
 			cmd.drawIndexed(mesh.getNumIndices(), 1, mesh.getFirstIndex(), mesh.getVertexBufferOffset(), mesh.getVertexBufferOffset());
@@ -779,6 +768,66 @@ void SponzaApp::setupResources()
 }
 
 
+void SponzaApp::loadMaterial(std::string directory, AssimpMaterialPaths texturePaths)
+{
+	// Get final diffuse path
+	std::string diffusePath(directory);
+	if (texturePaths.diffuseFilePath.has_value())
+		diffusePath += texturePaths.diffuseFilePath.value();
+	else
+		diffusePath = "Resources/Textures/defaulttexture.jpg";
+
+	// Get final opacity path
+	std::string opacityPath(directory);
+	if (texturePaths.opacityFilePath.has_value())
+		opacityPath += texturePaths.opacityFilePath.value();
+	else
+		opacityPath = "Resources/Textures/defaultopacity.jpg";
+
+	// Get final specular path
+	std::string specularPath(directory);
+	if (texturePaths.specularFilePath.has_value())
+		specularPath += texturePaths.specularFilePath.value();
+	else
+		specularPath = "Resources/Textures/defaultspecular.jpg";
+
+	// Get final normal path
+	std::string normalPath(directory);
+	if (texturePaths.normalFilePath.has_value())
+		normalPath += texturePaths.normalFilePath.value();
+	else
+		normalPath = "Resources/Textures/defaultnormal.jpg";
+
+	uploadTexture(diffusePath, true, true, diffusePath, 0);
+	uploadTexture(opacityPath, true, false, diffusePath, 1);
+	uploadTexture(specularPath, true, false, diffusePath, 2);
+	uploadTexture(normalPath, true, false, diffusePath, 3);
+
+}
+
+void SponzaApp::uploadTexture(std::string finalPath, bool genMips, bool srgb, std::string materialParentPath, uint32_t bindingSlot)
+{
+	if (m_mappedTextures.find(finalPath) == m_mappedTextures.cend())
+	{
+		m_mappedTextures.insert({ finalPath, std::move(Texture::fromFile(m_gfxCon, finalPath, genMips, srgb)) });
+	}
+
+	// Parent (responsible for descriptor not yet initialized)
+	if (m_mappedMaterials.find(materialParentPath) == m_mappedMaterials.cend())
+	{
+		// Create descriptor set with new material
+		vk::DescriptorSetAllocateInfo texAllocInfo(m_descriptorPool.get(), m_materialDescriptorSetLayout.get());
+		auto newMatDescSet = m_gfxCon.getDevice().allocateDescriptorSets(texAllocInfo).front();
+		m_mappedMaterials.insert({ materialParentPath, std::make_unique<Material>(m_mainGfxPipeline.get(), m_mainGfxPipelineLayout.get(), newMatDescSet) });
+	}
+
+
+	// Write to existing descriptor set (existing material that was made from diffuse) (bind image and sampler)
+	vk::DescriptorImageInfo imageInfo(m_commonSampler.get(), m_mappedTextures[finalPath]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
+	vk::WriteDescriptorSet imageSetWrite(m_mappedMaterials[materialParentPath]->getDescriptorSet(), bindingSlot, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo, {}, {});
+	m_gfxCon.getDevice().updateDescriptorSets(imageSetWrite, {});
+}
+
 void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 {
 	auto dev = m_gfxCon.getDevice();
@@ -790,7 +839,8 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 	auto& subsets = loader.getSubsets();
 	auto& materials = loader.getMaterials();
 
-	
+
+
 
 	// PACK DATA FOR VULKAN
 	// ======== Handle VB/IB
@@ -827,7 +877,8 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 	// Load materials
 	// Here we should load the materials and let renderUnits below simply pick from the loaded materials
 
-
+	for (auto& mat : materials)
+		loadMaterial(directory, mat);
 
 	std::vector<RenderUnit> renderUnits;
 	renderUnits.reserve(subsets.size());
@@ -835,104 +886,14 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 	{
 		auto mesh = Mesh(subset.indexStart, subset.indexCount, subset.vertexStart);
 
-		// Get final diffuse path
+		// Get final diffuse path (material parent path)
 		std::string diffusePath(directory);
 		if (subset.diffuseFilePath.has_value())
 			diffusePath += subset.diffuseFilePath.value();
 		else
 			diffusePath = "Resources/Textures/defaulttexture.jpg";
 
-		// Get final opacity path
-		std::string opacityPath(directory);
-		if (subset.opacityFilePath.has_value())
-			opacityPath += subset.opacityFilePath.value();
-		else
-			opacityPath = "Resources/Textures/defaultopacity.jpg";
-
-		// Get final specular path
-		std::string specularPath(directory);
-		if (subset.specularFilePath.has_value())
-			specularPath += subset.specularFilePath.value();
-		else
-			specularPath = "Resources/Textures/defaultspecular.jpg";
-
-		// Get final normal path
-		std::string normalPath(directory);
-		if (subset.normalFilePath.has_value())
-			normalPath += subset.normalFilePath.value();
-		else
-			normalPath = "Resources/Textures/defaultnormal.jpg";
-
-
-		// Insert texture data and create material
-		auto lb = m_mappedTextures.lower_bound(diffusePath);
-		if (lb != m_mappedTextures.end() && !(m_mappedTextures.key_comp()(diffusePath, lb->first)))
-		{
-			// Combine to mesh and material into a render unit
-			renderUnits.push_back(RenderUnit(mesh, *m_mappedMaterials[diffusePath].get()));
-		}
-		else
-		{
-			// Handle diffuse
-			{
-
-				m_mappedTextures.insert(lb, { diffusePath, std::move(Texture::fromFile(m_gfxCon, diffusePath, true)) });
-
-
-				// Create descriptor set with new material
-				vk::DescriptorSetAllocateInfo texAllocInfo(m_descriptorPool.get(), m_materialDescriptorSetLayout.get());
-				auto newMatDescSet = m_gfxCon.getDevice().allocateDescriptorSets(texAllocInfo).front();
-
-				// Write to it (bind image and sampler)
-				vk::DescriptorImageInfo imageInfo(m_commonSampler.get(), m_mappedTextures[diffusePath]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
-				vk::WriteDescriptorSet imageSetWrite(newMatDescSet, 0, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo, {}, {});
-				dev.updateDescriptorSets(imageSetWrite, {});
-
-
-				// Create material
-				//m_loadedMaterials.push_back(std::make_unique<Material>(m_mainGfxPipeline.get(), m_mainGfxPipelineLayout.get(), newMatDescSet));
-				m_mappedMaterials.insert({ diffusePath, std::make_unique<Material>(m_mainGfxPipeline.get(), m_mainGfxPipelineLayout.get(), newMatDescSet) });
-			}
-
-			// Handle opacity (implicit that if diffuse was not found, the opacity must be new)
-			{
-				// WARNING::::: Std move calls destructor if there is an existing element in the map!!! (why??)
-				if (m_mappedTextures.find(opacityPath) == m_mappedTextures.cend())
-					m_mappedTextures.insert({ opacityPath, std::move(Texture::fromFile(m_gfxCon, opacityPath, true, false)) });
-
-				// Write to existing descriptor set (existing material that was made from diffuse) (bind image and sampler)
-				vk::DescriptorImageInfo imageInfo(m_commonSampler.get(), m_mappedTextures[opacityPath]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
-				vk::WriteDescriptorSet imageSetWrite(m_mappedMaterials[diffusePath]->getDescriptorSet(), 1, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo, {}, {});	// Binding 1
-				dev.updateDescriptorSets(imageSetWrite, {});
-			}
-
-			// Handle specular
-			{
-				if (m_mappedTextures.find(specularPath) == m_mappedTextures.cend())
-					m_mappedTextures.insert({ specularPath, std::move(Texture::fromFile(m_gfxCon, specularPath, true, false)) });
-
-				// Write to existing descriptor set (existing material that was made from diffuse) (bind image and sampler)
-				vk::DescriptorImageInfo imageInfo(m_commonSampler.get(), m_mappedTextures[specularPath]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
-				vk::WriteDescriptorSet imageSetWrite(m_mappedMaterials[diffusePath]->getDescriptorSet(), 2, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo, {}, {});	// Binding 2
-				dev.updateDescriptorSets(imageSetWrite, {});
-
-			}
-
-			// Handle normal
-			{
-				if (m_mappedTextures.find(normalPath) == m_mappedTextures.cend())
-					m_mappedTextures.insert({ normalPath, std::move(Texture::fromFile(m_gfxCon, normalPath, true, false)) });
-
-				// Write to existing descriptor set (existing material that was made from diffuse) (bind image and sampler)
-				vk::DescriptorImageInfo imageInfo(m_commonSampler.get(), m_mappedTextures[normalPath]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
-				vk::WriteDescriptorSet imageSetWrite(m_mappedMaterials[diffusePath]->getDescriptorSet(), 3, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo, {}, {});	// Binding 3
-				dev.updateDescriptorSets(imageSetWrite, {});
-
-			}
-
-			// Combine to mesh and material into a render unit
-			renderUnits.push_back(RenderUnit(mesh, *m_mappedMaterials[diffusePath].get()));
-		}
+		renderUnits.push_back(RenderUnit(mesh, *m_mappedMaterials[diffusePath].get()));
 	}
 
 	std::sort(renderUnits.begin(), renderUnits.end());

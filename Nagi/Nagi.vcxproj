@@ -223,7 +223,6 @@
     <ClInclude Include="Includes\Entity.h" />
     <ClInclude Include="Includes\AssimpLoader.h" />
     <ClInclude Include="Includes\Camera.h" />
-    <ClInclude Include="Includes\Application\AppDefines.h" />
     <ClInclude Include="Includes\Application\Application.h" />
     <ClInclude Include="Includes\ImGui\imconfig.h" />
     <ClInclude Include="Includes\ImGui\imgui.h" />

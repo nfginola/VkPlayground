@@ -72,6 +72,9 @@ public:
 	
 	static constexpr uint32_t getMaxFramesInFlight() { return s_maxFramesInFlight; };
 
+
+
+
 	VulkanContext() = delete;
 	VulkanContext(const VulkanContext&) = delete;
 	VulkanContext& operator=(const VulkanContext&) = delete;

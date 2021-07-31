@@ -104,9 +104,6 @@
     <ClInclude Include="Includes\Application\Application.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Includes\Application\AppDefines.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Includes\VulkanUtilities.h">
       <Filter>Header Files</Filter>
     </ClInclude>
