@@ -185,8 +185,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			// ================================================ RECORD COMMANDS
 			cmd.begin(vk::CommandBufferBeginInfo());
 
-			// Bind engine wide resources with offsets into Dynamic UB (per frame resources) (Camera, Scene, Set 0)
-			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineDescriptorSet, engineBufferOffsets);
+
 
 			// ================================================ SETUP AND RECORD RENDER PASS (***)
 			{
@@ -198,6 +197,16 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 				vk::RenderPassBeginInfo rpInfo(m_defRenderPass.get(), m_defFramebuffers[frameRes.imageIdx].get(), vk::Rect2D({ 0, 0 }, scExtent), clearValues);
 
 				cmd.beginRenderPass(rpInfo, {});
+
+				// Draw skybox
+				// We bind engine wide here too because we are using different layout
+				cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_skyboxGfxPipelineLayout.get(), 0, m_engineDescriptorSet, engineBufferOffsets);
+				cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_skyboxGfxPipeline.get());
+				cmd.draw(36, 1, 0, 0);
+
+
+				// Bind engine wide resources with offsets into Dynamic UB (per frame resources) (Camera, Scene, Set 0)
+				cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineDescriptorSet, engineBufferOffsets);
 
 				// ================================================ RECORD OBJECTS DRAW CMDS
 				//drawObjects(cmd, timeElapsed);
@@ -306,6 +315,9 @@ void SponzaApp::loadTextures()
 	m_mappedTextures.insert({ "defaultopacity", Texture::fromFile(m_gfxCon, "Resources/Textures/defaultopacity.jpg") });
 	m_mappedTextures.insert({ "defaultspecular", Texture::fromFile(m_gfxCon, "Resources/Textures/defaultspecular.jpg") });
 	m_mappedTextures.insert({ "defaultnormal", Texture::fromFile(m_gfxCon, "Resources/Textures/defaultnormal.jpg") });
+	m_mappedTextures.insert({ "yokohamaSB", Texture::cubeFromFile(m_gfxCon, "Resources/Textures/Skybox/") });
+
+
 }
 
 void SponzaApp::drawObjects(vk::CommandBuffer& cmd, float timeElapsed)
@@ -527,7 +539,8 @@ void SponzaApp::setupDescriptorSetLayouts()
 	// Engine set layout v
 	std::vector<vk::DescriptorSetLayoutBinding> engineSetBindings{
 		vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBufferDynamic, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment),
-		vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eUniformBufferDynamic, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
+		vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eUniformBufferDynamic, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment),
+		vk::DescriptorSetLayoutBinding(2, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment)			// Skybox test	
 	};
 	vk::DescriptorSetLayoutCreateInfo engineSetLayoutCI({}, engineSetBindings);
 
@@ -715,6 +728,48 @@ void SponzaApp::createGraphicsPipeline()
 			0
 		)
 	).value;
+
+	// Skybox below
+
+	std::vector<vk::DescriptorSetLayout> compatibleLayoutsSB{
+		m_engineDescriptorSetLayout.get(),		// Set 0
+	};
+
+	m_skyboxGfxPipelineLayout = dev.createPipelineLayoutUnique(vk::PipelineLayoutCreateInfo({}, compatibleLayoutsSB));
+
+	auto vertBinSB = readFile("compiled_shaders/vertSkybox.spv");
+	auto fragBinSB = readFile("compiled_shaders/fragSkybox.spv");
+	auto vertModSB = dev.createShaderModuleUnique(vk::ShaderModuleCreateInfo({}, vertBinSB.size(), reinterpret_cast<uint32_t*>(vertBinSB.data())));
+	auto fragModSB = dev.createShaderModuleUnique(vk::ShaderModuleCreateInfo({}, fragBinSB.size(), reinterpret_cast<uint32_t*>(fragBinSB.data())));
+
+
+
+	std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStageCSB = {
+	vk::PipelineShaderStageCreateInfo({}, vk::ShaderStageFlagBits::eVertex, vertModSB.get(), "main"),
+	vk::PipelineShaderStageCreateInfo({}, vk::ShaderStageFlagBits::eFragment, fragModSB.get(), "main")
+	};
+
+	vk::PipelineVertexInputStateCreateInfo vertInCSB;	// empty
+
+	m_skyboxGfxPipeline = dev.createGraphicsPipelineUnique({},
+		vk::GraphicsPipelineCreateInfo({},
+			shaderStageCSB,
+			&vertInCSB,
+			&iaC,
+			{},
+			&vpC,
+			&rsC,
+			&msC,
+			&dsC,
+			&cbC,
+			{},
+			m_skyboxGfxPipelineLayout.get(),
+			m_defRenderPass.get(),
+			0
+		)
+	).value;
+
+
 }
 
 void SponzaApp::setupResources()
@@ -765,6 +820,12 @@ void SponzaApp::setupResources()
 	loadExternalModel("Resources/Objs/nanosuit_gunnar/nanosuit.obj");
 	loadExternalModel("Resources/Objs/sponza_new/Sponza.obj");
 	loadExternalModel("Resources/Objs/survival_backpack/backpack.obj");
+
+
+	// Write skybox data
+	vk::DescriptorImageInfo skyboxImageInfo(m_commonSampler.get(), m_mappedTextures["yokohamaSB"]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
+	vk::WriteDescriptorSet skyboxImageSetWrite(m_engineDescriptorSet, 2, 0, vk::DescriptorType::eCombinedImageSampler, skyboxImageInfo, {}, {});
+	m_gfxCon.getDevice().updateDescriptorSets({ skyboxImageSetWrite }, {});
 }
 
 

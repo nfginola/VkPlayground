@@ -321,6 +321,153 @@ namespace Nagi
 		return texture;
 	}
 
+	std::unique_ptr<Texture> Texture::cubeFromFile(VulkanContext& context, const std::filesystem::path& path, bool srgb)
+	{
+		// Get all image data
+		// ========================== Load image data
+		std::array<stbi_uc*, 6> cubeData;
+		std::array<std::string, 6> cubePaths{ "posx.jpg", "negx.jpg", "posy.jpg", "negy.jpg", "posz.jpg", "negz.jpg" };
+		int texWidth, texHeight, texChannels;
+		for (size_t i = 0; i < cubeData.size(); ++i)
+		{
+			auto fpath = path.relative_path().string() + cubePaths[i];
+			stbi_uc* pixels = stbi_load(fpath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+
+			if (!pixels)
+				throw std::runtime_error("Can't find the image resource: " + fpath);
+
+			cubeData[i] = pixels;
+		}
+
+		size_t imageSize = texWidth * texHeight * sizeof(uint32_t);
+
+		auto allocator = context.getAllocator();
+
+		// ========================== Create staging buffer and copy data to staging buffer
+		vk::BufferCreateInfo stagingCI({}, imageSize * cubeData.size(), vk::BufferUsageFlagBits::eTransferSrc);
+		VmaAllocationCreateInfo stagingBufAlloc{};
+		stagingBufAlloc.usage = VMA_MEMORY_USAGE_CPU_ONLY;
+
+		Buffer stagingBuffer(allocator, stagingCI, stagingBufAlloc);
+
+		for (size_t i = 0; i < cubeData.size(); ++i)
+		{
+			stagingBuffer.putData(cubeData[i], imageSize, i * imageSize);
+			stbi_image_free(cubeData[i]);
+		}
+
+		// ========================== We now want to copy the data from our staging buffer into a texture array
+
+		// Create texture array
+		auto texExtent = vk::Extent3D(texWidth, texHeight, 1);
+		vk::Format imageFormat = vk::Format::eR8G8B8A8Srgb;
+		if (!srgb)	imageFormat = vk::Format::eR8G8B8A8Unorm;
+
+		auto imageUsageBits = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
+
+		vk::ImageCreateInfo imgCI(
+			vk::ImageCreateFlagBits::eCubeCompatible,
+			vk::ImageType::e2D, imageFormat,
+			texExtent,
+			1, 6,	// 6
+			vk::SampleCountFlagBits::e1,
+			vk::ImageTiling::eOptimal,
+			imageUsageBits
+		);
+
+		VmaAllocationCreateInfo texAlloc{};
+		texAlloc.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+		//Texture texture(allocator, context.getDevice(), imgCI, texAlloc);
+		auto texture = std::make_unique<Texture>(allocator, context.getDevice(), imgCI, texAlloc);
+
+	
+		// Copy buffer data to texture in steps:
+		// 1. Transition texture array into TransferDstOptimal
+		// 2. Copy from buffer to texture
+		// 3. Transition texture array into ShaderReadOnlyOptimal
+
+		auto& uploadContext = context.getUploadContext();
+
+		// Transition layout, copy buffer, transition again to shader read only optimal
+		uploadContext.submitWork(
+			[&](const vk::CommandBuffer& cmd)
+			{
+				vk::ImageSubresourceRange range(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 6);		// 6 layers
+
+				vk::ImageMemoryBarrier barrierForTransfer(
+					{},
+					vk::AccessFlagBits::eTransferWrite,		// any transfer ops should wait until the image layout transition has occurred!
+					vk::ImageLayout::eUndefined,
+					vk::ImageLayout::eTransferDstOptimal,	// -> puts into linear layout, best for copying data from buffer to texture
+					{},
+					{},
+					texture->getImage(),
+					range
+				);
+
+				// Transition layout through barrier (after availability ops and before visibility ops)
+				cmd.pipelineBarrier(
+					vk::PipelineStageFlagBits::eTopOfPipe,
+					vk::PipelineStageFlagBits::eTransfer,	// any subsequent transfers should wait for this layout transition
+					{},
+					{},
+					{},
+					barrierForTransfer
+				);
+
+				// Now we can do our transfer cmd
+				vk::BufferImageCopy copyRegion({}, {}, {},
+					vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 6),
+					{},
+					texExtent
+				);
+
+				cmd.copyBufferToImage(stagingBuffer.getBuffer(), texture->getImage(), vk::ImageLayout::eTransferDstOptimal, copyRegion);
+
+				// Transition to shader read only optimal
+				vk::ImageMemoryBarrier barrierForReading(
+					vk::AccessFlagBits::eTransferWrite,
+					vk::AccessFlagBits::eShaderRead,
+					vk::ImageLayout::eTransferDstOptimal,
+					vk::ImageLayout::eShaderReadOnlyOptimal,
+					{},
+					{},
+					texture->getImage(),
+					range	// for all 6 
+				);
+
+				// Transition layout to Read Only Optimal through pipeline barrier (after availability ops and before visibility ops)
+				cmd.pipelineBarrier(
+					vk::PipelineStageFlagBits::eTransfer,
+					vk::PipelineStageFlagBits::eFragmentShader,		// guarantee that transition has happened before any subsequent fragment shader reads
+					{},												// above stage doesnt really matter since we are waiting for a Fence in submitWork which waits until the submitted work has COMPLETED execution
+					{},
+					{},
+					barrierForReading
+				);
+
+
+			});
+
+		// Create image views
+		vk::ComponentMapping componentMapping(vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG, vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA);
+		vk::ImageSubresourceRange subresRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 6);
+
+		vk::ImageViewCreateInfo viewCreateInfo({},
+			texture->getImage(),
+			vk::ImageViewType::eCube,
+			imageFormat,
+			componentMapping,
+			subresRange
+		);
+
+		texture->createView(viewCreateInfo);
+
+
+		return texture;
+	}
+
 	Material::Material(vk::Pipeline pipeline, vk::PipelineLayout pipelineLayout, vk::DescriptorSet descriptorSet) :
 		m_pipeline(pipeline), m_pipelineLayout(pipelineLayout), m_descriptorSet(descriptorSet)
 	{

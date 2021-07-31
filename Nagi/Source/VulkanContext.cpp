@@ -489,6 +489,7 @@ void VulkanContext::createLogicalDevice(const vk::PhysicalDevice& physicalDevice
 	// Enable anisotropic filtering (currently not doing checks to see if we do support it..)
 	vk::PhysicalDeviceFeatures physDevFeatures;
 	physDevFeatures.setSamplerAnisotropy(true);
+	//physDevFeatures.setImageCubeArray(true);		// for SampledCubeArray	https://vulkan.lunarg.com/doc/view/1.2.182.0/windows/1.2-extensions/vkspec.html#spirvenv-capabilities-table
 
 	
 

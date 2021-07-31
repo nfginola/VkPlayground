@@ -33,6 +33,8 @@ layout(set = 0, binding = 1) uniform SceneUBO
 	
 } sceneData;
 
+layout(set = 0, binding = 2) uniform samplerCube skyboxTexture;
+
 layout(set = 2, binding = 0) uniform sampler2D diffuseTexture;
 layout(set = 2, binding = 1) uniform sampler2D opacityTexture;
 layout(set = 2, binding = 2) uniform sampler2D specularTexture;

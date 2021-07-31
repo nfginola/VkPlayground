@@ -143,6 +143,9 @@ private:
 	vk::UniquePipelineLayout m_mainGfxPipelineLayout;
 	vk::UniquePipeline m_mainGfxPipeline;
 
+	vk::UniquePipelineLayout m_skyboxGfxPipelineLayout;
+	vk::UniquePipeline m_skyboxGfxPipeline;
+
 	vk::UniqueSampler m_commonSampler;
 
 
