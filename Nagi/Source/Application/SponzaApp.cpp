@@ -74,10 +74,10 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 		auto d1 = s1.createEntity();
 		auto f1 = s1.createEntity();
 
-		p1.getComponent<TransformComponent>().mat = glm::translate(glm::mat4(1.f), glm::vec3(-15.f, 8.f, -2.f));
+		p1.getComponent<TransformComponent>().mat = glm::translate(glm::mat4(1.f), glm::vec3(-15.f, 2.f, -2.f));
 		p1.addComponent<PointLightComponent>(glm::vec4(0.f, 1.f, 0.f, 0.f), glm::vec4(1.f, 0.09f, 0.016f, 0.f));
 
-		p2.getComponent<TransformComponent>().mat = glm::translate(glm::mat4(1.f), glm::vec3(15.f, 8.f, -2.f));
+		p2.getComponent<TransformComponent>().mat = glm::translate(glm::mat4(1.f), glm::vec3(15.f, 2.f, -2.f));
 		p2.addComponent<PointLightComponent>(glm::vec4(1.f, 0.f, 0.f, 0.f), glm::vec4(1.f, 0.09f, 0.016f, 0.f));
 
 		d1.addComponent<DirectionalLightComponent>(glm::vec4(1.f), glm::vec4(-0.35f, -1.f, -1.f, 0.f));
@@ -788,6 +788,7 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 	auto& vertices = loader.getVertices();
 	auto& indices = loader.getIndices();
 	auto& subsets = loader.getSubsets();
+	auto& materials = loader.getMaterials();
 
 	
 
@@ -822,6 +823,12 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 
 
 	// ======== Handle Subsets
+
+	// Load materials
+	// Here we should load the materials and let renderUnits below simply pick from the loaded materials
+
+
+
 	std::vector<RenderUnit> renderUnits;
 	renderUnits.reserve(subsets.size());
 	for (const auto& subset : subsets)
@@ -930,7 +937,7 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 
 	std::sort(renderUnits.begin(), renderUnits.end());
 	
-	// lowercase file name as id
+	// lowercase file name as id for the loaded model asset
 	auto fname = filePath.stem().string();
 	std::for_each(fname.begin(), fname.end(), [](char& c) { c = std::tolower(c); });
 
