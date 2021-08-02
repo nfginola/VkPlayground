@@ -38,7 +38,19 @@ All-in-all, it was a good experience to work with a modern graphics API. I have 
 Although Vulkan has been interesting, I think that it is very time-consuming to work with. There is a lot more information to read up on and variations to consider when making abstractions for the API.
 I have come to realize that the control (and complexity) of Vulkan is not something I want to prioritize right now and I will put aside this project for now and revisit a lower-level graphics API again in the near future when it is more appropriate. :)
   
-
+References:
+- [Synchronization (TheMaister)](https://themaister.net/blog/2019/08/14/yet-another-blog-explaining-vulkan-synchronization/)
+- [Synchronization (Jeremy Ong)](https://www.jeremyong.com/vulkan/graphics/rendering/2018/11/22/vulkan-synchronization-primer/)
+- [Vulkan-Tutorial (Alexander Overvoorde](https://vulkan-tutorial.com/)
+- [VkGuide (Victor Blanco)](https://vkguide.dev/)
+- [API Without Secrets (Pawel Lapinski)](https://software.intel.com/content/www/us/en/develop/articles/api-without-secrets-introduction-to-vulkan-preface.html)
+- [Minimal Vulkan HPP (Daniel Elliott)](https://github.com/dokipen3d/vulkanHppMinimalExample)
+- [Introduction To Vulkan (Johannes Unterguggenberger)](https://www.youtube.com/watch?v=isbMMIwmZes)
+- [Design Patterns for Low-Level Real-Time Rendering (Nicolas Guillemot)](https://www.youtube.com/watch?v=mdPeXJ0eiGc)
+- [Vulkan Spec](https://renderdoc.org/vkspec_chunked/index.html)
+  
+It is always healthy to have multiple references for the same material in order to compare-and-contrast which can help you verify and solidify your understanding. Above are a few major references I used over my one-month learning Vulkan (specified in no particular order).
+  
 General
 ![](Animation.gif)  
   
