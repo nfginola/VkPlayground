@@ -18,12 +18,13 @@ Miscellaneous Vulkan-related work done:
 - Have proper image layout transitions for texture creation and WSI sync.
 - Enable alpha-to-coverage to use opacity masks.
 - Multiple meshes in a single buffer, accessed and rendered through vertex offsets.
-- ImGui hook
+- Hook ImGui to Vulkan and GLFW
+- Inteface with Vulkan-Memory-Allocator for Buffer/Texture primitive creation/destruction
   
 Basic tech implemented in this application:  
 - Assimp model loading (With diffuse, opacity, specular and normal textures supported)
-- Phong Lighting (Blinn Phong specular)
-- Directional Light
+- Phong Lighting (with Blinn Phong specular)
+- Directional Light (not in any screenshots)
 - Spotlight
 - Point Light
 - Normal mapping
@@ -37,6 +38,7 @@ All-in-all, it was a good experience to work with a modern graphics API. I have 
 Although Vulkan has been interesting, I think that it is very time-consuming to work with. There is a lot more information to read up on and variations to consider when making abstractions for the API.
 I have come to realize that the control (and complexity) of Vulkan is not something I want to prioritize right now and I will put aside this project for now and revisit a lower-level graphics API again in the near future when it is more appropriate. :)
   
+
 General
 ![](Animation.gif)  
   
