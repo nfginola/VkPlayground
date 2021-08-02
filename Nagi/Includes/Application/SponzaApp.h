@@ -96,28 +96,20 @@ public:
 
 private:
 
-	void drawObjects(vk::CommandBuffer& cmd, float timeElapsed);
-
 	void drawObjects(Scene* scene, vk::CommandBuffer& cmd);
 
+	void setupResources();
+	
 	void createDescriptorPool();
-
-	void loadExternalModel(const std::filesystem::path& filePath);
-
-	void createRenderModels();
-
 	void createUBOs();
 	void loadTextures();
-
 	void setupDescriptorSetLayouts();
 	void configurePushConstantRange();
-
 	void allocateDescriptorSets();
-	
 	void createGraphicsPipeline();
 
-	void setupResources();
-
+	void createRenderModels();
+	void loadExternalModel(const std::filesystem::path& filePath);
 	void loadMaterial(std::string directory, AssimpMaterialPaths texturePaths);
 	void uploadTexture(std::string finalPathm, bool genMips, bool srgb, std::string materialParentPath, uint32_t bindingSlot);
 
@@ -130,10 +122,9 @@ private:
 	vk::DescriptorSet m_engineDescriptorSet;		// we will be using a single descriptor set for engine data (resources with offsets!) --> One buffer for all
 	std::unique_ptr<Buffer> m_engineFrameBuffer;
 
-	std::vector<ObjectFrameData> m_objectFrameData;
+	std::vector<ObjectFrameData> m_objectFrameData;		// Currently not used (planned to use for SSBO)
 
 	vk::UniqueDescriptorPool m_descriptorPool;
-
 	vk::UniqueDescriptorSetLayout m_engineDescriptorSetLayout;
 	vk::UniqueDescriptorSetLayout m_passDescriptorSetLayout;
 	vk::UniqueDescriptorSetLayout m_materialDescriptorSetLayout;
@@ -142,18 +133,14 @@ private:
 
 	vk::UniquePipelineLayout m_mainGfxPipelineLayout;
 	vk::UniquePipeline m_mainGfxPipeline;
-
-	vk::UniquePipelineLayout m_skyboxGfxPipelineLayout;
 	vk::UniquePipeline m_skyboxGfxPipeline;
 
 	vk::UniqueSampler m_commonSampler;
 
-
+	// Assets
 	std::map<std::string, std::unique_ptr<Texture>> m_mappedTextures;
 	std::map<std::string, std::unique_ptr<Material>> m_mappedMaterials;
-
 	std::unordered_map<std::string, std::unique_ptr<RenderModel>> m_loadedModels;
-	//std::vector<std::unique_ptr<RenderModel>> m_loadedModels;
 };
 
 }

@@ -29,11 +29,6 @@ public:
 	const glm::vec3& getLookDirection() const;
 
 	void update(float dt);
-
-	// Temporary count to check update frequency of each
-	int m_rotateCount = 0;
-	int m_updateCount = 0;
-
 private:
 	void applyMoveDirection(const glm::vec3& dir);
 	void moveInDirection(const glm::vec3& direction, float speed, float dt);

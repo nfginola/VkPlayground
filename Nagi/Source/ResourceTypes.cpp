@@ -383,7 +383,7 @@ namespace Nagi
 
 	
 		// Copy buffer data to texture in steps:
-		// 1. Transition texture array into TransferDstOptimal
+		// 1. Transition texture array layout into TransferDstOptimal
 		// 2. Copy from buffer to texture
 		// 3. Transition texture array into ShaderReadOnlyOptimal
 
@@ -441,7 +441,7 @@ namespace Nagi
 				cmd.pipelineBarrier(
 					vk::PipelineStageFlagBits::eTransfer,
 					vk::PipelineStageFlagBits::eFragmentShader,		// guarantee that transition has happened before any subsequent fragment shader reads
-					{},												// above stage doesnt really matter since we are waiting for a Fence in submitWork which waits until the submitted work has COMPLETED execution
+					{},												
 					{},
 					{},
 					barrierForReading
@@ -450,7 +450,7 @@ namespace Nagi
 
 			});
 
-		// Create image views
+		// Create image view
 		vk::ComponentMapping componentMapping(vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG, vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA);
 		vk::ImageSubresourceRange subresRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 6);
 

@@ -37,7 +37,11 @@ namespace Nagi
 			auto mtl = scene->mMaterials[i];
 			aiString diffPath, norPath, opacityPath, specularPath, bruh;
 			mtl->GetTexture(aiTextureType_DIFFUSE, 0, &diffPath);
-			mtl->GetTexture(aiTextureType_HEIGHT, 0, &norPath);
+
+			aiReturn norRet = mtl->GetTexture(aiTextureType_NORMALS, 0, &norPath);
+			if (norRet != aiReturn_SUCCESS)
+				mtl->GetTexture(aiTextureType_HEIGHT, 0, &norPath);
+
 			mtl->GetTexture(aiTextureType_OPACITY, 0, &opacityPath);
 			mtl->GetTexture(aiTextureType_SPECULAR, 0, &specularPath);
 			mtl->GetTexture(aiTextureType_UNKNOWN, 0, &bruh);

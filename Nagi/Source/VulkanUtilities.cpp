@@ -63,6 +63,28 @@ vk::UniqueRenderPass createDefaultRenderPass(VulkanContext& context)
 	// Using implicit external subpass
 
 	return dev.createRenderPassUnique(vk::RenderPassCreateInfo({}, attachmentDescs, subpassDesc, extInDep));
+
+	/*
+	RenderPassBuilder
+
+		.setAttachmentDesc(0,
+			...
+			...
+			...)
+		.setAttachmentDesc(1,
+			...
+			...
+			...)
+		.setSubpassInfo(subpassIDX, { 0, Layout }, { 1, Layout }, ...) --> Variadic templates to make unlimited args
+
+		.setSubpassDep(VK_EXT, 0, SubpassDependency)
+		.setSubpassDep(0, 1, SubpassDependency)
+		.setSubpassDep(1, VK_EXT, SubpassDependency)
+
+		.build(device);
+	
+	
+	*/
 }
 
 std::vector<vk::UniqueFramebuffer> createDefaultFramebuffers(VulkanContext& context, const vk::RenderPass& suitableRenderPass)

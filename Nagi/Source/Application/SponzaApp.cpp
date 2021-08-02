@@ -6,6 +6,8 @@
 #include "VulkanImGuiContext.h"
 #include "Timer.h"
 
+
+
 namespace Nagi
 {
 
@@ -77,12 +79,6 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 		d1.addComponent<DirectionalLightComponent>(glm::vec4(1.f), glm::vec4(-0.35f, -1.f, -1.f, 0.f));
 	
-
-
-
-
-
-
 		float dt = 0.f;
 		float timeElapsed = 0.f;
 		float spotlightStrength = 0.2f;
@@ -110,11 +106,6 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 			fpsCam.update(dt);
 
-			if (keyHandler->isKeyPressed(KeyName::E))
-			{
-				std::cout << "Rotate count: " << fpsCam.m_rotateCount << "\n";
-				std::cout << "Update count: " << fpsCam.m_updateCount << "\n\n";
-			}
 
 
 			if (keyHandler->isKeyPressed(KeyName::G))
@@ -175,7 +166,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			uint32_t sceneDataOffset = thisFrameOffset + sizeof(GPUCameraData);
 			// packing : [camera, scene, camera, scene, camera, scene]
 			m_engineFrameBuffer->putData(&cameraData, sizeof(GPUCameraData), cameraDataOffset);						// Upload camera data
-			m_engineFrameBuffer->putData(&sceneData, sizeof(SceneData), sceneDataOffset);	// Upload scene data
+			m_engineFrameBuffer->putData(&sceneData, sizeof(SceneData), sceneDataOffset);							// Upload scene data
 
 			// Offsets into the 1st dynamic UB and 2nd dynamic UB
 			std::array<uint32_t, 2> engineBufferOffsets = { cameraDataOffset, sceneDataOffset };
@@ -185,7 +176,8 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			// ================================================ RECORD COMMANDS
 			cmd.begin(vk::CommandBufferBeginInfo());
 
-
+			// Bind engine wide resources with offsets into Dynamic UB (per frame resources) (Camera, Scene, Set 0)
+			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineDescriptorSet, engineBufferOffsets);
 
 			// ================================================ SETUP AND RECORD RENDER PASS (***)
 			{
@@ -198,19 +190,12 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 				cmd.beginRenderPass(rpInfo, {});
 
-				// Draw skybox
-				// We bind engine wide here too because we are using different layout
-				cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_skyboxGfxPipelineLayout.get(), 0, m_engineDescriptorSet, engineBufferOffsets);
-				cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_skyboxGfxPipeline.get());
+				// ================================================ DRAW SKYBOX
+				cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_skyboxGfxPipeline.get());	// SkyboxGfxPipeline is built with mainGfxPipelineLayout which makes it compatible with the desc set
 				cmd.draw(36, 1, 0, 0);
 
-
-				// Bind engine wide resources with offsets into Dynamic UB (per frame resources) (Camera, Scene, Set 0)
-				cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineDescriptorSet, engineBufferOffsets);
-
 				// ================================================ RECORD OBJECTS DRAW CMDS
-				//drawObjects(cmd, timeElapsed);
-				drawObjects(&s1, cmd);		// Submitting entities from scene which have a render model ref
+				drawObjects(&s1, cmd);		// Submitting entities from scene which have render model refs, no instancing.
 				// ================================================ RECORD IMGUI DRAW CMDS
 				imGuiContext->render(cmd);
 
@@ -308,8 +293,6 @@ void SponzaApp::createUBOs()
 
 void SponzaApp::loadTextures()
 {
-	//m_loadedTextures.push_back(loadVkImage(m_gfxCon, "Resources/Textures/rimuru.jpg"));
-	//m_loadedTextures.push_back(loadVkImage(m_gfxCon, "Resources/Textures/rimuru2.jpg"));
 	m_mappedTextures.insert({ "rimuru", Texture::fromFile(m_gfxCon, "Resources/Textures/rimuru.jpg", true) });
 	m_mappedTextures.insert({ "rimuru2", Texture::fromFile(m_gfxCon, "Resources/Textures/rimuru2.jpg", true) });
 	m_mappedTextures.insert({ "defaultopacity", Texture::fromFile(m_gfxCon, "Resources/Textures/defaultopacity.jpg") });
@@ -318,95 +301,6 @@ void SponzaApp::loadTextures()
 	m_mappedTextures.insert({ "yokohamaSB", Texture::cubeFromFile(m_gfxCon, "Resources/Textures/Skybox/") });
 
 
-}
-
-void SponzaApp::drawObjects(vk::CommandBuffer& cmd, float timeElapsed)
-{	
-	PushConstantData perObjectData{};
-
-	int tmpId = 0;
-	int materialChangeThisFrame = 0;
-	Material lastMaterial;
-	for (const auto& model : m_loadedModels)
-	{
-		const auto& renderUnits = model.second->getRenderUnits();
-		const auto& vb = model.second->getVertexBuffer();
-		const auto& ib = model.second->getIndexBuffer();
-
-		std::array<vk::Buffer, 1> vbs{ vb };
-		std::array<vk::DeviceSize, 1> offsets{ 0 };
-		cmd.bindVertexBuffers(0, vbs, offsets);
-		cmd.bindIndexBuffer(ib, 0, vk::IndexType::eUint32);
-
-		// Sponza
-		if (tmpId == 2)
-		{
-			auto newMatModel = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, 0.f)) * glm::scale(glm::mat4(1.f), glm::vec3(0.07f));
-			perObjectData.modelMat = newMatModel;
-		}
-		// Nanosuit
-		else if (tmpId == 1)
-		{
-			auto newMatModel = 
-				glm::translate(glm::mat4(1.f), glm::vec3(9.f, 0.f, -9.f)) * 
-				glm::rotate(glm::mat4(1.f), glm::radians(timeElapsed * 45.f), glm::vec3(0.f, 1.f, 0.f)) * 
-				glm::scale(glm::mat4(1.f), glm::vec3(1.f));
-			perObjectData.modelMat = newMatModel;
-		}
-		// Backpack
-		else if (tmpId == 3)
-		{
-			auto newMatModel = 
-				glm::translate(glm::mat4(1.f), glm::vec3(0.f, 10.f + 2.f * cosf(timeElapsed), 0.f)) * 
-				glm::rotate(glm::mat4(1.f), glm::radians(timeElapsed * 21.f), glm::vec3(0.f, 1.f, 0.f)) *
-				glm::scale(glm::mat4(1.f), glm::vec3(1.f));
-			perObjectData.modelMat = newMatModel;
-		}
-		// Quad
-		else if (tmpId == 0)
-		{
-			auto newMatModel =
-				glm::translate(glm::mat4(1.f), glm::vec3(0.f, 2.5f, 0.f)) *
-				glm::rotate(glm::mat4(1.f), glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f)) *
-				glm::scale(glm::mat4(1.f), glm::vec3(8.f, 5.f, 8.f));
-			perObjectData.modelMat = newMatModel;
-		}
-
-		for (const auto& renderUnit : renderUnits)
-		{
-			const auto& mesh = renderUnit.getMesh();
-			const auto& mat = renderUnit.getMaterial();
-
-			if (mat != lastMaterial)
-			{
-				// we technically dont have to check this every material change because we may still be using the same pipeline but simply different set of resources
-				// (textures). We could check the pipeline independently to avoid this state change.
-				cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, mat.getPipeline());		
-				
-				// Bind per material resources (Textures, Set 2)
-				cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mat.getPipelineLayout(), 2, mat.getDescriptorSet(), {});
-				lastMaterial = mat;
-				materialChangeThisFrame++;
-			}
-
-
-
-			// Bind model matrix (Buffer style, disabled)
-			//perObjectFrameData.modelMatBuffer->putData(&perObjectData, sizeof(ObjectData));
-			//cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mat.getPipelineLayout(), 3, perObjectFrameData.descriptorSet, {});
-
-			// Upload model matrix through push constant
-			cmd.pushConstants<PushConstantData>(mat.getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, { perObjectData });
-
-			cmd.drawIndexed(mesh.getNumIndices(), 1, mesh.getFirstIndex(), mesh.getVertexBufferOffset(), mesh.getVertexBufferOffset());
-		}
-
-		++tmpId;
-	}
-
-	// use this to check the std::sort on RenderUnits to see that the material change count is lower!
-	// because we are sorting the renderunits by material, we can have less state change
-	//std::cout << "material change this frame: " << materialChangeThisFrame << '\n';
 }
 
 void SponzaApp::drawObjects(Scene* scene, vk::CommandBuffer& cmd)
@@ -419,7 +313,6 @@ void SponzaApp::drawObjects(Scene* scene, vk::CommandBuffer& cmd)
 	{
 		auto model = scene->getRegistry().get<ModelRefComponent>(e).model;
 		auto& mat = scene->getRegistry().get<TransformComponent>(e).mat;
-
 		PushConstantData perObjectData{ mat };
 
 		const auto& renderUnits = model->getRenderUnits();
@@ -464,7 +357,7 @@ void SponzaApp::drawObjects(Scene* scene, vk::CommandBuffer& cmd)
 
 void SponzaApp::createDescriptorPool()
 {
-	// Make pool large enough for our needs
+	// Make pool large enough for our needs (arbitrary)
 	std::vector<vk::DescriptorPoolSize> descriptorPoolSizes{
 		vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer, 10),
 		vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler, 500),
@@ -536,11 +429,11 @@ void SponzaApp::createRenderModels()
 
 void SponzaApp::setupDescriptorSetLayouts()
 {
-	// Engine set layout v
+	// Engine set layout
 	std::vector<vk::DescriptorSetLayoutBinding> engineSetBindings{
 		vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBufferDynamic, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment),
 		vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eUniformBufferDynamic, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment),
-		vk::DescriptorSetLayoutBinding(2, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment)			// Skybox test	
+		vk::DescriptorSetLayoutBinding(2, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment)			// Skybox	
 	};
 	vk::DescriptorSetLayoutCreateInfo engineSetLayoutCI({}, engineSetBindings);
 
@@ -561,7 +454,7 @@ void SponzaApp::setupDescriptorSetLayouts()
 	};
 	vk::DescriptorSetLayoutCreateInfo materialSetLayoutCI({}, materialBindings);
 
-	// Per object layout
+	// Per object layout (not used currently)
 	std::vector<vk::DescriptorSetLayoutBinding> objectBindings{
 		vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eVertex)	// SSBO for model matrices
 	};
@@ -641,6 +534,7 @@ void SponzaApp::createGraphicsPipeline()
 		vk::PipelineShaderStageCreateInfo({}, vk::ShaderStageFlagBits::eVertex, vertMod.get(), "main"),
 		vk::PipelineShaderStageCreateInfo({}, vk::ShaderStageFlagBits::eFragment, fragMod.get(), "main")
 	};
+	
 
 	// ======== Vertex Input Binding Description
 	std::vector<vk::VertexInputBindingDescription> bindingDescs{ Vertex::getBindingDescription() };
@@ -729,13 +623,13 @@ void SponzaApp::createGraphicsPipeline()
 		)
 	).value;
 
-	// Skybox below
+	// =============================== Skybox below 
 
 	std::vector<vk::DescriptorSetLayout> compatibleLayoutsSB{
 		m_engineDescriptorSetLayout.get(),		// Set 0
 	};
 
-	m_skyboxGfxPipelineLayout = dev.createPipelineLayoutUnique(vk::PipelineLayoutCreateInfo({}, compatibleLayoutsSB));
+	//m_skyboxGfxPipelineLayout = dev.createPipelineLayoutUnique(vk::PipelineLayoutCreateInfo({}, compatibleLayoutsSB));
 
 	auto vertBinSB = readFile("compiled_shaders/vertSkybox.spv");
 	auto fragBinSB = readFile("compiled_shaders/fragSkybox.spv");
@@ -763,7 +657,7 @@ void SponzaApp::createGraphicsPipeline()
 			&dsC,
 			&cbC,
 			{},
-			m_skyboxGfxPipelineLayout.get(),
+			m_mainGfxPipelineLayout.get(),
 			m_defRenderPass.get(),
 			0
 		)
@@ -821,7 +715,6 @@ void SponzaApp::setupResources()
 	loadExternalModel("Resources/Objs/sponza_new/Sponza.obj");
 	loadExternalModel("Resources/Objs/survival_backpack/backpack.obj");
 
-
 	// Write skybox data
 	vk::DescriptorImageInfo skyboxImageInfo(m_commonSampler.get(), m_mappedTextures["yokohamaSB"]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
 	vk::WriteDescriptorSet skyboxImageSetWrite(m_engineDescriptorSet, 2, 0, vk::DescriptorType::eCombinedImageSampler, skyboxImageInfo, {}, {});
@@ -859,6 +752,7 @@ void SponzaApp::loadMaterial(std::string directory, AssimpMaterialPaths textureP
 	else
 		normalPath = "Resources/Textures/defaultnormal.jpg";
 
+	// Parent paths is diffuse (identifier for descriptor set)
 	uploadTexture(diffusePath, true, true, diffusePath, 0);
 	uploadTexture(opacityPath, true, false, diffusePath, 1);
 	uploadTexture(specularPath, true, false, diffusePath, 2);
@@ -873,7 +767,7 @@ void SponzaApp::uploadTexture(std::string finalPath, bool genMips, bool srgb, st
 		m_mappedTextures.insert({ finalPath, std::move(Texture::fromFile(m_gfxCon, finalPath, genMips, srgb)) });
 	}
 
-	// Parent (responsible for descriptor not yet initialized)
+	// Parent (diffuse) (responsible for descriptor not yet initialized)
 	if (m_mappedMaterials.find(materialParentPath) == m_mappedMaterials.cend())
 	{
 		// Create descriptor set with new material

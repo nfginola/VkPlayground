@@ -141,6 +141,9 @@ void main()
     vec3 diffuseColor = texture(diffuseTexture, fragUV).xyz;
     
     normal = getFinalNormal(normal);
+
+    //outColor = vec4(normal, 1.f);
+    //return;
      
     //vec3 finalColor = calculateDirectionalLight(sceneData.directionalLightDirection.xyz, sceneData.directionalLightColor.xyz, normal);
     vec3 finalColor = vec3(0.f);
@@ -156,6 +159,11 @@ void main()
     }
 
     finalColor += calculateSpotlight();
+    finalColor = max(finalColor, vec3(0.f));
 
-    outColor = vec4(max(finalColor, vec3(0.f)), texture(opacityTexture, fragUV).r);
+    // HDR tonemapping??
+    //finalColor = finalColor / (finalColor + vec3(1.f));
+    //finalColor = vec3(1.0) - exp(-finalColor * 5.f);
+
+    outColor = vec4(finalColor, texture(opacityTexture, fragUV).r);
 }

@@ -1,5 +1,17 @@
 # VkPlayground
 Vulkan Playground  
+    
+The purpose of this project primarily for learning purposes and to get my hands dirty with a lower-level graphics API. 
+
+General
+![](Animation.gif)  
   
-The project consists of a collection of independent Applications which can be found in the Application folder under src/includes.  
-This project is only for me to get my hands dirty with Vulkan.  
+![Alt text](pic1.png?raw=true "General")
+  
+Normal mapping  
+![Alt text](normal.png?raw=true "Normal")
+  
+Skybox
+![Alt text](skybox.png?raw=true "Skybox")
+
+

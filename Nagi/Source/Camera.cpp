@@ -34,7 +34,6 @@ namespace Nagi
 		else if (m_camPitch < -89.f)
 			m_camPitch = -89.f;
 
-		m_rotateCount++;
 
 	}
 
@@ -132,8 +131,6 @@ namespace Nagi
 
 		m_localForward = glm::normalize(m_localForward);
 		m_localRight = glm::normalize(m_localRight);
-
-		m_updateCount++;
 	}
 
 	void Camera::moveInDirection(const glm::vec3& direction, float speed, float dt)

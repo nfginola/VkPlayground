@@ -36,8 +36,6 @@ VulkanContext::VulkanContext(const Window& win, bool debugLayer) :
 		createCommandPools(m_device, m_queueFamilies);
 
 		// Initialize VMA
-		// We will use later, stick with normal Buffer/Image creation for now for learning purposes
-		// Note that there are VMA destruction code that are commented in the destructor
 		createVulkanMemoryAllocator(m_instance, m_physicalDevice, m_device);
 
 		std::pair<uint32_t, uint32_t> clientDim{ win.getClientWidth(), win.getClientHeight() };
@@ -163,14 +161,6 @@ FrameResource VulkanContext::beginFrame()
 			m_currFrame
 		};
 
-		//return 
-		//{ 
-		//	// Arguments needed in VkSubmitInfo
-		//	m_frameSyncResources[m_currFrame].imageAvailableSemaphore.get(),
-		//	m_frameSyncResources[m_currFrame].renderFinishedSemaphore.get(),
-		//	//m_frameSyncResources[m_currFrame].inFlightFence.get(),
-		//	m_gfxCmdBuffers[m_currFrame]		// Even though command buffer is tied to frame resource, lets keep it separate for now
-		//};
 	}
 	catch (vk::SystemError& err)
 	{
@@ -629,6 +619,8 @@ void VulkanContext::createSwapchainImageViews(const vk::SwapchainKHR& swapchain,
 
 void VulkanContext::createDepthResources(const vk::PhysicalDevice& physicalDevice, const vk::Device& logicalDevice, std::pair<uint32_t, uint32_t> clientDimensions)
 {
+	// This is done the original way (without VMA) for learning purposes)
+
 	// ========================= Create Image
 	// Declare that we want a 32 bit signed floating point component
 	const vk::Format depthFormat = vk::Format::eD32Sfloat;
