@@ -41,7 +41,7 @@ I have come to realize that the control (and complexity) of Vulkan is not someth
 References:
 - [Synchronization (TheMaister)](https://themaister.net/blog/2019/08/14/yet-another-blog-explaining-vulkan-synchronization/)
 - [Synchronization (Jeremy Ong)](https://www.jeremyong.com/vulkan/graphics/rendering/2018/11/22/vulkan-synchronization-primer/)
-- [Vulkan-Tutorial (Alexander Overvoorde](https://vulkan-tutorial.com/)
+- [Vulkan-Tutorial (Alexander Overvoorde)](https://vulkan-tutorial.com/)
 - [VkGuide (Victor Blanco)](https://vkguide.dev/)
 - [API Without Secrets (Pawel Lapinski)](https://software.intel.com/content/www/us/en/develop/articles/api-without-secrets-introduction-to-vulkan-preface.html)
 - [Minimal Vulkan HPP (Daniel Elliott)](https://github.com/dokipen3d/vulkanHppMinimalExample)
