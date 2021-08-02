@@ -33,7 +33,7 @@ Basic tech implemented in this application:
 I unfortunately have no complex synchronization usage which I can showcase in this project which would be required for, e.g, Deferred Rendering (Geometry Pass, then Light Pass) where resource dependencies are needed (between both subpass)
 to avoid Read-After-Write hazards on the GBuffers. 
   
-All-in-all, it was a good experience to work with a modern graphics API. I have gotten a taste of the workflow and the primitives a modern graphics API provides and made a basic application! I have also gained a better appreciation of a higher level graphics API and understand, at least partly, what it may do for me under-the-hood.
+All-in-all, it was a good experience to work with a modern graphics API. I have gotten a taste of the workflow and the primitives a modern graphics API provides and made a basic application! I have also gained a better appreciation for a higher level graphics API and understand, at least partly, what it may do for me under-the-hood.
   
 Although Vulkan has been interesting, I think that it is very time-consuming to work with. There is a lot more information to read up on and variations to consider when making abstractions for the API.
 I have come to realize that the control (and complexity) of Vulkan is not something I want to prioritize right now and I will put aside this project for now and revisit a lower-level graphics API again in the near future when it is more appropriate. :)
