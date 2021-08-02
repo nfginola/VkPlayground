@@ -49,7 +49,7 @@ References:
 - [Design Patterns for Low-Level Real-Time Rendering (Nicolas Guillemot)](https://www.youtube.com/watch?v=mdPeXJ0eiGc)
 - [Vulkan Spec](https://renderdoc.org/vkspec_chunked/index.html)
   
-It is always healthy to have multiple references for the same material in order to compare-and-contrast which can help you verify and solidify your understanding. Above are a few major references I used over my one-month learning Vulkan (specified in no particular order).
+It is always healthy to have multiple references for the same material in order to compare-and-contrast which can help you verify and solidify your understanding. Above are a few major references I used during this project (specified in no particular order).
   
 General
 ![](Animation.gif)  
