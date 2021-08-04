@@ -299,8 +299,6 @@ void SponzaApp::loadTextures()
 	m_mappedTextures.insert({ "defaultspecular", Texture::fromFile(m_gfxCon, "Resources/Textures/defaultspecular.jpg") });
 	m_mappedTextures.insert({ "defaultnormal", Texture::fromFile(m_gfxCon, "Resources/Textures/defaultnormal.jpg") });
 	m_mappedTextures.insert({ "yokohamaSB", Texture::cubeFromFile(m_gfxCon, "Resources/Textures/Skybox/") });
-
-
 }
 
 void SponzaApp::drawObjects(Scene* scene, vk::CommandBuffer& cmd)
