@@ -3,7 +3,7 @@ Vulkan Playground
   
 This is a self-initiated project where I take a dive into Vulkan (using the C++ bindings) after prior experience with D3D11 to get my hands dirty with a lower-level graphics API.
   
-I will be refactoring as I go, when I need it.
+I will be refactoring as I go, when I need it, as I extend this application.
   
 Basic tech implemented so far
 - Assimp model loading (With diffuse, opacity, specular and normal textures supported)
@@ -13,7 +13,6 @@ Basic tech implemented so far
 - Point Light
 - Normal mapping
 - Skybox
-
   
 References:
 - [Synchronization (TheMaister)](https://themaister.net/blog/2019/08/14/yet-another-blog-explaining-vulkan-synchronization/)
@@ -25,8 +24,6 @@ References:
 - [Introduction To Vulkan (Johannes Unterguggenberger)](https://www.youtube.com/watch?v=isbMMIwmZes)
 - [Design Patterns for Low-Level Real-Time Rendering (Nicolas Guillemot)](https://www.youtube.com/watch?v=mdPeXJ0eiGc)
 - [Vulkan Spec](https://renderdoc.org/vkspec_chunked/index.html)
-  
-It is always healthy to have multiple references for the same material in order to compare-and-contrast which can help you verify and solidify your understanding. Above are a few major references I used during this project (specified in no particular order).
   
 General
 ![](Animation.gif)  
