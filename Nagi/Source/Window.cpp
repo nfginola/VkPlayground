@@ -2,8 +2,8 @@
 #include "Window.h"
 #include <vulkan/vulkan.hpp>
 
-#include "Input/KeyHandler.h"
-#include "Input/MouseHandler.h"
+#include "Input/Keyboard.h"
+#include "Input/Mouse.h"
 
 namespace Nagi
 {
@@ -28,13 +28,8 @@ Window::Window(int clientWidth, int clientHeight, const char* title) :
 	glfwSetMouseButtonCallback(m_window, mouseButtonCallback);
 	glfwSetCursorPosCallback(m_window, mouseCursorCallback);
 
-
-
 	if (glfwRawMouseMotionSupported())
 		glfwSetInputMode(m_window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
-
-
-
 
 
 	// Get required extensions
@@ -45,6 +40,10 @@ Window::Window(int clientWidth, int clientHeight, const char* title) :
 	m_reqExtensions.reserve(glfwExtensionCount);
 	for (uint32_t i = 0; i < glfwExtensionCount; ++i)
 		m_reqExtensions.push_back(glfwExtensions[i]);
+
+	// Setup input handlers
+	m_Keyboard = std::make_unique<Nagi::Keyboard>();
+	m_Mouse = std::make_unique<Nagi::Mouse>();
 }
 
 Window::~Window()
@@ -73,24 +72,14 @@ void Window::processEvents() const
 	glfwPollEvents();
 }
 
-void Window::setKeyHandler(KeyHandler* handler)
+Keyboard* Window::getKeyboard() const
 {
-	m_keyHandler = handler;
+	return m_Keyboard.get();
 }
 
-void Window::setMouseHandler(MouseHandler* handler)
+Mouse* Window::getMouse() const
 {
-	m_mouseHandler = handler;
-}
-
-KeyHandler* Window::getKeyHandler() const
-{
-	return m_keyHandler;
-}
-
-MouseHandler* Window::getMouseHandler() const
-{
-	return m_mouseHandler;
+	return m_Mouse.get();
 }
 
 void Window::setResizeCallback(std::function<void(GLFWwindow*, int, int)> function)
@@ -127,22 +116,22 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 		glfwSetWindowShouldClose(window, GLFW_TRUE);
 
 	auto app = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-	if (app->m_keyHandler)
-		app->m_keyHandler->handleKeyEvent(window, key, scancode, action, mods);
+	if (app->m_Keyboard)
+		app->m_Keyboard->handleKeyEvent(window, key, scancode, action, mods);
 }
 
 void Window::mouseCursorCallback(GLFWwindow* window, double xPos, double yPos)
 {
 	auto app = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-	if (app->m_mouseHandler)
-		app->m_mouseHandler->handleCursor(window, xPos, yPos);
+	if (app->m_Mouse)
+		app->m_Mouse->handleCursor(window, xPos, yPos);
 }
 
 void Window::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
 	auto app = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-	if (app->m_mouseHandler)
-		app->m_mouseHandler->handleButton(window, button, action, mods);
+	if (app->m_Mouse)
+		app->m_Mouse->handleButton(window, button, action, mods);
 }
 
 }

@@ -132,6 +132,7 @@ private:
 	vk::PushConstantRange m_pushConstantRange;
 
 	vk::UniquePipelineLayout m_mainGfxPipelineLayout;
+	vk::UniquePipelineLayout m_skyboxGfxPipelineLayout;
 	vk::UniquePipeline m_mainGfxPipeline;
 	vk::UniquePipeline m_skyboxGfxPipeline;
 

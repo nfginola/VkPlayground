@@ -6,23 +6,25 @@
 #include "VulkanImGuiContext.h"
 #include "Timer.h"
 
+#include "ReflectionTest.h"
 
+#include "ShaderGroup.h"
 
 namespace Nagi
 {
 
-SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
-	Application(window, gfxCon)
+SponzaApp::SponzaApp(Window& window, VulkanContext& vkCon) :
+	Application(window, vkCon)
 {
 	// Get input handlers
-	auto keyHandler = window.getKeyHandler();
-	auto mouseHandler = window.getMouseHandler();
-	assert(keyHandler != nullptr && mouseHandler != nullptr);
+	auto keyboard = window.getKeyboard();
+	auto mouse = window.getMouse();
+	assert(keyboard != nullptr && mouse != nullptr);
 
-	auto scExtent = m_gfxCon.getSwapchainExtent();
+	auto scExtent = m_vkCon.getSwapchainExtent();
 	Camera fpsCam((float)scExtent.width / scExtent.height, 90.f);
 
-	mouseHandler->hookFunctionToCursor([&fpsCam](float deltaX, float deltaY) { fpsCam.rotateCamera(deltaX, deltaY, 0.07f); });
+	mouse->hookFunctionToCursor([&fpsCam](float deltaX, float deltaY) { fpsCam.rotateCamera(deltaX, deltaY, 0.07f); });
 
 	try
 	{
@@ -30,7 +32,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 		// Initialize ImGui (After application resources --> Defined render pass to "hook onto")
 		// Give a suitable render pass to draw with
-		auto imGuiContext = std::make_unique<VulkanImGuiContext>(m_gfxCon, m_window, m_defRenderPass.get());
+		auto imGuiContext = std::make_unique<VulkanImGuiContext>(m_vkCon, m_window, m_defRenderPass.get());
 
 		// Setup entities
 		Scene s1;
@@ -97,20 +99,18 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			ImGui::ShowDemoWindow(&showImGuiDemo);
 
 			// ============================================= HANDLE INPUT RESPONSE
-			if (keyHandler->isKeyDown(KeyName::A))		fpsCam.move(MoveDirection::Left);
-			if (keyHandler->isKeyDown(KeyName::D))		fpsCam.move(MoveDirection::Right);
-			if (keyHandler->isKeyDown(KeyName::W))		fpsCam.move(MoveDirection::Forward);
-			if (keyHandler->isKeyDown(KeyName::S))		fpsCam.move(MoveDirection::Backward);
-			if (keyHandler->isKeyDown(KeyName::Space))	fpsCam.move(MoveDirection::Up);
-			if (keyHandler->isKeyDown(KeyName::LShift))	fpsCam.move(MoveDirection::Down);
+			if (keyboard->isKeyDown(KeyName::A))		fpsCam.move(MoveDirection::Left);
+			if (keyboard->isKeyDown(KeyName::D))		fpsCam.move(MoveDirection::Right);
+			if (keyboard->isKeyDown(KeyName::W))		fpsCam.move(MoveDirection::Forward);
+			if (keyboard->isKeyDown(KeyName::S))		fpsCam.move(MoveDirection::Backward);
+			if (keyboard->isKeyDown(KeyName::Space))	fpsCam.move(MoveDirection::Up);
+			if (keyboard->isKeyDown(KeyName::LShift))	fpsCam.move(MoveDirection::Down);
 
 			fpsCam.update(dt);
 
-
-
-			if (keyHandler->isKeyPressed(KeyName::G))
+			if (keyboard->isKeyPressed(KeyName::G))
 				spotlightStrength = 0.f;
-			else if (keyHandler->isKeyPressed(KeyName::F))
+			else if (keyboard->isKeyPressed(KeyName::F))
 				spotlightStrength = 0.2f;
 
 			// =============================================== UPDATE OBJECTS
@@ -148,7 +148,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 
 			// ================================================ BEGIN GPU FRAME
-			auto frameRes = gfxCon.beginFrame();
+			auto frameRes = vkCon.beginFrame();
 			auto& cmd = frameRes.gfxCmdBuffer;
 
 
@@ -164,7 +164,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 
 			uint32_t cameraDataOffset = thisFrameOffset;
 			uint32_t sceneDataOffset = thisFrameOffset + sizeof(GPUCameraData);
-			// packing : [camera, scene, camera, scene, camera, scene]
+			// packing : [camera, scene, camera, scene, camera, scene] (max 3 frames in flight)
 			m_engineFrameBuffer->putData(&cameraData, sizeof(GPUCameraData), cameraDataOffset);						// Upload camera data
 			m_engineFrameBuffer->putData(&sceneData, sizeof(SceneData), sceneDataOffset);							// Upload scene data
 
@@ -177,6 +177,7 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 			cmd.begin(vk::CommandBufferBeginInfo());
 
 			// Bind engine wide resources with offsets into Dynamic UB (per frame resources) (Camera, Scene, Set 0)
+			//cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineDescriptorSet, engineBufferOffsets);
 			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_mainGfxPipelineLayout.get(), 0, m_engineDescriptorSet, engineBufferOffsets);
 
 			// ================================================ SETUP AND RECORD RENDER PASS (***)
@@ -216,15 +217,15 @@ SponzaApp::SponzaApp(Window& window, VulkanContext& gfxCon) :
 				frameRes.sync.renderFinishedSemaphore
 			);
 
-			gfxCon.submitQueue(submitInfo);
-			gfxCon.endFrame();
+			vkCon.submitQueue(submitInfo);
+			vkCon.endFrame();
 
 			dt = timer.time();
 			timeElapsed += dt;
 		}
 
 		// Idle to wait for GPU resources to stop being used before resource destruction
-		gfxCon.getDevice().waitIdle();
+		vkCon.getDevice().waitIdle();
 
 	}
 	catch (vk::SystemError& err)
@@ -254,7 +255,7 @@ void SponzaApp::createUBOs()
 {
 	// Create UBO for engine set (Camera and scene)
 	// check for minimum buffer alignment for dynamic buffer implementation (one buffer, multiple offset binds)
-	auto& prop = m_gfxCon.getPhysicalDeviceProperties();
+	auto& prop = m_vkCon.getPhysicalDeviceProperties();
 	auto minBufferAlignment = prop.limits.minUniformBufferOffsetAlignment;
 	std::cout << "min buffer alignment: " << minBufferAlignment << std::endl;
 
@@ -264,7 +265,7 @@ void SponzaApp::createUBOs()
 	// Create engine data buffer
 	uint32_t sizeAligned = getAlignedSize(VulkanContext::getMaxFramesInFlight() * (sizeof(SceneData) + sizeof(GPUCameraData)), minBufferAlignment);
 	auto engineBufCI = vk::BufferCreateInfo({}, sizeAligned, vk::BufferUsageFlagBits::eUniformBuffer);
-	m_engineFrameBuffer = std::make_unique<Buffer>(m_gfxCon.getAllocator(), engineBufCI, engineBufAllocCI);
+	m_engineFrameBuffer = std::make_unique<Buffer>(m_vkCon.getAllocator(), engineBufCI, engineBufAllocCI);
 
 
 
@@ -284,7 +285,7 @@ void SponzaApp::createUBOs()
 	for (auto i = 0ul; i < VulkanContext::getMaxFramesInFlight(); ++i)
 	{
 		ObjectFrameData dat{};
-		dat.modelMatBuffer = std::make_unique<Buffer>(m_gfxCon.getAllocator(), objectUBOCI, objectUBOAllocCI);
+		dat.modelMatBuffer = std::make_unique<Buffer>(m_vkCon.getAllocator(), objectUBOCI, objectUBOAllocCI);
 		
 		m_objectFrameData.push_back(std::move(dat));
 	}
@@ -293,17 +294,19 @@ void SponzaApp::createUBOs()
 
 void SponzaApp::loadTextures()
 {
-	m_mappedTextures.insert({ "rimuru", Texture::fromFile(m_gfxCon, "Resources/Textures/rimuru.jpg", true) });
-	m_mappedTextures.insert({ "rimuru2", Texture::fromFile(m_gfxCon, "Resources/Textures/rimuru2.jpg", true) });
-	m_mappedTextures.insert({ "defaultopacity", Texture::fromFile(m_gfxCon, "Resources/Textures/defaultopacity.jpg") });
-	m_mappedTextures.insert({ "defaultspecular", Texture::fromFile(m_gfxCon, "Resources/Textures/defaultspecular.jpg") });
-	m_mappedTextures.insert({ "defaultnormal", Texture::fromFile(m_gfxCon, "Resources/Textures/defaultnormal.jpg") });
-	m_mappedTextures.insert({ "yokohamaSB", Texture::cubeFromFile(m_gfxCon, "Resources/Textures/Skybox/") });
+	m_mappedTextures.insert({ "rimuru", Texture::fromFile(m_vkCon, "Resources/Textures/rimuru.jpg", true) });
+	m_mappedTextures.insert({ "rimuru2", Texture::fromFile(m_vkCon, "Resources/Textures/rimuru2.jpg", true) });
+	m_mappedTextures.insert({ "defaultopacity", Texture::fromFile(m_vkCon, "Resources/Textures/defaultopacity.jpg") });
+	m_mappedTextures.insert({ "defaultspecular", Texture::fromFile(m_vkCon, "Resources/Textures/defaultspecular.jpg") });
+	m_mappedTextures.insert({ "defaultnormal", Texture::fromFile(m_vkCon, "Resources/Textures/defaultnormal.jpg") });
+	m_mappedTextures.insert({ "yokohamaSB", Texture::cubeFromFile(m_vkCon, "Resources/Textures/Skybox/") });
 }
 
 void SponzaApp::drawObjects(Scene* scene, vk::CommandBuffer& cmd)
 {
 	auto view = scene->getRegistry().view<TransformComponent, ModelRefComponent>();
+
+	// We can batch the transforms by ModelRefs, put transforms in SSBO and use draw instanced using InstanceID as lookup for world matrix in SSBO
 
 	int materialChangeThisFrame = 0;
 	Material lastMaterial;
@@ -368,12 +371,12 @@ void SponzaApp::createDescriptorPool()
 		descriptorPoolSizes
 	);
 	
-	m_descriptorPool = m_gfxCon.getDevice().createDescriptorPoolUnique(poolCI);
+	m_descriptorPool = m_vkCon.getDevice().createDescriptorPoolUnique(poolCI);
 }
 
 void SponzaApp::createRenderModels()
 {
-	auto dev = m_gfxCon.getDevice();
+	auto dev = m_vkCon.getDevice();
 
 	// Local space (RH)
 	std::vector<Vertex> vertices{
@@ -390,12 +393,12 @@ void SponzaApp::createRenderModels()
 	};
 
 	// Create buffer resources
-	auto vb = Buffer::loadImmutable(m_gfxCon, vertices, vk::BufferUsageFlagBits::eVertexBuffer);
-	auto ib = Buffer::loadImmutable(m_gfxCon, indices, vk::BufferUsageFlagBits::eIndexBuffer);
+	auto vb = Buffer::loadImmutable(m_vkCon, vertices, vk::BufferUsageFlagBits::eVertexBuffer);
+	auto ib = Buffer::loadImmutable(m_vkCon, indices, vk::BufferUsageFlagBits::eIndexBuffer);
 
 	// Create descriptor set with new material
 	vk::DescriptorSetAllocateInfo texAllocInfo(m_descriptorPool.get(), m_materialDescriptorSetLayout.get());
-	auto newMatDescSet = m_gfxCon.getDevice().allocateDescriptorSets(texAllocInfo).front();
+	auto newMatDescSet = m_vkCon.getDevice().allocateDescriptorSets(texAllocInfo).front();
 
 	// Write to it (bind image and sampler)
 	vk::DescriptorImageInfo imageInfo(m_commonSampler.get(), m_mappedTextures["rimuru2"]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
@@ -459,7 +462,7 @@ void SponzaApp::setupDescriptorSetLayouts()
 	vk::DescriptorSetLayoutCreateInfo objectSetLayoutCI({}, objectBindings);
 
 	// Create layouts
-	auto dev = m_gfxCon.getDevice();
+	auto dev = m_vkCon.getDevice();
 	m_engineDescriptorSetLayout = dev.createDescriptorSetLayoutUnique(engineSetLayoutCI);
 	m_passDescriptorSetLayout = dev.createDescriptorSetLayoutUnique(passSetLayoutCI);
 	m_materialDescriptorSetLayout = dev.createDescriptorSetLayoutUnique(materialSetLayoutCI);
@@ -475,7 +478,7 @@ void SponzaApp::configurePushConstantRange()
 
 void SponzaApp::allocateDescriptorSets()
 {
-	auto dev = m_gfxCon.getDevice();
+	auto dev = m_vkCon.getDevice();
 
 	// ======================================= Allocate Set 0 and bind resources to it
 	vk::DescriptorSetAllocateInfo engineSetAllocInfo(m_descriptorPool.get(), m_engineDescriptorSetLayout.get());
@@ -519,9 +522,11 @@ void SponzaApp::allocateDescriptorSets()
 	}
 }
 
+
+
 void SponzaApp::createGraphicsPipeline()
 {
-	auto dev = m_gfxCon.getDevice();
+	auto dev = m_vkCon.getDevice();
 
 	// ======== Shader
 	auto vertBin = readFile("compiled_shaders/vertSponza.spv");
@@ -532,19 +537,48 @@ void SponzaApp::createGraphicsPipeline()
 		vk::PipelineShaderStageCreateInfo({}, vk::ShaderStageFlagBits::eVertex, vertMod.get(), "main"),
 		vk::PipelineShaderStageCreateInfo({}, vk::ShaderStageFlagBits::eFragment, fragMod.get(), "main")
 	};
+
+	//ShaderGroup shdGrp;
+	//shdGrp
+	//	.addStage(vk::ShaderStageFlagBits::eVertex, "compiled_shaders/vertSponza.spv")
+	//	.addStage(vk::ShaderStageFlagBits::eFragment, "compiled_shaders/fragSponza.spv")
+	//	.build(m_vkCon.getDevice());
+
+	reflectShader(vertBin);
+	std::cout << "========\n";
+	reflectShader(fragBin);
 	
 
-	// ======== Vertex Input Binding Description
+
+	// ======== Vertex Input Binding Description (Vertex Shader)
 	std::vector<vk::VertexInputBindingDescription> bindingDescs{ Vertex::getBindingDescription() };
 	auto inputAttrDescs{ Vertex::getAttributeDescriptions() };
 	vk::PipelineVertexInputStateCreateInfo vertInC({}, bindingDescs, inputAttrDescs);
 
-	// ======== Input Assembler State
+	// ======== Pipeline Layout (Layouts for Shader Inputs + Push Constant)
+	// Order matters here
+	std::vector<vk::DescriptorSetLayout> compatibleLayouts{
+		m_engineDescriptorSetLayout.get(),		// Set 0
+		m_passDescriptorSetLayout.get(),		// Set 1
+		m_materialDescriptorSetLayout.get(),	// Set 2
+		m_objectDescriptorSetLayout.get()		// Set 3
+	};
+
+	m_mainGfxPipelineLayout = dev.createPipelineLayoutUnique(vk::PipelineLayoutCreateInfo({}, compatibleLayouts, m_pushConstantRange));
+	//m_mainGfxPipelineLayout = dev.createPipelineLayoutUnique(vk::PipelineLayoutCreateInfo({}, compatibleLayouts));
+
+
+
+
+
+
+
+	// ======== Input Assembler State (Vertex Shader)
 	vk::PipelineInputAssemblyStateCreateInfo iaC({}, vk::PrimitiveTopology::eTriangleList);
 
 	// ======== Viewport & Scissor
 	// https://www.saschawillems.de/blog/2019/03/29/flipping-the-vulkan-viewport/
-	auto scExtent = m_gfxCon.getSwapchainExtent();
+	auto scExtent = m_vkCon.getSwapchainExtent();
 	vk::Viewport vp = vk::Viewport(0.f, 0.f, static_cast<float>(scExtent.width), static_cast<float>(scExtent.height), 0.0, 1.0);
 	vk::Rect2D scissor = vk::Rect2D({ 0, 0 }, scExtent);
 	vk::PipelineViewportStateCreateInfo vpC({}, 1, &vp, 1, &scissor);	// no stencil
@@ -590,18 +624,7 @@ void SponzaApp::createGraphicsPipeline()
 		{}		// we are not blending so this the blendConstants are irrelevant
 	);
 
-	// ======== Pipeline Layout (Shader Input)
-	
-	// Order matters here
-	std::vector<vk::DescriptorSetLayout> compatibleLayouts{
-		m_engineDescriptorSetLayout.get(),		// Set 0
-		m_passDescriptorSetLayout.get(),		// Set 1
-		m_materialDescriptorSetLayout.get(),	// Set 2
-		m_objectDescriptorSetLayout.get()		// Set 3
-	};	
 
-	m_mainGfxPipelineLayout = dev.createPipelineLayoutUnique(vk::PipelineLayoutCreateInfo({}, compatibleLayouts, m_pushConstantRange));
-	//m_mainGfxPipelineLayout = dev.createPipelineLayoutUnique(vk::PipelineLayoutCreateInfo({}, compatibleLayouts));
 
 	m_mainGfxPipeline = dev.createGraphicsPipelineUnique({},
 		vk::GraphicsPipelineCreateInfo({},
@@ -627,7 +650,12 @@ void SponzaApp::createGraphicsPipeline()
 		m_engineDescriptorSetLayout.get(),		// Set 0
 	};
 
-	//m_skyboxGfxPipelineLayout = dev.createPipelineLayoutUnique(vk::PipelineLayoutCreateInfo({}, compatibleLayoutsSB));
+	// Why do we need the push constant range?
+	// Spec @Pipeline Layout Compatibility 14.2.2
+	// Two pipeline layouts are defined to be “compatible for push constants” if they were created with identical push constant ranges. 
+	// Two pipeline layouts are defined to be “compatible for set N” if they were created with 
+	// identically defined descriptor set layouts for sets zero through N, || and if they were created with identical push constant ranges. || <-- Last bit 
+	m_skyboxGfxPipelineLayout = dev.createPipelineLayoutUnique(vk::PipelineLayoutCreateInfo({}, compatibleLayoutsSB, m_pushConstantRange));
 
 	auto vertBinSB = readFile("compiled_shaders/vertSkybox.spv");
 	auto fragBinSB = readFile("compiled_shaders/fragSkybox.spv");
@@ -655,7 +683,8 @@ void SponzaApp::createGraphicsPipeline()
 			&dsC,
 			&cbC,
 			{},
-			m_mainGfxPipelineLayout.get(),
+			//m_mainGfxPipelineLayout.get(),
+			m_skyboxGfxPipelineLayout.get(),
 			m_defRenderPass.get(),
 			0
 		)
@@ -666,8 +695,8 @@ void SponzaApp::createGraphicsPipeline()
 
 void SponzaApp::setupResources()
 {
-	m_defRenderPass = ezTmp::createDefaultRenderPass(m_gfxCon);
-	m_defFramebuffers = ezTmp::createDefaultFramebuffers(m_gfxCon, m_defRenderPass.get());
+	m_defRenderPass = ezTmp::createDefaultRenderPass(m_vkCon);
+	m_defFramebuffers = ezTmp::createDefaultFramebuffers(m_vkCon, m_defRenderPass.get());
 
 	// Allocate pool for descriptors
 	createDescriptorPool();
@@ -684,11 +713,11 @@ void SponzaApp::setupResources()
 		vk::SamplerMipmapMode::eLinear,				// mipmapMode
 		vk::SamplerAddressMode::eRepeat, vk::SamplerAddressMode::eRepeat, vk::SamplerAddressMode::eRepeat,
 		0.f,							// mipLodBias
-		true, m_gfxCon.getPhysicalDeviceProperties().limits.maxSamplerAnisotropy,		// anisotropy enabled / max anisotropy (max clamp value) (we are just maxing out here (16))
+		true, m_vkCon.getPhysicalDeviceProperties().limits.maxSamplerAnisotropy,		// anisotropy enabled / max anisotropy (max clamp value) (we are just maxing out here (16))
 		false, vk::CompareOp::eNever,	// compare enabled/op
 		0.f, VK_LOD_CLAMP_NONE
 	);
-	m_commonSampler = m_gfxCon.getDevice().createSamplerUnique(sCI);
+	m_commonSampler = m_vkCon.getDevice().createSamplerUnique(sCI);
 
 	// ============ Setup the layout for our 4 sets and possible push constants (for PipelineLayout)
 	setupDescriptorSetLayouts();
@@ -716,7 +745,7 @@ void SponzaApp::setupResources()
 	// Write skybox data
 	vk::DescriptorImageInfo skyboxImageInfo(m_commonSampler.get(), m_mappedTextures["yokohamaSB"]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
 	vk::WriteDescriptorSet skyboxImageSetWrite(m_engineDescriptorSet, 2, 0, vk::DescriptorType::eCombinedImageSampler, skyboxImageInfo, {}, {});
-	m_gfxCon.getDevice().updateDescriptorSets({ skyboxImageSetWrite }, {});
+	m_vkCon.getDevice().updateDescriptorSets({ skyboxImageSetWrite }, {});
 }
 
 
@@ -761,16 +790,14 @@ void SponzaApp::loadMaterial(std::string directory, AssimpMaterialPaths textureP
 void SponzaApp::uploadTexture(std::string finalPath, bool genMips, bool srgb, std::string materialParentPath, uint32_t bindingSlot)
 {
 	if (m_mappedTextures.find(finalPath) == m_mappedTextures.cend())
-	{
-		m_mappedTextures.insert({ finalPath, std::move(Texture::fromFile(m_gfxCon, finalPath, genMips, srgb)) });
-	}
+		m_mappedTextures.insert({ finalPath, std::move(Texture::fromFile(m_vkCon, finalPath, genMips, srgb)) });
 
 	// Parent (diffuse) (responsible for descriptor not yet initialized)
 	if (m_mappedMaterials.find(materialParentPath) == m_mappedMaterials.cend())
 	{
 		// Create descriptor set with new material
 		vk::DescriptorSetAllocateInfo texAllocInfo(m_descriptorPool.get(), m_materialDescriptorSetLayout.get());
-		auto newMatDescSet = m_gfxCon.getDevice().allocateDescriptorSets(texAllocInfo).front();
+		auto newMatDescSet = m_vkCon.getDevice().allocateDescriptorSets(texAllocInfo).front();
 		m_mappedMaterials.insert({ materialParentPath, std::make_unique<Material>(m_mainGfxPipeline.get(), m_mainGfxPipelineLayout.get(), newMatDescSet) });
 	}
 
@@ -778,12 +805,12 @@ void SponzaApp::uploadTexture(std::string finalPath, bool genMips, bool srgb, st
 	// Write to existing descriptor set (existing material that was made from diffuse) (bind image and sampler)
 	vk::DescriptorImageInfo imageInfo(m_commonSampler.get(), m_mappedTextures[finalPath]->getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal);
 	vk::WriteDescriptorSet imageSetWrite(m_mappedMaterials[materialParentPath]->getDescriptorSet(), bindingSlot, 0, vk::DescriptorType::eCombinedImageSampler, imageInfo, {}, {});
-	m_gfxCon.getDevice().updateDescriptorSets(imageSetWrite, {});
+	m_vkCon.getDevice().updateDescriptorSets(imageSetWrite, {});
 }
 
 void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 {
-	auto dev = m_gfxCon.getDevice();
+	auto dev = m_vkCon.getDevice();
 	std::string directory = filePath.parent_path().string() + "/";
 
 	auto loader = AssimpLoader(filePath);
@@ -821,8 +848,8 @@ void SponzaApp::loadExternalModel(const std::filesystem::path& filePath)
 	}
 
 	// Push into VB/IB pair
-	auto vb = Buffer::loadImmutable(m_gfxCon, finalVerts, vk::BufferUsageFlagBits::eVertexBuffer);
-	auto ib = Buffer::loadImmutable(m_gfxCon, indices, vk::BufferUsageFlagBits::eIndexBuffer);
+	auto vb = Buffer::loadImmutable(m_vkCon, finalVerts, vk::BufferUsageFlagBits::eVertexBuffer);
+	auto ib = Buffer::loadImmutable(m_vkCon, indices, vk::BufferUsageFlagBits::eIndexBuffer);
 
 
 	// ======== Handle Subsets

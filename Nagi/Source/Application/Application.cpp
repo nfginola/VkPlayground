@@ -4,9 +4,9 @@
 namespace Nagi
 {
 
-Application::Application(Window& window, VulkanContext& gfxCon) :
+Application::Application(Window& window, VulkanContext& vkCon) :
 	m_window(window),
-	m_gfxCon(gfxCon)
+	m_vkCon(vkCon)
 {
 }
 

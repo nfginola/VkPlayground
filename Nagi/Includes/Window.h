@@ -11,8 +11,8 @@ namespace vk
 namespace Nagi
 {
 
-	class KeyHandler;
-	class MouseHandler;
+	class Keyboard;
+	class Mouse;
 
 class Window
 {
@@ -24,16 +24,13 @@ public:
 	Window(const Window&) = delete;
 	Window& operator=(const Window&) = delete;
 
-
 	uint32_t getClientWidth() const;
 	uint32_t getClientHeight() const;
 	bool isRunning() const;
 	void processEvents() const;
 
-	void setKeyHandler(KeyHandler* handler);
-	void setMouseHandler(MouseHandler* handler);
-	KeyHandler* getKeyHandler() const;
-	MouseHandler* getMouseHandler() const;
+	Keyboard* getKeyboard() const;
+	Mouse* getMouse() const;
 
 	void setResizeCallback(std::function<void(GLFWwindow*, int, int)> function);
 
@@ -53,8 +50,8 @@ private:
 	std::pair<int, int> m_clientDimensions;
 	std::function<void(GLFWwindow*, int, int)> m_resizeCallback;
 	
-	KeyHandler* m_keyHandler;
-	MouseHandler* m_mouseHandler;
+	std::unique_ptr<Keyboard> m_Keyboard;
+	std::unique_ptr<Mouse> m_Mouse;
 
 	std::vector<const char*> m_reqExtensions;
 

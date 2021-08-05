@@ -134,8 +134,8 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)Dependencies\EnTT\Include;$(ProjectDir)Includes\ImGui;$(ProjectDir)Dependencies\AssimpBin\include;$(ProjectDir)Dependencies\assimp-4.1.0\include;$(ProjectDir)Dependencies\Vulkan\Include;$(ProjectDir)Dependencies\glm-master;$(ProjectDir)Dependencies\stb-master;$(ProjectDir)Dependencies\glfw-3.3.4.bin.WIN64\include;$(ProjectDir)Dependencies\VulkanMemoryAllocator-master\include;$(ProjectDir)Includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)Dependencies\imgui-master\backends;$(ProjectDir)Dependencies\imgui-master;$(ProjectDir)Dependencies\SPIRV-Reflect;$(ProjectDir)Dependencies\EnTT\Include;$(ProjectDir)Includes\ImGui;$(ProjectDir)Dependencies\AssimpBin\include;$(ProjectDir)Dependencies\assimp-4.1.0\include;$(ProjectDir)Dependencies\Vulkan\Include;$(ProjectDir)Dependencies\glm-master;$(ProjectDir)Dependencies\stb-master;$(ProjectDir)Dependencies\glfw-3.3.4.bin.WIN64\include;$(ProjectDir)Dependencies\VulkanMemoryAllocator-master\include;$(ProjectDir)Includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
@@ -155,8 +155,8 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)Dependencies\EnTT\Include;$(ProjectDir)Includes\ImGui;$(ProjectDir)Dependencies\AssimpBin\include;$(ProjectDir)Dependencies\assimp-4.1.0\include;$(ProjectDir)Dependencies\Vulkan\Include;$(ProjectDir)Dependencies\glm-master;$(ProjectDir)Dependencies\stb-master;$(ProjectDir)Dependencies\glfw-3.3.4.bin.WIN64\include;$(ProjectDir)Dependencies\VulkanMemoryAllocator-master\include;$(ProjectDir)Includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)Dependencies\imgui-master\backends;$(ProjectDir)Dependencies\imgui-master;$(ProjectDir)Dependencies\SPIRV-Reflect;$(ProjectDir)Dependencies\EnTT\Include;$(ProjectDir)Includes\ImGui;$(ProjectDir)Dependencies\AssimpBin\include;$(ProjectDir)Dependencies\assimp-4.1.0\include;$(ProjectDir)Dependencies\Vulkan\Include;$(ProjectDir)Dependencies\glm-master;$(ProjectDir)Dependencies\stb-master;$(ProjectDir)Dependencies\glfw-3.3.4.bin.WIN64\include;$(ProjectDir)Dependencies\VulkanMemoryAllocator-master\include;$(ProjectDir)Includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
@@ -169,41 +169,46 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Dependencies\imgui-master\backends\imgui_impl_glfw.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Dependencies\imgui-master\backends\imgui_impl_vulkan.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Dependencies\imgui-master\imgui.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Dependencies\imgui-master\imgui_demo.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Dependencies\imgui-master\imgui_draw.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Dependencies\imgui-master\imgui_tables.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Dependencies\imgui-master\imgui_widgets.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Dependencies\SPIRV-Reflect\spirv_reflect.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Source\ShaderGroup.cpp" />
     <ClCompile Include="Source\Entity.cpp" />
     <ClCompile Include="Source\Scene.cpp" />
     <ClCompile Include="Source\AssimpLoader.cpp" />
-    <ClCompile Include="Source\ImGui\imgui.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="Source\ImGui\imgui_demo.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="Source\ImGui\imgui_draw.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="Source\ImGui\imgui_impl_glfw.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="Source\ImGui\imgui_impl_vulkan.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="Source\ImGui\imgui_tables.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="Source\ImGui\imgui_widgets.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="Source\Input\KeyHandler.cpp" />
+    <ClCompile Include="Source\Input\Keyboard.cpp" />
     <ClCompile Include="Source\Camera.cpp" />
     <ClCompile Include="Source\Application\Application.cpp" />
-    <ClCompile Include="Source\Input\MouseHandler.cpp" />
+    <ClCompile Include="Source\Input\Mouse.cpp" />
     <ClCompile Include="Source\ResourceTypes.cpp" />
     <ClCompile Include="Source\VulkanContext.cpp" />
     <ClCompile Include="Source\main.cpp" />
@@ -222,19 +227,21 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dependencies\EnTT\Include\entt.hpp" />
+    <ClInclude Include="Dependencies\imgui-master\backends\imgui_impl_glfw.h" />
+    <ClInclude Include="Dependencies\imgui-master\backends\imgui_impl_vulkan.h" />
+    <ClInclude Include="Dependencies\imgui-master\imconfig.h" />
+    <ClInclude Include="Dependencies\imgui-master\imgui.h" />
+    <ClInclude Include="Dependencies\imgui-master\imgui_internal.h" />
+    <ClInclude Include="Dependencies\imgui-master\imstb_rectpack.h" />
+    <ClInclude Include="Dependencies\imgui-master\imstb_textedit.h" />
+    <ClInclude Include="Dependencies\imgui-master\imstb_truetype.h" />
+    <ClInclude Include="Dependencies\SPIRV-Reflect\spirv_reflect.h" />
     <ClInclude Include="Includes\Entity.h" />
     <ClInclude Include="Includes\AssimpLoader.h" />
     <ClInclude Include="Includes\Camera.h" />
     <ClInclude Include="Includes\Application\Application.h" />
-    <ClInclude Include="Includes\ImGui\imconfig.h" />
-    <ClInclude Include="Includes\ImGui\imgui.h" />
-    <ClInclude Include="Includes\ImGui\imgui_impl_glfw.h" />
-    <ClInclude Include="Includes\ImGui\imgui_impl_vulkan.h" />
-    <ClInclude Include="Includes\ImGui\imgui_internal.h" />
-    <ClInclude Include="Includes\ImGui\imstb_rectpack.h" />
-    <ClInclude Include="Includes\ImGui\imstb_textedit.h" />
-    <ClInclude Include="Includes\ImGui\imstb_truetype.h" />
-    <ClInclude Include="Includes\Input\MouseHandler.h" />
+    <ClInclude Include="Includes\Input\Mouse.h" />
+    <ClInclude Include="Includes\ReflectionTest.h" />
     <ClInclude Include="Includes\ResourceTypes.h" />
     <ClInclude Include="Includes\VulkanContext.h" />
     <ClInclude Include="Includes\pch.h" />
@@ -242,11 +249,12 @@
     <ClInclude Include="Includes\Window.h" />
     <ClInclude Include="Includes\VulkanUtilities.h" />
     <ClInclude Include="Includes\Application\SponzaApp.h" />
-    <ClInclude Include="Includes\Input\KeyHandler.h" />
+    <ClInclude Include="Includes\Input\Keyboard.h" />
     <ClInclude Include="Includes\VulkanImGuiContext.h" />
     <ClInclude Include="Includes\Timer.h" />
     <ClInclude Include="Includes\Scene.h" />
     <ClInclude Include="Includes\Component.h" />
+    <ClInclude Include="Includes\ShaderGroup.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

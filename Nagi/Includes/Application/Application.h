@@ -6,8 +6,8 @@
 #include "VulkanUtilities.h"
 #include "ResourceTypes.h"
 
-#include "Input/KeyHandler.h"
-#include "Input/MouseHandler.h"
+#include "Input/Keyboard.h"
+#include "Input/Mouse.h"
 
 
 
@@ -29,7 +29,7 @@ protected:
 
 protected:
 	Window& m_window;
-	VulkanContext& m_gfxCon;
+	VulkanContext& m_vkCon;
 
 };
 }

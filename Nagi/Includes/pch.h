@@ -3,6 +3,8 @@
 // Project settings >> C++ >> Precompiled Headers >> Set to Use (/Yu) and set this file
 // File setting for pch.cpp >> Set Create (/Yc)
 
+#include "Utilities.h"
+
 #include <assert.h>
 #include <stdint.h>
 

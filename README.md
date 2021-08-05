@@ -3,7 +3,8 @@ Vulkan Playground
   
 This is a self-initiated project where I take a dive into Vulkan (using the C++ bindings) after prior experience with D3D11 to get my hands dirty with a lower-level graphics API.
   
-I will be refactoring as I go, when I need it, as I extend this application.
+I will be refactoring as I go, when I need it, as I extend this application. It is worth mentioning that my primary focus with this project is to explore Vulkan. I am in no way trying to architect a well modularized engine so there will probably be
+redundant dependencies or tightly coupled modules around.
   
 Basic tech implemented so far
 - Assimp model loading (With diffuse, opacity, specular and normal textures supported)

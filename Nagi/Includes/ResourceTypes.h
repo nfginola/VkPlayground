@@ -16,6 +16,8 @@ namespace Nagi
 		void putData(const void* inData, size_t dataSize, size_t offset = 0);
 		const vk::Buffer& getBuffer() const;
 
+		// createView(const vk::BufferViewCreateInfo& viewCI);
+
 		// Helper designed for VB/IB
 		template <typename T>
 		static std::unique_ptr<Buffer> loadImmutable(const VulkanContext& context, const std::vector<T>& inData, vk::BufferUsageFlagBits usage)
