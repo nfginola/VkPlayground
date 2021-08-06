@@ -444,7 +444,9 @@ void SponzaApp::setupDescriptorSetLayouts()
 	std::vector<vk::DescriptorSetLayoutBinding> passBindings{
 		vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex)
 	};
-	vk::DescriptorSetLayoutCreateInfo passSetLayoutCI({}, passBindings);
+
+	vk::DescriptorSetLayoutCreateInfo passSetLayoutCI({}, {});
+	//vk::DescriptorSetLayoutCreateInfo passSetLayoutCI({}, passBindings);
 
 	// Per material layout
 	std::vector<vk::DescriptorSetLayoutBinding> materialBindings{
@@ -459,6 +461,8 @@ void SponzaApp::setupDescriptorSetLayouts()
 	std::vector<vk::DescriptorSetLayoutBinding> objectBindings{
 		vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eVertex)	// SSBO for model matrices
 	};
+
+	//vk::DescriptorSetLayoutCreateInfo objectSetLayoutCI({}, {});
 	vk::DescriptorSetLayoutCreateInfo objectSetLayoutCI({}, objectBindings);
 
 	// Create layouts
@@ -538,17 +542,12 @@ void SponzaApp::createGraphicsPipeline()
 		vk::PipelineShaderStageCreateInfo({}, vk::ShaderStageFlagBits::eFragment, fragMod.get(), "main")
 	};
 
-	//ShaderGroup shdGrp;
-	//shdGrp
-	//	.addStage(vk::ShaderStageFlagBits::eVertex, "compiled_shaders/vertSponza.spv")
-	//	.addStage(vk::ShaderStageFlagBits::eFragment, "compiled_shaders/fragSponza.spv")
-	//	.build(m_vkCon.getDevice());
-
-	reflectShader(vertBin);
-	std::cout << "========\n";
-	reflectShader(fragBin);
+	ShaderGroup shdGrp;
+	shdGrp
+		.addStage(vk::ShaderStageFlagBits::eVertex, "compiled_shaders/vertSponza.spv")
+		.addStage(vk::ShaderStageFlagBits::eFragment, "compiled_shaders/fragSponza.spv")
+		.build(m_vkCon.getDevice());
 	
-
 
 	// ======== Vertex Input Binding Description (Vertex Shader)
 	std::vector<vk::VertexInputBindingDescription> bindingDescs{ Vertex::getBindingDescription() };

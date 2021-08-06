@@ -1,6 +1,8 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
+#include "per_frame_res"
+
 // Location can be seen as the identifier used for in/out from this stage to other stages
 layout(location = 0) in vec3 inPos;
 layout(location = 1) in vec2 inUV;
@@ -14,19 +16,19 @@ layout(location = 2) out vec3 fragPos;
 layout(location = 3) out vec3 fragTangent;
 layout(location = 4) out vec3 fragBitangent;
 
-layout(push_constant) uniform Constants
-{
-	mat4 modelMat;
-} pushConstants;
-
-layout(set = 0, binding = 0) uniform EngineUBO
-{
-	mat4 viewMat;
-	mat4 projMat;
-	mat4 viewProjMat;
-} engineUBO;
-
-
+//layout(push_constant) uniform Constants
+//{
+//	mat4 modelMat;
+//} pushConstants;
+//
+//layout(set = 0, binding = 0) uniform EngineUBO
+//{
+//	mat4 viewMat;
+//	mat4 projMat;
+//	mat4 viewProjMat;
+//} engineUBO;
+//
+//
 //layout(set = 3, binding = 0) uniform ObjectUBO
 //{
 //	mat4 modelMat;

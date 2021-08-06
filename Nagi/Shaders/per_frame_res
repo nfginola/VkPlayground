@@ -1,0 +1,31 @@
+const uint POINT_LIGHT_COUNT = 2;
+const float SPOTLIGHT_DISTANCE = 77;
+
+layout(push_constant) uniform Constants
+{	
+    mat4 modelMat;
+} pushConstants;
+
+layout(set = 0, binding = 0) uniform EngineUBO
+{
+	mat4 viewMat;
+	mat4 projMat;
+	mat4 viewProjMat;
+} engineUBO;
+
+
+layout(set = 0, binding = 1) uniform SceneUBO
+{
+    vec4 directionalLightDirection;
+    vec4 directionalLightColor;
+
+    vec4 spotlightPositionAndStrength;
+	vec4 spotlightDirectionAndCutoff;
+
+    vec4 pointLightPosition[POINT_LIGHT_COUNT];
+    vec4 pointLightColor[POINT_LIGHT_COUNT];
+    vec4 pointLightAttenuation[POINT_LIGHT_COUNT];
+	
+} sceneData;
+
+layout(set = 0, binding = 2) uniform samplerCube skyboxTexture;

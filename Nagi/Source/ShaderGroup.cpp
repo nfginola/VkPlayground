@@ -146,217 +146,237 @@ namespace Nagi
 
 	ShaderGroup::~ShaderGroup()
 	{
+		for (auto deletor : m_deletionQueue)
+			deletor();
 	}
 
 	ShaderGroup& ShaderGroup::addStage(vk::ShaderStageFlagBits stage, const std::filesystem::path& path)
-    {
-        StageInfo info{};
-        info.code = readFile(path.string());
-        info.stage = stage;
-        m_stages.push_back(info);
+	{
+		StageInfo info{};
+		info.code = readFile(path.string());
+		info.stage = stage;
+		m_stages.push_back(info);
 		return *this;
-    }
+	}
 
-    ShaderGroup& ShaderGroup::build(vk::Device dev)
-    {
-        for (auto& stage : m_stages)
-            stage.module = dev.createShaderModule(vk::ShaderModuleCreateInfo({}, stage.code.size(), reinterpret_cast<uint32_t*>(stage.code.data())));
-        
-        reflect();
+	ShaderGroup& ShaderGroup::build(vk::Device dev)
+	{
+		for (auto& stage : m_stages)
+		{
+			stage.module = dev.createShaderModule(vk::ShaderModuleCreateInfo({}, stage.code.size(), reinterpret_cast<uint32_t*>(stage.code.data())));
+			m_deletionQueue.push_back([dev, &stage]() { dev.destroyShaderModule(stage.module); });
+		}
+
+		reflect();
+
+		// Create set layouts
+		for (auto& setData : m_setLayoutsData)
+		{
+			setData.layout = dev.createDescriptorSetLayout(setData.createInfo);
+			m_deletionQueue.push_back([dev, &setData]() { dev.destroyDescriptorSetLayout(setData.layout); });
+			m_setLayouts.push_back(setData.layout);
+		}
+
+		m_pipelineLayout = dev.createPipelineLayout(vk::PipelineLayoutCreateInfo({}, m_setLayouts, m_pushConstantRanges));
+		m_deletionQueue.push_back([dev, this]() { dev.destroyPipelineLayout(this->getPipelineLayout()); });
+
 		return *this;
-    }
+	}
 
-    vk::PipelineLayout ShaderGroup::getPipelineLayout()
-    {
-        return m_pipelineLayout;
-    }
+	vk::PipelineLayout ShaderGroup::getPipelineLayout()
+	{
+		return m_pipelineLayout;
+	}
 
-    vk::DescriptorSetLayout ShaderGroup::getSetLayout(uint32_t setNum)
-    {
-		auto it = std::find_if(m_setLayoutsData.cbegin(), m_setLayoutsData.cend(), [setNum](const auto& a) { return a.setNum == setNum; });
-		assert(it != m_setLayoutsData.cend());
-
-		return (*it).layout;
-    }
-    void ShaderGroup::reflect()
-    {
+	vk::DescriptorSetLayout ShaderGroup::getPerMaterialSetLayout()
+	{
+		// This is code for finding a specific setNum
+		//auto it = std::find_if(m_setLayoutsData.cbegin(), m_setLayoutsData.cend(), [setNum](const auto& a) { return a.setNum == setNum; });
+		//assert(it != m_setLayoutsData.cend());
+		//return (*it).layout;
 		
+		auto it = std::find_if(m_setLayoutsData.cbegin(), m_setLayoutsData.cend(), [](const auto& a) { return a.setNum == PER_MATERIAL_SET_NUM; });
+		assert(it != m_setLayoutsData.cend());
+		return (*it).layout;
+	}
+
+	const std::vector<vk::DescriptorSetLayout>& ShaderGroup::getSetLayouts()
+	{
+		return m_setLayouts;
+	}
+
+	vk::PipelineVertexInputStateCreateInfo ShaderGroup::getVertexInputStateCI()
+	{
+		return m_vertInputState;
+	}
+
+	void ShaderGroup::reflect()
+	{
+
 		for (const auto& stage : m_stages)
 		{
 			spv_reflect::ShaderModule spvMod(stage.code);
-
-			// Reflect Descriptor Sets
-			{
-				uint32_t setCount;
-				spvMod.EnumerateDescriptorSets(&setCount, nullptr);
-
-				std::vector<DescriptorSetLayoutData> setLayouts;
-				setLayouts.resize(setCount);
-
-				SpvReflectResult res;
-				for (uint32_t setNum = 0; setNum < setCount; ++setNum)
-				{
-					auto setRefl = spvMod.GetDescriptorSet(setNum, &res);
-					if (res != SPV_REFLECT_RESULT_SUCCESS)
-						continue;
-
-
-					// Prep for data extraction
-					auto& finalSetLayout = setLayouts[setNum];
-					finalSetLayout.bindings.resize(setRefl->binding_count);
-
-					//std::vector<SpvReflectDescriptorBinding*> bindingsReflected;
-					//bindingsReflected.resize(setRefl->binding_count);
-
-					for (uint32_t i = 0; i < setRefl->binding_count; ++i)
-					{
-						//auto bindingRefl = spvMod.GetDescriptorBinding(bindingNum, setNum, &res);
-						auto bindingRefl = setRefl->bindings[i];
-						assert(res == SPV_REFLECT_RESULT_SUCCESS);
-
-						// Assemble binding data so we can create a DescriptorSetLayout
-						auto& bindingExtract = finalSetLayout.bindings[i];
-						bindingExtract.binding = bindingRefl->binding;
-						bindingExtract.descriptorType = static_cast<vk::DescriptorType>(bindingRefl->descriptor_type);
-						bindingExtract.stageFlags = static_cast<vk::ShaderStageFlagBits>(spvMod.GetShaderStage());
-
-						// Get the descriptor count for this binding (array count)
-						bindingExtract.descriptorCount = 1;
-						for (uint32_t bindDim = 0; bindDim < bindingRefl->array.dims_count; ++bindDim)
-							bindingExtract.descriptorCount *= bindingRefl->array.dims[bindDim];
-					}
-
-					finalSetLayout.setNum = setNum;
-					finalSetLayout.ci = vk::DescriptorSetLayoutCreateInfo({}, finalSetLayout.bindings);
-				}
-			}
-			
-
+			reflectDescriptorSets(spvMod);
+			reflectPushConstantBlocks(spvMod);	// Simply accumulate all Push Constant Ranges for each shader stage
+			reflectVertexInputState(spvMod);
 		}
 
+		std::cout << "Hey yeah\n";
+
+	}
+
+	void ShaderGroup::reflectDescriptorSets(const spv_reflect::ShaderModule& spvMod)
+	{
+		uint32_t setCount;
+		spvMod.EnumerateDescriptorSets(&setCount, nullptr);
+
+		std::vector<SpvReflectDescriptorSet*> setsReflected;
+		setsReflected.resize(setCount);
+		spvMod.EnumerateDescriptorSets(&setCount, setsReflected.data());
 
 
+		for (uint32_t setIdx = 0; setIdx < setCount; ++setIdx)
+		{
+			const auto setRefl = setsReflected[setIdx];
 
-		//// ================================
+			// Check if this set is already populated
+			//bool combineFlags = false;
+			//if (m_setLayoutsData[setRefl->set].setNum != INVALID_SET_NUM)
+			//	combineFlags = true;
 
-		//uint32_t setCount;
-		//spvMod.EnumerateDescriptorSets(&setCount, nullptr);
+			// Prep for data extraction
+			auto& finalSetLayout = m_setLayoutsData[setRefl->set];			// populate the set idx
+			//finalSetLayout.bindings.resize(setRefl->binding_count);
 
-		//std::vector<DescriptorSetLayoutData> setLayouts;
-		//setLayouts.resize(setCount);
+			for (uint32_t i = 0; i < setRefl->binding_count; ++i)
+			{
+				auto bindingRefl = setRefl->bindings[i];
+				auto bindingNum = bindingRefl->binding;
+				vk::DescriptorSetLayoutBinding bindingExtract;
 
-		//SpvReflectResult res;
-		//for (uint32_t setNum = 0; setNum < setCount; ++setNum)
-		//{
-		//	auto setRefl = spvMod.GetDescriptorSet(setNum, &res);
-		//	if (res != SPV_REFLECT_RESULT_SUCCESS)
-		//		continue;
+				// Does this binding exist?
+				auto it = std::find_if(finalSetLayout.bindings.cbegin(), finalSetLayout.bindings.cend(),
+					[bindingNum](const vk::DescriptorSetLayoutBinding& setLayoutBinding) { return setLayoutBinding.binding == bindingNum; });
+				bool bindingExists = false;
+				if (it != finalSetLayout.bindings.cend())
+					bindingExists = true;
 
-		//	// Prep for data extraction
-		//	auto& finalSetLayout = setLayouts[setNum];
-		//	finalSetLayout.bindings.resize(setRefl->binding_count);
+				if (!bindingExists)
+				{
+					// Assemble binding data so we can create a DescriptorSetLayout
+					bindingExtract.binding = bindingNum;
+					bindingExtract.descriptorType = static_cast<vk::DescriptorType>(bindingRefl->descriptor_type);
+					bindingExtract.stageFlags = static_cast<vk::ShaderStageFlagBits>(spvMod.GetShaderStage());
 
-		//	for (uint32_t bindingNum = 0; bindingNum < setRefl->binding_count; ++bindingNum)
-		//	{
-		//		auto bindingRefl = spvMod.GetDescriptorBinding(bindingNum, setNum, &res);
-		//		assert(res == SPV_REFLECT_RESULT_SUCCESS);
+					// Get the descriptor count for this binding (array count)
+					bindingExtract.descriptorCount = 1;
+					for (uint32_t bindDim = 0; bindDim < bindingRefl->array.dims_count; ++bindDim)
+						bindingExtract.descriptorCount *= bindingRefl->array.dims[bindDim];
+					
+					finalSetLayout.bindings.push_back(bindingExtract);
+				}
+				else
+				{
+					auto& existingBinding = finalSetLayout.bindings[bindingNum];
+					existingBinding.stageFlags |= static_cast<vk::ShaderStageFlagBits>(spvMod.GetShaderStage());
+				}
 
-		//		// Assemble binding data so we can create a DescriptorSetLayout
-		//		auto& bindingExtract = finalSetLayout.bindings[bindingNum];
-		//		bindingExtract.binding = bindingRefl->binding;
-		//		bindingExtract.descriptorType = static_cast<vk::DescriptorType>(bindingRefl->descriptor_type);
-		//		bindingExtract.stageFlags = static_cast<vk::ShaderStageFlagBits>(spvMod.GetShaderStage());
+			}
 
-		//		// Get the descriptor count for this binding (array count)
-		//		bindingExtract.descriptorCount = 1;
-		//		for (uint32_t i_dim = 0; i_dim < bindingRefl->array.dims_count; ++i_dim)
-		//			bindingExtract.descriptorCount *= bindingRefl->array.dims[i_dim];
-		//	}
+			finalSetLayout.setNum = setRefl->set;
+			finalSetLayout.createInfo = vk::DescriptorSetLayoutCreateInfo({}, finalSetLayout.bindings);
+		}
 
-		//	finalSetLayout.setNum = setNum;
-		//	finalSetLayout.ci = vk::DescriptorSetLayoutCreateInfo({}, finalSetLayout.bindings);
-		//}
+		// Fill in the empty descriptor sets with blanks
+		for (auto& setData : m_setLayoutsData)
+		{
+			if (setData.setNum == INVALID_SET_NUM)
+			{
+				setData.createInfo = vk::DescriptorSetLayoutCreateInfo({}, {});
+			}
+		}
+	}
+
+	void ShaderGroup::reflectPushConstantBlocks(const spv_reflect::ShaderModule& spvMod)
+	{
+		uint32_t pcbCount;
+		spvMod.EnumeratePushConstantBlocks(&pcbCount, nullptr);
+
+		std::vector<SpvReflectBlockVariable*> pcbs;
+		pcbs.resize(pcbCount);
+		spvMod.EnumeratePushConstantBlocks(&pcbCount, pcbs.data());
+
+		for (uint32_t pcbIdx = 0; pcbIdx < pcbCount; ++pcbIdx)
+		{
+			const auto pcbRefl = pcbs[pcbIdx];
+			m_pushConstantRanges.push_back(vk::PushConstantRange(static_cast<vk::ShaderStageFlagBits>(spvMod.GetShaderStage()), pcbRefl->offset, pcbRefl->size));
+		}
+	}
+
+	void ShaderGroup::reflectVertexInputState(const spv_reflect::ShaderModule& spvMod)
+	{
+		// Trying out, reflect Input (input layout)
+		// YES! We have enough information to create the VertexInputAttributeDescriptions! (e.g inPos, inUV, etc.)
+		//  ---- BUT, we still need to specify VertexInputBindingDescription (VB binding slot, stride and input rate (vertex or instance))
+		//  ---- This is fine though! Its just a little extra metadata
+		// https://github.com/KhronosGroup/SPIRV-Reflect/blob/master/examples/main_io_variables.cpp
+		// We can use the simplifying assumptions and override this if needed in the future when we get a more complex application
 
 
+		// Reflect Input Layout
+		// Simplifying assumptions:
+		   // - All vertex input attributes are sourced from a single vertex buffer,
+		   //   bound to VB slot 0.
+		   // - Each vertex's attribute are laid out in ascending order by location.
+		   // - The format of each attribute matches its usage in the shader;
+		   //   float4 -> VK_FORMAT_R32G32B32A32_FLOAT, etc. No attribute compression is applied.
+		   // - All attributes are provided per-vertex, not per-instance.
 
 
+		if (spvMod.GetShaderStage() == SPV_REFLECT_SHADER_STAGE_VERTEX_BIT)
+		{
+			uint32_t ivCount;
+			spvMod.EnumerateInputVariables(&ivCount, nullptr);
 
+			std::vector<vk::VertexInputAttributeDescription> inputAttrDescs;
+			inputAttrDescs.resize(ivCount);
 
-		//// Reflect push constants
-		//uint32_t pcbCount;
-		//spvMod.EnumeratePushConstantBlocks(&pcbCount, nullptr);
+			std::vector<SpvReflectInterfaceVariable*> inputVarsRefl;
+			inputVarsRefl.resize(ivCount);
+			spvMod.EnumerateInputVariables(&ivCount, inputVarsRefl.data());
 
-		//std::vector<vk::PushConstantRange> pushConstantRanges;
-		//pushConstantRanges.resize(pcbCount);
+			// Hardcoded assumptions
+			/*
+				- All input attr is on VB slot 0
+				- Each vertex attr is laid out in ascending order by loc (0, 1, 2...)
+				- All attr provided per vertex
+				- 16 byte alignment for each input attribute (default behaviour of offsetof?)
+			*/
+			uint32_t vbBindingSlot = 0;
 
-		//for (uint32_t pcbIdx = 0; pcbIdx < pcbCount; ++pcbIdx)
-		//{
-		//	auto pcbRefl = spvMod.GetPushConstantBlock(pcbIdx, &res);
-		//	assert(res == SPV_REFLECT_RESULT_SUCCESS);
+			// Get in location order (0..n)
+			uint32_t stride = 0;
+			for (uint32_t ivIdx = 0; ivIdx < ivCount; ++ivIdx)
+			{
+				const auto ivRefl = inputVarsRefl[ivIdx];
 
-		//	pushConstantRanges[pcbIdx] = vk::PushConstantRange(static_cast<vk::ShaderStageFlagBits>(spvMod.GetShaderStage()), pcbRefl->offset, pcbRefl->size);
-		//}
+				auto& inputAttrDesc = inputAttrDescs[ivIdx];
+				inputAttrDesc.location = ivRefl->location;
+				inputAttrDesc.format = static_cast<vk::Format>(ivRefl->format);
+				inputAttrDesc.binding = vbBindingSlot;
 
-		//// Trying out, reflect Input (input layout)
-		//// YES! We have enough information to create the VertexInputAttributeDescriptions! (e.g inPos, inUV, etc.)
-		////  ---- BUT, we still need to specify VertexInputBindingDescription (VB binding slot, stride and input rate (vertex or instance))
-		////  ---- This is fine though! Its just a little extra metadata
-		//// https://github.com/KhronosGroup/SPIRV-Reflect/blob/master/examples/main_io_variables.cpp
-		//// We can use the simplifying assumptions and override this if needed in the future when we get a more complex application
-		///*
+				inputAttrDesc.offset = stride;
+				stride += getAlignedSize(formatSize(static_cast<VkFormat>(inputAttrDesc.format)), 16);	// 16 byte aligned
+			}
 
-		//// Reflect Input Layout
-		//// Simplifying assumptions:
-		//   // - All vertex input attributes are sourced from a single vertex buffer,
-		//   //   bound to VB slot 0.
-		//   // - Each vertex's attribute are laid out in ascending order by location.
-		//   // - The format of each attribute matches its usage in the shader;
-		//   //   float4 -> VK_FORMAT_R32G32B32A32_FLOAT, etc. No attribute compression is applied.
-		//   // - All attributes are provided per-vertex, not per-instance.
+			// Hardcoded assumption above!
+			// We should probably make sure that this is overridable in the future when we want to use e.g per instance data
+			vk::VertexInputBindingDescription inputBindingDesc(vbBindingSlot, stride, vk::VertexInputRate::eVertex);
+			auto inputBindingDescs = { inputBindingDesc };
 
-		//*/
+			m_vertInputState = vk::PipelineVertexInputStateCreateInfo({}, inputBindingDescs, inputAttrDescs);
+		}
 
-		//if (spvMod.GetShaderStage() == SPV_REFLECT_SHADER_STAGE_VERTEX_BIT)
-		//{
-		//	uint32_t ivCount;
-		//	spvMod.EnumerateInputVariables(&ivCount, nullptr);
+	}
 
-		//	std::vector<vk::VertexInputAttributeDescription> inputAttrDescs;
-		//	inputAttrDescs.resize(ivCount);
-
-		//	// Hardcoded assumptions
-		//	/*
-		//		- All input attr is on VB slot 0
-		//		- Each vertex attr is laid out in ascending order by loc (0, 1, 2...)
-		//		- All attr provided per vertex
-		//		- 16 byte alignment for each input attribute (default behaviour of offsetof?)
-		//	*/
-		//	uint32_t vbBindingSlot = 0;
-
-		//	// Get in location order (0..n)
-		//	uint32_t stride = 0;
-		//	for (uint32_t ivLoc = 0; ivLoc < ivCount; ++ivLoc)
-		//	{
-		//		auto ivRefl = spvMod.GetInputVariableByLocation(ivLoc, &res);
-		//		assert(res == SPV_REFLECT_RESULT_SUCCESS);
-
-		//		auto& inputAttrDesc = inputAttrDescs[ivLoc];
-		//		inputAttrDesc.location = ivRefl->location;
-		//		inputAttrDesc.format = static_cast<vk::Format>(ivRefl->format);
-		//		inputAttrDesc.binding = vbBindingSlot;
-
-		//		inputAttrDesc.offset = stride;
-		//		stride += getAlignedSize(formatSize(static_cast<VkFormat>(inputAttrDesc.format)), 16);	// 16 byte aligned
-		//	}
-
-		//	// Hardcoded assumption above!
-		//	// We should probably make sure that this is overridable in the future when we want to use e.g per instance data
-		//	vk::VertexInputBindingDescription inputBindingDesc(vbBindingSlot, stride, vk::VertexInputRate::eVertex);
-
-		//	// Now we have enough to create a vk::PipelineInputStateCreateInfo on top of vk::PipelineLayout (Push Constant + Descriptor Sets)!
-		//	// We could even set up a validator between stages (VS to next, GS to next, etc. to validate Input and Output variables here and assert)
-
-		//}
-    }
 }
-

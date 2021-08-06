@@ -1,5 +1,7 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
+
+#include "per_frame_res"
         
 // Match previous stages out with matching identifiers
 layout(location = 0) in vec3 fragNormal;
@@ -8,32 +10,32 @@ layout(location = 2) in vec3 fragPos;
 layout(location = 3) in vec3 fragTangent;
 layout(location = 4) in vec3 fragBitangent;
 
-const uint POINT_LIGHT_COUNT = 2;
-const float SPOTLIGHT_DISTANCE = 77;
 
-layout(set = 0, binding = 0) uniform EngineUBO
-{
-	mat4 viewMat;
-	mat4 projMat;
-	mat4 viewProjMat;
-} engineUBO;
-
-
-layout(set = 0, binding = 1) uniform SceneUBO
-{
-    vec4 directionalLightDirection;
-    vec4 directionalLightColor;
-
-    vec4 spotlightPositionAndStrength;
-	vec4 spotlightDirectionAndCutoff;
-
-    vec4 pointLightPosition[POINT_LIGHT_COUNT];
-    vec4 pointLightColor[POINT_LIGHT_COUNT];
-    vec4 pointLightAttenuation[POINT_LIGHT_COUNT];
-	
-} sceneData;
-
-layout(set = 0, binding = 2) uniform samplerCube skyboxTexture;
+//const uint POINT_LIGHT_COUNT = 2;
+//const float SPOTLIGHT_DISTANCE = 77;
+//
+//layout(set = 0, binding = 0) uniform EngineUBO
+//{
+//	mat4 viewMat;
+//	mat4 projMat;
+//	mat4 viewProjMat;
+//} engineUBO;
+//
+//
+//layout(set = 0, binding = 1) uniform SceneUBO
+//{
+//    vec4 directionalLightDirection;
+//    vec4 directionalLightColor;
+//
+//    vec4 spotlightPositionAndStrength;
+//	vec4 spotlightDirectionAndCutoff;
+//
+//    vec4 pointLightPosition[POINT_LIGHT_COUNT];
+//    vec4 pointLightColor[POINT_LIGHT_COUNT];
+//    vec4 pointLightAttenuation[POINT_LIGHT_COUNT];
+//	
+//} sceneData;
+//layout(set = 0, binding = 2) uniform samplerCube skyboxTexture;
 
 layout(set = 2, binding = 0) uniform sampler2D diffuseTexture;
 layout(set = 2, binding = 1) uniform sampler2D opacityTexture;
