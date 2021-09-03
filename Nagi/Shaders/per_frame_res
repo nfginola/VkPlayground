@@ -1,6 +1,7 @@
 const uint POINT_LIGHT_COUNT = 2;
 const float SPOTLIGHT_DISTANCE = 77;
 
+// In VS
 layout(push_constant) uniform Constants
 {	
     mat4 modelMat;
@@ -28,4 +29,5 @@ layout(set = 0, binding = 1) uniform SceneUBO
 	
 } sceneData;
 
+// In FS
 layout(set = 0, binding = 2) uniform samplerCube skyboxTexture;

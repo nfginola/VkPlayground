@@ -1,6 +1,8 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
+#include "per_frame_res"
+
 const vec4 CUBE[36] =
 {
 // Front 1
@@ -66,12 +68,12 @@ vec4(0.5f, -0.5f, -0.5f, 0.5f)
 
 layout(location = 0) out vec3 wsPos;
 
-layout(set = 0, binding = 0) uniform EngineUBO
-{
-	mat4 viewMat;
-	mat4 projMat;
-	mat4 viewProjMat;
-} engineUBO;
+//layout(set = 0, binding = 0) uniform EngineUBO
+//{
+//	mat4 viewMat;
+//	mat4 projMat;
+//	mat4 viewProjMat;
+//} engineUBO;
 
 void main()
 {

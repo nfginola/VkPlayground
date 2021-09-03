@@ -346,7 +346,7 @@ void SponzaApp::drawObjects(Scene* scene, vk::CommandBuffer& cmd)
 			// This is easiest as each Draw call in our current case is one instance of some model
 			cmd.pushConstants<PushConstantData>(mat.getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, { perObjectData });
 
-			cmd.drawIndexed(mesh.getNumIndices(), 1, mesh.getFirstIndex(), mesh.getVertexBufferOffset(), mesh.getVertexBufferOffset());
+			cmd.drawIndexed(mesh.getNumIndices(), 1, mesh.getFirstIndex(), mesh.getVertexBufferOffset(), 0);
 		}
 
 	}
@@ -542,10 +542,18 @@ void SponzaApp::createGraphicsPipeline()
 		vk::PipelineShaderStageCreateInfo({}, vk::ShaderStageFlagBits::eFragment, fragMod.get(), "main")
 	};
 
+	// We probably dont want the includes as we do now (per frame)
+	// Perhaps we dont need to have all bindings everywhere for per frame?
 	ShaderGroup shdGrp;
 	shdGrp
 		.addStage(vk::ShaderStageFlagBits::eVertex, "compiled_shaders/vertSponza.spv")
 		.addStage(vk::ShaderStageFlagBits::eFragment, "compiled_shaders/fragSponza.spv")
+		.build(m_vkCon.getDevice());
+
+	ShaderGroup shdGrp2;
+	shdGrp2
+		.addStage(vk::ShaderStageFlagBits::eVertex, "compiled_shaders/vertSkybox.spv")
+		.addStage(vk::ShaderStageFlagBits::eFragment, "compiled_shaders/fragSkybox.spv")
 		.build(m_vkCon.getDevice());
 	
 
@@ -627,18 +635,18 @@ void SponzaApp::createGraphicsPipeline()
 
 	m_mainGfxPipeline = dev.createGraphicsPipelineUnique({},
 		vk::GraphicsPipelineCreateInfo({},
-			shaderStageC,
-			&vertInC,
-			&iaC,
-			{},
-			&vpC,
-			&rsC,
-			&msC,
-			&dsC,
-			&cbC,
-			{},
+			shaderStageC,			// Shaders
+			&vertInC,				// Input Layout
+			&iaC,					// Input Assembler STATE (Topology)
+			{},						// TesselationState
+			&vpC,					// Viewport and Stencil 
+			&rsC,					// Rasterizer State
+			&msC,					// Multisample states
+			&dsC,					// Depth stencil states
+			&cbC,					// Color blend states
+			{},						// Optional dynamic state
 			m_mainGfxPipelineLayout.get(),
-			m_defRenderPass.get(),
+			m_defRenderPass.get(),	// Suitable render pass
 			0
 		)
 	).value;
@@ -672,9 +680,9 @@ void SponzaApp::createGraphicsPipeline()
 
 	m_skyboxGfxPipeline = dev.createGraphicsPipelineUnique({},
 		vk::GraphicsPipelineCreateInfo({},
-			shaderStageCSB,
-			&vertInCSB,
-			&iaC,
+			shaderStageCSB,	
+			&vertInCSB,			
+			&iaC,				 
 			{},
 			&vpC,
 			&rsC,
